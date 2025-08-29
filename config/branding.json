@@ -1,0 +1,185 @@
+{
+  "companyName": "CyberShield",
+  "productName": "CyberShield Drain",
+  "version": "1.0.0",
+  "description": "Enterprise-grade web security and content manipulation extension",
+  
+  "branding": {
+    "primaryColor": "#2563eb",
+    "secondaryColor": "#64748b",
+    "accentColor": "#059669",
+    "warningColor": "#d97706",
+    "errorColor": "#dc2626",
+    "backgroundColor": "#f8fafc",
+    "surfaceColor": "#ffffff",
+    "textPrimary": "#1f2937",
+    "textSecondary": "#6b7280"
+  },
+  
+  "assets": {
+    "logoUrl": "images/icon48.png",
+    "iconUrl": "images/icon32.png",
+    "faviconUrl": "images/icon16.png",
+    "bannerUrl": "images/banner.png",
+    "screenshotUrls": [
+      "images/screenshot1.png",
+      "images/screenshot2.png",
+      "images/screenshot3.png"
+    ]
+  },
+  
+  "contact": {
+    "supportEmail": "support@cybershield.com",
+    "supportUrl": "https://support.cybershield.com",
+    "salesEmail": "sales@cybershield.com",
+    "salesUrl": "https://cybershield.com/contact",
+    "websiteUrl": "https://cybershield.com",
+    "documentationUrl": "https://docs.cybershield.com"
+  },
+  
+  "legal": {
+    "privacyPolicyUrl": "https://cybershield.com/privacy",
+    "termsOfServiceUrl": "https://cybershield.com/terms",
+    "licenseUrl": "https://cybershield.com/license",
+    "copyrightNotice": "© 2024 CyberShield Technologies. All rights reserved."
+  },
+  
+  "customization": {
+    "showCompanyBranding": true,
+    "allowUserCustomization": true,
+    "enableWhiteLabeling": true,
+    "customCssEnabled": true,
+    "customIconsEnabled": true
+  },
+  
+  "features": {
+    "welcomeMessage": "Welcome to CyberShield Drain - Your Enterprise Web Security Solution",
+    "tagline": "Advanced threat protection for the modern web",
+    "securityBadgeText": "Protected by CyberShield",
+    "blockedPageTitle": "Access Blocked by CyberShield",
+    "blockedPageMessage": "This page has been blocked by your organization's security policy for your protection."
+  },
+  
+  "customText": {
+    "extensionDescription": "CyberShield Drain provides enterprise-grade web security with advanced threat detection, content manipulation capabilities, and comprehensive policy management.",
+    "securityFeatures": [
+      "Real-time threat detection and blocking",
+      "Advanced phishing protection",
+      "Content manipulation and injection",
+      "Enterprise policy enforcement",
+      "Comprehensive audit logging",
+      "White-label customization"
+    ],
+    "enterpriseFeatures": [
+      "Group Policy (GPO) support",
+      "Microsoft Intune integration",
+      "Centralized management console",
+      "Compliance reporting",
+      "Custom detection rules",
+      "24/7 enterprise support"
+    ]
+  },
+  
+  "socialMedia": {
+    "twitter": "https://twitter.com/cybershield",
+    "linkedin": "https://linkedin.com/company/cybershield",
+    "youtube": "https://youtube.com/c/cybershield",
+    "github": "https://github.com/cybershield"
+  },
+  
+  "whiteLabel": {
+    "enabled": true,
+    "allowCustomColors": true,
+    "allowCustomLogos": true,
+    "allowCustomText": true,
+    "allowCustomIcons": true,
+    "allowCustomCss": true,
+    "preserveAttribution": false,
+    "customizableElements": [
+      "extension_name",
+      "company_name",
+      "logo",
+      "colors",
+      "contact_info",
+      "support_links",
+      "custom_css"
+    ]
+  },
+  
+  "licensing": {
+    "licenseKey": "",
+    "licensedTo": "",
+    "licenseType": "enterprise",
+    "licenseExpiry": null,
+    "maxUsers": null,
+    "features": [
+      "unlimited_users",
+      "white_labeling",
+      "enterprise_support",
+      "compliance_reporting",
+      "custom_rules",
+      "api_access"
+    ]
+  },
+  
+  "deployment": {
+    "supportedPlatforms": [
+      "Chrome",
+      "Chromium",
+      "Microsoft Edge",
+      "Brave",
+      "Opera"
+    ],
+    "minimumVersion": "88",
+    "manifestVersion": 3,
+    "deploymentMethods": [
+      "Group Policy (GPO)",
+      "Microsoft Intune",
+      "Chrome Enterprise",
+      "Manual Installation"
+    ]
+  },
+  
+  "support": {
+    "documentationUrl": "https://docs.cybershield.com/drain",
+    "knowledgeBaseUrl": "https://support.cybershield.com/kb",
+    "communityForumUrl": "https://community.cybershield.com",
+    "statusPageUrl": "https://status.cybershield.com",
+    "feedbackUrl": "https://feedback.cybershield.com",
+    "supportHours": "24/7 for Enterprise customers, Business hours for Standard",
+    "supportChannels": [
+      "email",
+      "phone",
+      "chat",
+      "ticket_system"
+    ]
+  },
+  
+  "analytics": {
+    "enabled": false,
+    "trackingId": "",
+    "events": [
+      "extension_installed",
+      "threat_blocked",
+      "page_scanned",
+      "settings_changed"
+    ],
+    "anonymizeData": true,
+    "respectDoNotTrack": true
+  },
+  
+  "updates": {
+    "autoUpdateEnabled": true,
+    "updateChannel": "stable",
+    "updateCheckInterval": 86400000,
+    "releaseNotesUrl": "https://releases.cybershield.com/drain"
+  },
+  
+  "metadata": {
+    "created": "2024-01-01T00:00:00Z",
+    "modified": "2024-01-01T00:00:00Z",
+    "author": "CyberShield Technologies",
+    "maintainer": "security-team@cybershield.com",
+    "schema_version": "1.0"
+  }
+}

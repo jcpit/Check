@@ -1,0 +1,328 @@
+# CyberShield Drain - Git Ignore File
+
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Package manager locks (choose one based on your preference)
+# package-lock.json
+# yarn.lock
+
+# Build outputs
+dist/
+build/
+*.zip
+*.crx
+*.pem
+
+# Development files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Chrome extension development
+web-accessible-resources/temp/
+*.key
+private-key.pem
+extension.pem
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Coverage reports
+coverage/
+*.lcov
+.nyc_output
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# next.js build output
+.next
+
+# nuxt.js build output
+.nuxt
+
+# vuepress build output
+.vuepress/dist
+
+# Serverless directories
+.serverless
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# Temporary folders
+tmp/
+temp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Windows Installer files
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Windows shortcuts
+*.lnk
+
+# Linux
+*~
+
+# KDE directory preferences
+.directory
+
+# Linux trash folder which might appear on any partition or disk
+.Trash-*
+
+# .nfs files are created when an open file is removed but is still being accessed
+.nfs*
+
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon must end with two \r
+Icon
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Extension-specific ignores
+config/local-config.json
+config/development.json
+config/production.json
+config/test.json
+
+# Sensitive configuration files
+config/secrets.json
+config/private-keys.json
+config/certificates/
+keys/
+certificates/
+
+# Custom detection rules (if sensitive)
+rules/custom-rules.json
+rules/private-rules.json
+
+# User data and logs
+user-data/
+logs/
+audit-logs/
+security-logs/
+
+# Test files
+test-results/
+screenshots/
+test-output/
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+
+# Compiled CSS from SASS/LESS
+*.css.map
+
+# Package files
+*.deb
+*.dmg
+*.exe
+*.iso
+*.tar.gz
+
+# Application specific
+manifest-v2.json
+legacy/
+
+# Chrome Web Store assets
+store-assets/screenshots/
+store-assets/promotional/
+store-assets/videos/
+
+# Documentation builds
+docs/_build/
+docs/build/
+
+# Translation files
+locales/*.mo
+*.pot
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Configuration files with sensitive data
+config/managed-policies.json
+config/enterprise-settings.json
+
+# Deployment files
+deploy/
+deployment/
+releases/
+
+# External resources
+external/
+vendor/
+third-party/
+
+# Cache directories
+.cache/
+cache/
+
+# Benchmark results
+benchmark-results/
+
+# Performance test results
+perf-results/
+
+# Memory dumps
+*.hprof
+*.heap
+
+# ESLint cache
+.eslintcache
+
+# Prettier cache
+.prettiercache
+
+# Stylelint cache
+.stylelintcache
+
+# Jest cache
+.jestcache
+
+# Cypress
+cypress/videos/
+cypress/screenshots/
+
+# Storybook
+storybook-static/
+
+# Webpack
+.webpack/
+
+# Rollup
+.rollup/
+
+# Parcel
+.parcel/
+
+# TypeScript
+*.tsbuildinfo
+
+# Optional stylelint cache
+.stylelintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Local Netlify folder
+.netlify
+
+# SvelteKit build / generate output
+.svelte-kit
+
+# End of https://www.gitignore.io/api/node

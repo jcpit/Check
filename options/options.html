@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberShield Drain - Settings</title>
+    <link rel="stylesheet" href="options.css">
+</head>
+<body>
+    <div class="options-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <img src="../images/icon48.png" alt="CyberShield Logo" class="sidebar-logo" id="sidebarLogo">
+                <div class="sidebar-title">
+                    <h2 id="sidebarTitle">CyberShield Drain</h2>
+                    <span class="sidebar-version" id="sidebarVersion">v1.0.0</span>
+                </div>
+            </div>
+            
+            <ul class="sidebar-menu">
+                <li><a href="#general" class="menu-item active" data-section="general">
+                    <span class="menu-icon">⚙️</span>
+                    <span class="menu-text">General</span>
+                </a></li>
+                <li><a href="#security" class="menu-item" data-section="security">
+                    <span class="menu-icon">🛡️</span>
+                    <span class="menu-text">Security</span>
+                </a></li>
+                <li><a href="#detection" class="menu-item" data-section="detection">
+                    <span class="menu-icon">🔍</span>
+                    <span class="menu-text">Detection Rules</span>
+                </a></li>
+                <li><a href="#privacy" class="menu-item" data-section="privacy">
+                    <span class="menu-icon">🔒</span>
+                    <span class="menu-text">Privacy</span>
+                </a></li>
+                <li><a href="#enterprise" class="menu-item" data-section="enterprise">
+                    <span class="menu-icon">🏢</span>
+                    <span class="menu-text">Enterprise</span>
+                </a></li>
+                <li><a href="#logs" class="menu-item" data-section="logs">
+                    <span class="menu-icon">📋</span>
+                    <span class="menu-text">Activity Logs</span>
+                </a></li>
+                <li><a href="#branding" class="menu-item" data-section="branding">
+                    <span class="menu-icon">🎨</span>
+                    <span class="menu-text">Branding</span>
+                </a></li>
+                <li><a href="#about" class="menu-item" data-section="about">
+                    <span class="menu-icon">ℹ️</span>
+                    <span class="menu-text">About</span>
+                </a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="content-header">
+                <h1 id="pageTitle">General Settings</h1>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" id="exportConfig">Export Config</button>
+                    <button class="btn btn-secondary" id="importConfig">Import Config</button>
+                    <button class="btn btn-primary" id="saveSettings">Save Settings</button>
+                </div>
+            </header>
+
+            <!-- General Section -->
+            <section id="general-section" class="settings-section active">
+                <div class="section-header">
+                    <h2>General Settings</h2>
+                    <p>Configure basic extension behavior and features</p>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="setting-group">
+                        <h3>Extension Control</h3>
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <input type="checkbox" id="extensionEnabled" class="setting-checkbox">
+                                <span class="checkbox-custom"></span>
+                                Enable Extension
+                            </label>
+                            <p class="setting-description">Turn the extension on or off globally</p>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <input type="checkbox" id="enableContentManipulation" class="setting-checkbox">
+                                <span class="checkbox-custom"></span>
+                                Enable Content Manipulation
+                            </label>
+                            <p class="setting-description">Allow the extension to modify page content</p>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <input type="checkbox" id="enableUrlMonitoring" class="setting-checkbox">
+                                <span class="checkbox-custom"></span>
+                                Enable URL Monitoring
+                            </label>
+                            <p class="setting-description">Monitor and analyze visited URLs for threats</p>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>User Interface</h3>
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <input type="checkbox" id="showNotifications" class="setting-checkbox">
+                                <span class="checkbox-custom"></span>
+                                Show Notifications
+                            </label>
+                            <p class="setting-description">Display security notifications and warnings</p>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                Notification Duration
+                                <input type="range" id="notificationDuration" class="setting-range" min="1000" max="10000" step="1000">
+                            </label>
+                            <span class="setting-value" id="notificationDurationValue">5s</span>
+                            <p class="setting-description">How long notifications stay visible</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Security Section -->
+            <section id="security-section" class="settings-section">
+                <div class="section-header">
+                    <h2>Security Settings</h2>
+                    <p>Configure threat detection and blocking behavior</p>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="setting-group">
+                        <h3>URL Protection</h3>
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <input type="checkbox" id="blockMaliciousUrls" class="setting-checkbox">
+                                <span class="checkbox-custom"></span>
+                                Block Malicious URLs
+                            </label>
+                            <p class="setting-description">Automatically block known malicious websites</p>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <input type="checkbox" id="blockPhishingAttempts" class="setting-checkbox">
+                                <span class="checkbox-custom"></span>
+                                Block Phishing Attempts
+                            </label>
+                            <p class="setting-description">Block suspected phishing websites</p>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>Domain Lists</h3>
+                        <div class="setting-item">
+                            <label class="setting-label">Whitelisted Domains</label>
+                            <textarea id="whitelistedDomains" class="setting-textarea" placeholder="example.com&#10;trusted-site.org&#10;*.safe-domain.net"></textarea>
+                            <p class="setting-description">Domains that are always allowed (one per line)</p>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="setting-label">Blacklisted Domains</label>
+                            <textarea id="blacklistedDomains" class="setting-textarea" placeholder="malicious-site.com&#10;phishing-site.org&#10;*.bad-domain.net"></textarea>
+                            <p class="setting-description">Domains that are always blocked (one per line)</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Detection Section -->
+            <section id="detection-section" class="settings-section">
+                <div class="section-header">
+                    <h2>Detection Rules</h2>
+                    <p>Manage threat detection patterns and custom rules</p>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="setting-group">
+                        <h3>Detection Configuration</h3>
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <input type="checkbox" id="enableCustomRules" class="setting-checkbox">
+                                <span class="checkbox-custom"></span>
+                                Enable Custom Rules
+                            </label>
+                            <p class="setting-description">Allow custom detection rules to be loaded</p>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                Custom Rules URL
+                                <input type="url" id="customRulesUrl" class="setting-input" placeholder="https://example.com/rules.json">
+                            </label>
+                            <p class="setting-description">URL to fetch custom detection rules from</p>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                Update Interval (hours)
+                                <input type="number" id="updateInterval" class="setting-input" min="1" max="168" value="24">
+                            </label>
+                            <p class="setting-description">How often to update detection rules</p>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>Custom Rules Editor</h3>
+                        <div class="setting-item">
+                            <label class="setting-label">Custom Detection Rules (JSON)</label>
+                            <textarea id="customRulesEditor" class="setting-textarea large" placeholder='{"malicious": [], "phishing": [], "suspicious": []}'></textarea>
+                            <p class="setting-description">Define custom detection patterns in JSON format</p>
+                            <div class="setting-actions">
+                                <button class="btn btn-secondary small" id="validateRules">Validate</button>
+                                <button class="btn btn-secondary small" id="loadDefaultRules">Load Defaults</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Privacy Section -->
+            <section id="privacy-section" class="settings-section">
+                <div class="section-header">
+                    <h2>Privacy Settings</h2>
+                    <p>Control data collection and privacy features</p>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="setting-group">
+                        <h3>Data Collection</h3>
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <input type="checkbox" id="enableLogging" class="setting-checkbox">
+                                <span class="checkbox-custom"></span>
+                                Enable Activity Logging
+                            </label>
+                            <p class="setting-description">Log security events and activities</p>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                Log Level
+                                <select id="logLevel" class="setting-select">
+                                    <option value="error">Error</option>
+                                    <option value="warn">Warning</option>
+                                    <option value="info">Info</option>
+                                    <option value="debug">Debug</option>
+                                </select>
+                            </label>
+                            <p class="setting-description">Level of detail for logging</p>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                Max Log Entries
+                                <input type="number" id="maxLogEntries" class="setting-input" min="100" max="10000" value="1000">
+                            </label>
+                            <p class="setting-description">Maximum number of log entries to keep</p>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>Privacy Options</h3>
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <input type="checkbox" id="respectDoNotTrack" class="setting-checkbox">
+                                <span class="checkbox-custom"></span>
+                                Respect Do Not Track
+                            </label>
+                            <p class="setting-description">Honor browser's Do Not Track setting</p>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <input type="checkbox" id="enableIncognitoMode" class="setting-checkbox">
+                                <span class="checkbox-custom"></span>
+                                Work in Incognito Mode
+                            </label>
+                            <p class="setting-description">Allow extension to run in private browsing</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Enterprise Section -->
+            <section id="enterprise-section" class="settings-section">
+                <div class="section-header">
+                    <h2>Enterprise Settings</h2>
+                    <p>Enterprise deployment and management options</p>
+                </div>
+
+                <div class="enterprise-status" id="enterpriseStatus">
+                    <div class="status-indicator">
+                        <span class="status-badge" id="managementStatus">Not Managed</span>
+                    </div>
+                    <p class="status-description">This extension is not currently managed by enterprise policies</p>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="setting-group">
+                        <h3>Policy Information</h3>
+                        <div class="policy-list" id="policyList">
+                            <div class="policy-item">
+                                <span class="policy-name">Content Manipulation</span>
+                                <span class="policy-status user-configurable">User Configurable</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>Compliance</h3>
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <input type="checkbox" id="enableComplianceMode" class="setting-checkbox">
+                                <span class="checkbox-custom"></span>
+                                Enable Compliance Mode
+                            </label>
+                            <p class="setting-description">Enable additional compliance features and reporting</p>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                Reporting Endpoint
+                                <input type="url" id="reportingEndpoint" class="setting-input" placeholder="https://compliance.example.com/api/reports">
+                            </label>
+                            <p class="setting-description">URL to send compliance reports to</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Logs Section -->
+            <section id="logs-section" class="settings-section">
+                <div class="section-header">
+                    <h2>Activity Logs</h2>
+                    <p>View security events and extension activity</p>
+                </div>
+
+                <div class="logs-controls">
+                    <div class="logs-filters">
+                        <select id="logFilter" class="setting-select">
+                            <option value="all">All Events</option>
+                            <option value="security">Security Events</option>
+                            <option value="url_access">URL Access</option>
+                            <option value="content_manipulation">Content Changes</option>
+                        </select>
+                        <button class="btn btn-secondary" id="clearLogs">Clear Logs</button>
+                        <button class="btn btn-secondary" id="exportLogs">Export Logs</button>
+                    </div>
+                </div>
+
+                <div class="logs-container">
+                    <div class="logs-list" id="logsList">
+                        <div class="log-entry">
+                            <span class="log-time">Loading...</span>
+                            <span class="log-type">system</span>
+                            <span class="log-message">Loading activity logs...</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Branding Section -->
+            <section id="branding-section" class="settings-section">
+                <div class="section-header">
+                    <h2>Branding & White Labeling</h2>
+                    <p>Customize the extension's appearance and branding</p>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="setting-group">
+                        <h3>Company Information</h3>
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                Company Name
+                                <input type="text" id="companyName" class="setting-input" placeholder="Your Company Name">
+                            </label>
+                            <p class="setting-description">Company name displayed in the extension</p>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                Product Name
+                                <input type="text" id="productName" class="setting-input" placeholder="Custom Extension Name">
+                            </label>
+                            <p class="setting-description">Custom name for the extension</p>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                Support Email
+                                <input type="email" id="supportEmail" class="setting-input" placeholder="support@yourcompany.com">
+                            </label>
+                            <p class="setting-description">Email address for user support</p>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h3>Visual Customization</h3>
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                Primary Color
+                                <input type="color" id="primaryColor" class="setting-color" value="#2563eb">
+                            </label>
+                            <p class="setting-description">Main theme color for the extension</p>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                Logo URL
+                                <input type="url" id="logoUrl" class="setting-input" placeholder="https://yourcompany.com/logo.png">
+                            </label>
+                            <p class="setting-description">URL to your company logo</p>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="setting-label">Custom CSS</label>
+                            <textarea id="customCss" class="setting-textarea" placeholder="/* Custom CSS styles */"></textarea>
+                            <p class="setting-description">Additional CSS to customize the appearance</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="branding-preview">
+                    <h3>Preview</h3>
+                    <div class="preview-popup" id="brandingPreview">
+                        <div class="preview-header">
+                            <img src="../images/icon32.png" alt="Logo" class="preview-logo" id="previewLogo">
+                            <span class="preview-title" id="previewTitle">CyberShield Drain</span>
+                        </div>
+                        <div class="preview-content">
+                            <p>This is how your branding will appear in the extension popup.</p>
+                            <button class="preview-button" id="previewButton">Sample Button</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- About Section -->
+            <section id="about-section" class="settings-section">
+                <div class="section-header">
+                    <h2>About CyberShield Drain</h2>
+                    <p>Extension information and support resources</p>
+                </div>
+
+                <div class="about-content">
+                    <div class="about-info">
+                        <div class="info-item">
+                            <span class="info-label">Version:</span>
+                            <span class="info-value" id="aboutVersion">1.0.0</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Manifest Version:</span>
+                            <span class="info-value">3</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Build Date:</span>
+                            <span class="info-value" id="buildDate">2024-01-01</span>
+                        </div>
+                    </div>
+
+                    <div class="about-links">
+                        <a href="#" class="about-link" id="supportUrl">
+                            <span class="link-icon">🆘</span>
+                            <span class="link-text">Get Support</span>
+                        </a>
+                        <a href="#" class="about-link" id="privacyUrl">
+                            <span class="link-icon">🔒</span>
+                            <span class="link-text">Privacy Policy</span>
+                        </a>
+                        <a href="#" class="about-link" id="termsUrl">
+                            <span class="link-icon">📄</span>
+                            <span class="link-text">Terms of Service</span>
+                        </a>
+                    </div>
+
+                    <div class="system-info">
+                        <h3>System Information</h3>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">Browser:</span>
+                                <span class="info-value" id="browserInfo">Loading...</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">OS:</span>
+                                <span class="info-value" id="osInfo">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal-overlay" id="modalOverlay" style="display: none;">
+        <div class="modal">
+            <h3 class="modal-title" id="modalTitle">Confirm Action</h3>
+            <p class="modal-message" id="modalMessage">Are you sure you want to proceed?</p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="modalCancel">Cancel</button>
+                <button class="btn btn-primary" id="modalConfirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="options.js"></script>
+</body>
+</html>

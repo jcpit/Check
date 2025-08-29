@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Blocked - CyberShield Drain</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .icon {
+            width: 80px;
+            height: 80px;
+            background: #dc2626;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            font-size: 40px;
+            color: white;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 600;
+            color: #dc2626;
+            margin-bottom: 16px;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: #6b7280;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .reason {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .reason-title {
+            font-weight: 600;
+            color: #991b1b;
+            margin-bottom: 8px;
+        }
+
+        .reason-text {
+            color: #7f1d1d;
+            line-height: 1.5;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .details {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            text-align: left;
+        }
+
+        .details-title {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 12px;
+        }
+
+        .details-list {
+            list-style: none;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .details-list li {
+            padding: 4px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .company-logo {
+            max-width: 120px;
+            height: auto;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .subtitle {
+                font-size: 16px;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🛡️</div>
+        
+        <h1>Access Blocked</h1>
+        <p class="subtitle">This website has been blocked by your organization's security policy</p>
+
+        <div class="reason">
+            <div class="reason-title">Reason for blocking:</div>
+            <div class="reason-text" id="blockReason">
+                This website contains potentially malicious content that could harm your computer or compromise your data.
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-primary" onclick="goBack()">Go Back</button>
+            <button class="btn btn-secondary" onclick="reportIssue()">Report Issue</button>
+            <button class="btn btn-secondary" onclick="contactAdmin()">Contact Admin</button>
+        </div>
+
+        <div class="details">
+            <div class="details-title">Block Details</div>
+            <ul class="details-list">
+                <li>
+                    <span>URL:</span>
+                    <span id="blockedUrl">--</span>
+                </li>
+                <li>
+                    <span>Category:</span>
+                    <span id="threatCategory">Security Threat</span>
+                </li>
+                <li>
+                    <span>Time:</span>
+                    <span id="blockTime">--</span>
+                </li>
+                <li>
+                    <span>Policy:</span>
+                    <span id="policyName">Enterprise Security Policy</span>
+                </li>
+            </ul>
+        </div>
+
+        <div class="footer">
+            <div id="companyBranding">
+                Protected by <strong id="companyName">CyberShield Drain</strong>
+            </div>
+            <div style="margin-top: 8px;">
+                For support, contact your IT administrator
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Parse URL parameters to get block details
+        function parseUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Update blocked URL
+            const blockedUrl = urlParams.get('url') || window.location.href;
+            document.getElementById('blockedUrl').textContent = truncateUrl(blockedUrl);
+            
+            // Update block reason
+            const reason = urlParams.get('reason');
+            if (reason) {
+                document.getElementById('blockReason').textContent = decodeURIComponent(reason);
+            }
+            
+            // Update threat category
+            const category = urlParams.get('category');
+            if (category) {
+                document.getElementById('threatCategory').textContent = category;
+            }
+            
+            // Update block time
+            document.getElementById('blockTime').textContent = new Date().toLocaleString();
+            
+            // Update policy name
+            const policy = urlParams.get('policy');
+            if (policy) {
+                document.getElementById('policyName').textContent = decodeURIComponent(policy);
+            }
+        }
+
+        function truncateUrl(url) {
+            if (url.length > 50) {
+                return url.substring(0, 47) + '...';
+            }
+            return url;
+        }
+
+        function goBack() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = 'about:blank';
+            }
+        }
+
+        function reportIssue() {
+            const subject = encodeURIComponent('CyberShield Drain - False Positive Report');
+            const body = encodeURIComponent(`
+Blocked URL: ${document.getElementById('blockedUrl').textContent}
+Block Reason: ${document.getElementById('blockReason').textContent}
+Time: ${document.getElementById('blockTime').textContent}
+
+I believe this website was incorrectly blocked. Please review.
+
+Additional details:
+[Please provide any additional context about why you believe this is a false positive]
+            `);
+            
+            window.location.href = `mailto:support@cybershield.com?subject=${subject}&body=${body}`;
+        }
+
+        function contactAdmin() {
+            alert('Please contact your IT administrator for assistance with accessing this website.');
+        }
+
+        // Load branding configuration
+        async function loadBranding() {
+            try {
+                // This would normally load from chrome.storage or extension API
+                // For now, we'll use default branding
+                const companyName = 'CyberShield Drain';
+                document.getElementById('companyName').textContent = companyName;
+                document.title = `Access Blocked - ${companyName}`;
+            } catch (error) {
+                console.warn('Could not load branding configuration');
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            parseUrlParams();
+            loadBranding();
+        });
+
+        // Handle keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // ESC key to go back
+            if (e.key === 'Escape') {
+                goBack();
+            }
+            // Ctrl+R or F5 to go back (prevent refresh on blocked page)
+            if ((e.ctrlKey && e.key === 'r') || e.key === 'F5') {
+                e.preventDefault();
+                goBack();
+            }
+        });
+
+        // Prevent right-click context menu on blocked page
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+        // Log page view for analytics
+        if (typeof chrome !== 'undefined' && chrome.runtime) {
+            chrome.runtime.sendMessage({
+                type: 'LOG_EVENT',
+                event: {
+                    type: 'blocked_page_viewed',
+                    url: new URLSearchParams(window.location.search).get('url'),
+                    timestamp: new Date().toISOString()
+                }
+            });
+        }
+    </script>
+</body>
+</html>

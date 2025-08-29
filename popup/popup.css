@@ -1,0 +1,649 @@
+/**
+ * CyberShield Drain - Popup Styles
+ * Modern, clean interface for the extension popup
+ */
+
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 380px;
+  min-height: 500px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1f2937;
+  background: #ffffff;
+  overflow-x: hidden;
+}
+
+/* Container */
+.popup-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 500px;
+}
+
+/* Header */
+.popup-header {
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  color: white;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+}
+
+.brand-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.extension-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.version {
+  font-size: 11px;
+  opacity: 0.8;
+  font-weight: 400;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: pulse 2s infinite;
+}
+
+.status-dot.warning {
+  background: #f59e0b;
+}
+
+.status-dot.error {
+  background: #ef4444;
+}
+
+.status-dot.inactive {
+  background: #6b7280;
+  animation: none;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Main content */
+.popup-main {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Quick actions */
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.action-btn {
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  font-family: inherit;
+}
+
+.action-btn.primary {
+  background: #2563eb;
+  color: white;
+  padding: 12px 16px;
+  font-size: 15px;
+}
+
+.action-btn.primary:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.action-btn.primary.disabled {
+  background: #6b7280;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.action-btn.secondary {
+  background: #f8fafc;
+  color: #374151;
+  border: 1px solid #e2e8f0;
+  padding: 10px 12px;
+}
+
+.action-btn.secondary:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.action-btn.small {
+  font-size: 13px;
+  padding: 8px 10px;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.btn-icon {
+  font-size: 16px;
+}
+
+.btn-text {
+  font-size: inherit;
+}
+
+/* Page info */
+.page-info {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.page-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.page-url {
+  font-size: 12px;
+  color: #6b7280;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.security-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.security-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.security-badge.safe {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.security-badge.warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.security-badge.danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.security-badge.analyzing {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+/* Threat summary */
+.threat-summary {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.threat-summary h4 {
+  font-size: 12px;
+  font-weight: 600;
+  color: #dc2626;
+  margin-bottom: 8px;
+}
+
+#threatList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#threatList li {
+  font-size: 11px;
+  color: #6b7280;
+  padding: 2px 0;
+}
+
+/* Statistics */
+.stats-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.stat-item {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-number {
+  font-size: 20px;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Enterprise section */
+.enterprise-section {
+  background: #fefce8;
+  border: 1px solid #facc15;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.enterprise-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.policy-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.policy-label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.policy-value {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.compliance-status {
+  display: flex;
+  justify-content: center;
+}
+
+.compliance-badge {
+  padding: 4px 12px;
+  background: #dcfce7;
+  color: #166534;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.compliance-badge.non-compliant {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Activity section */
+.activity-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 12px;
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-item.placeholder {
+  color: #9ca3af;
+  font-style: italic;
+  justify-content: center;
+  border-bottom: none;
+}
+
+.activity-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+
+.activity-icon.blocked {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.activity-icon.warned {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.activity-icon.scanned {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.activity-text {
+  flex: 1;
+  color: #374151;
+}
+
+.activity-time {
+  color: #9ca3af;
+  font-size: 10px;
+}
+
+/* Footer */
+.popup-footer {
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-links {
+  display: flex;
+  gap: 16px;
+}
+
+.footer-link {
+  color: #6b7280;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.footer-link:hover {
+  color: #2563eb;
+}
+
+.company-branding {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.company-name {
+  font-size: 11px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+/* Loading overlay */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  z-index: 1000;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e2e8f0;
+  border-top: 2px solid #2563eb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Notification toast */
+.notification-toast {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  background: #1f2937;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 1001;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.notification-text {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.notification-close {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+  margin-left: 12px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.notification-close:hover {
+  opacity: 1;
+}
+
+/* Notification variants */
+.notification-toast.success {
+  background: #059669;
+}
+
+.notification-toast.warning {
+  background: #d97706;
+}
+
+.notification-toast.error {
+  background: #dc2626;
+}
+
+/* Responsive adjustments */
+@media (max-height: 600px) {
+  .popup-main {
+    gap: 16px;
+  }
+  
+  .activity-list {
+    max-height: 80px;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .action-btn.secondary {
+    border-width: 2px;
+  }
+  
+  .page-info,
+  .stats-section,
+  .activity-section {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .action-btn,
+  .footer-link,
+  .notification-close {
+    transition: none;
+  }
+  
+  .status-dot,
+  .loading-spinner {
+    animation: none;
+  }
+  
+  .notification-toast {
+    animation: none;
+  }
+}
+
+/* Dark mode support (future enhancement) */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #111827;
+    color: #f9fafb;
+  }
+  
+  .popup-header {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+  }
+  
+  .page-info,
+  .stats-section,
+  .activity-section {
+    background: #1f2937;
+    border-color: #374151;
+  }
+  
+  .action-btn.secondary {
+    background: #374151;
+    color: #f9fafb;
+    border-color: #4b5563;
+  }
+  
+  .action-btn.secondary:hover {
+    background: #4b5563;
+    border-color: #6b7280;
+  }
+  
+  .popup-footer {
+    background: #1f2937;
+    border-color: #374151;
+  }
+}

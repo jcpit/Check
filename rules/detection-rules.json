@@ -1,0 +1,455 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2024-01-01T00:00:00Z",
+  "description": "CyberShield Drain threat detection rules for identifying malicious content, phishing attempts, and suspicious behavior",
+  
+  "malicious": [
+    {
+      "id": "mal_001",
+      "pattern": "(?:javascript:|data:|vbscript:)",
+      "flags": "i",
+      "severity": "high",
+      "description": "Malicious protocol scheme detected",
+      "action": "block",
+      "category": "script_injection",
+      "confidence": 0.9
+    },
+    {
+      "id": "mal_002", 
+      "pattern": "eval\\s*\\(.*(?:location|document\\.cookie|window\\.|navigator\\.)",
+      "flags": "i",
+      "severity": "high",
+      "description": "Suspicious JavaScript execution with sensitive object access",
+      "action": "block",
+      "category": "script_injection",
+      "confidence": 0.85
+    },
+    {
+      "id": "mal_003",
+      "pattern": "document\\.write\\s*\\(.*(?:<script|<iframe|javascript:)",
+      "flags": "i",
+      "severity": "high",
+      "description": "Dynamic script injection via document.write",
+      "action": "block",
+      "category": "script_injection",
+      "confidence": 0.8
+    },
+    {
+      "id": "mal_004",
+      "pattern": "(?:setTimeout|setInterval)\\s*\\(\\s*['\"].*(?:location|document\\.cookie)",
+      "flags": "i",
+      "severity": "high",
+      "description": "Delayed execution of suspicious code",
+      "action": "block",
+      "category": "script_injection",
+      "confidence": 0.75
+    },
+    {
+      "id": "mal_005",
+      "pattern": "window\\.open\\s*\\(.*(?:data:|javascript:|about:blank)",
+      "flags": "i",
+      "severity": "medium",
+      "description": "Suspicious window opening with dangerous URL schemes",
+      "action": "warn",
+      "category": "popup",
+      "confidence": 0.7
+    },
+    {
+      "id": "mal_006",
+      "pattern": "(?:innerHTML|outerHTML)\\s*[+=].*(?:<script|<iframe|javascript:)",
+      "flags": "i",
+      "severity": "high",
+      "description": "DOM manipulation with script injection",
+      "action": "block",
+      "category": "dom_manipulation",
+      "confidence": 0.8
+    },
+    {
+      "id": "mal_007",
+      "pattern": "(?:ActiveXObject|WScript\\.Shell|Shell\\.Application)",
+      "flags": "i",
+      "severity": "critical",
+      "description": "Attempt to access system-level ActiveX objects",
+      "action": "block",
+      "category": "system_access",
+      "confidence": 0.95
+    },
+    {
+      "id": "mal_008",
+      "pattern": "(?:unescape|fromCharCode|atob)\\s*\\(.*(?:eval|exec|Function)",
+      "flags": "i",
+      "severity": "high",
+      "description": "Obfuscated code execution attempt",
+      "action": "block",
+      "category": "obfuscation",
+      "confidence": 0.8
+    }
+  ],
+  
+  "phishing": [
+    {
+      "id": "phi_001",
+      "pattern": "(?:secure-?(?:bank|pay|login|account|update))",
+      "flags": "i",
+      "severity": "high",
+      "description": "Potential phishing domain mimicking banking/payment sites",
+      "action": "warn",
+      "category": "domain_spoofing",
+      "confidence": 0.7
+    },
+    {
+      "id": "phi_002",
+      "pattern": "(?:verify-?(?:account|identity|payment)|suspended-?account|update-?(?:payment|billing))",
+      "flags": "i",
+      "severity": "medium",
+      "description": "Common phishing keywords detected",
+      "action": "warn",
+      "category": "social_engineering",
+      "confidence": 0.6
+    },
+    {
+      "id": "phi_003",
+      "pattern": "(?:urgent.*(?:action|update|verify)|immediate.*(?:action|attention)|act.*(?:now|immediately))",
+      "flags": "i",
+      "severity": "medium",
+      "description": "Urgency-based social engineering tactics",
+      "action": "warn",
+      "category": "social_engineering",
+      "confidence": 0.5
+    },
+    {
+      "id": "phi_004",
+      "pattern": "(?:apple|microsoft|google|amazon|paypal|ebay).*(?:security|verification|account).*(?:team|department|support)",
+      "flags": "i",
+      "severity": "high",
+      "description": "Impersonation of major technology companies",
+      "action": "warn",
+      "category": "brand_impersonation",
+      "confidence": 0.75
+    },
+    {
+      "id": "phi_005",
+      "pattern": "(?:click.*(?:here|link|below)|confirm.*(?:identity|account|details)|provide.*(?:information|details|credentials))",
+      "flags": "i",
+      "severity": "medium",
+      "description": "Call-to-action phrases common in phishing",
+      "action": "monitor",
+      "category": "social_engineering",
+      "confidence": 0.4
+    },
+    {
+      "id": "phi_006",
+      "pattern": "(?:congratulations.*(?:won|winner|selected)|lottery.*(?:winner|winnings)|prize.*(?:claim|collect))",
+      "flags": "i",
+      "severity": "medium",
+      "description": "Lottery/prize scam indicators",
+      "action": "warn",
+      "category": "scam",
+      "confidence": 0.8
+    },
+    {
+      "id": "phi_007",
+      "pattern": "data:text/html.*(?:login|password|signin|account)",
+      "flags": "i",
+      "severity": "high",
+      "description": "Data URI containing login form elements",
+      "action": "block",
+      "category": "credential_harvesting",
+      "confidence": 0.85
+    },
+    {
+      "id": "phi_008",
+      "pattern": "(?:limited.*(?:time|offer)|expires.*(?:today|soon)|(?:50|75|90)%.*(?:off|discount))",
+      "flags": "i",
+      "severity": "low",
+      "description": "Pressure tactics and unrealistic offers",
+      "action": "monitor",
+      "category": "social_engineering",
+      "confidence": 0.3
+    }
+  ],
+  
+  "suspicious": [
+    {
+      "id": "sus_001",
+      "pattern": "(?:[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})",
+      "flags": "i",
+      "severity": "low",
+      "description": "Direct IP address access detected",
+      "action": "monitor",
+      "category": "network",
+      "confidence": 0.3
+    },
+    {
+      "id": "sus_002",
+      "pattern": "(?:localhost|127\\.0\\.0\\.1|0\\.0\\.0\\.0)(?::|/)",
+      "flags": "i",
+      "severity": "medium",
+      "description": "Local/loopback address access",
+      "action": "monitor",
+      "category": "network",
+      "confidence": 0.5
+    },
+    {
+      "id": "sus_003",
+      "pattern": "(?:base64|btoa|atob)\\s*\\(",
+      "flags": "i",
+      "severity": "low",
+      "description": "Base64 encoding/decoding operations",
+      "action": "monitor",
+      "category": "obfuscation",
+      "confidence": 0.2
+    },
+    {
+      "id": "sus_004",
+      "pattern": "crypto.*(?:mine|mining|hash|blockchain)",
+      "flags": "i",
+      "severity": "medium",
+      "description": "Potential cryptocurrency mining activity",
+      "action": "warn",
+      "category": "cryptomining",
+      "confidence": 0.6
+    },
+    {
+      "id": "sus_005",
+      "pattern": "(?:keylogger|keystroke|screen.*capture|clipboard)",
+      "flags": "i",
+      "severity": "high",
+      "description": "Potential keylogging or screen capture activity",
+      "action": "warn",
+      "category": "data_theft",
+      "confidence": 0.8
+    },
+    {
+      "id": "sus_006",
+      "pattern": "(?:proxy|vpn|tor|anonymize).*(?:free|unlimited|bypass)",
+      "flags": "i",
+      "severity": "low",
+      "description": "Anonymous proxy or VPN services",
+      "action": "monitor",
+      "category": "anonymization",
+      "confidence": 0.3
+    },
+    {
+      "id": "sus_007",
+      "pattern": "(?:download|install).*(?:crack|keygen|serial|patch)",
+      "flags": "i",
+      "severity": "medium",
+      "description": "Software piracy related content",
+      "action": "warn",
+      "category": "piracy",
+      "confidence": 0.7
+    },
+    {
+      "id": "sus_008",
+      "pattern": "(?:adult|porn|xxx|18\\+|mature).*(?:content|site|video)",
+      "flags": "i",
+      "severity": "low",
+      "description": "Adult content indicators",
+      "action": "monitor",
+      "category": "adult_content",
+      "confidence": 0.5
+    },
+    {
+      "id": "sus_009",
+      "pattern": "(?:casino|gambling|poker|bet|lottery).*(?:online|play|win)",
+      "flags": "i",
+      "severity": "low",
+      "description": "Online gambling indicators",
+      "action": "monitor",
+      "category": "gambling",
+      "confidence": 0.4
+    },
+    {
+      "id": "sus_010",
+      "pattern": "(?:survey|questionnaire).*(?:reward|prize|money|cash)",
+      "flags": "i",
+      "severity": "medium",
+      "description": "Potentially fraudulent survey/reward offers",
+      "action": "warn",
+      "category": "scam",
+      "confidence": 0.6
+    }
+  ],
+  
+  "behavioral": [
+    {
+      "id": "beh_001",
+      "pattern": "multiple_rapid_redirects",
+      "threshold": 3,
+      "timeWindow": 5000,
+      "severity": "high",
+      "description": "Multiple rapid page redirects detected",
+      "action": "block",
+      "category": "redirect_chain",
+      "confidence": 0.8
+    },
+    {
+      "id": "beh_002",
+      "pattern": "excessive_popup_attempts",
+      "threshold": 5,
+      "timeWindow": 10000,
+      "severity": "medium",
+      "description": "Excessive popup window creation attempts",
+      "action": "warn",
+      "category": "popup_spam",
+      "confidence": 0.7
+    },
+    {
+      "id": "beh_003",
+      "pattern": "rapid_form_submission",
+      "threshold": 10,
+      "timeWindow": 60000,
+      "severity": "medium",
+      "description": "Rapid automated form submissions detected",
+      "action": "warn",
+      "category": "automation",
+      "confidence": 0.6
+    },
+    {
+      "id": "beh_004",
+      "pattern": "clipboard_access_attempts",
+      "threshold": 3,
+      "timeWindow": 30000,
+      "severity": "high",
+      "description": "Multiple clipboard access attempts",
+      "action": "block",
+      "category": "data_theft",
+      "confidence": 0.9
+    }
+  ],
+  
+  "network": [
+    {
+      "id": "net_001",
+      "pattern": "(?:http://)(?!localhost|127\\.0\\.0\\.1)",
+      "flags": "i",
+      "severity": "low",
+      "description": "Unencrypted HTTP connection",
+      "action": "monitor",
+      "category": "insecure_connection",
+      "confidence": 0.3
+    },
+    {
+      "id": "net_002",
+      "pattern": "(?:ftp://|telnet://|rsh://)",
+      "flags": "i",
+      "severity": "medium",
+      "description": "Insecure protocol usage",
+      "action": "warn",
+      "category": "insecure_protocol",
+      "confidence": 0.7
+    },
+    {
+      "id": "net_003",
+      "pattern": "(?:10\\.(?:[0-9]{1,3}\\.){2}[0-9]{1,3}|172\\.(?:1[6-9]|2[0-9]|3[01])\\.[0-9]{1,3}\\.[0-9]{1,3}|192\\.168\\.[0-9]{1,3}\\.[0-9]{1,3})",
+      "flags": "i",
+      "severity": "medium",
+      "description": "Private IP address access from public site",
+      "action": "warn",
+      "category": "network_anomaly",
+      "confidence": 0.6
+    }
+  ],
+  
+  "content": [
+    {
+      "id": "con_001",
+      "pattern": "(?:password|credit.*card|ssn|social.*security).*(?:input|field|form)",
+      "flags": "i",
+      "severity": "medium",
+      "description": "Sensitive data collection form detected",
+      "action": "monitor",
+      "category": "data_collection",
+      "confidence": 0.5
+    },
+    {
+      "id": "con_002",
+      "pattern": "(?:webcam|camera|microphone|location).*(?:access|permission|allow)",
+      "flags": "i",
+      "severity": "medium",
+      "description": "Hardware access permission request",
+      "action": "monitor",
+      "category": "privacy",
+      "confidence": 0.6
+    },
+    {
+      "id": "con_003",
+      "pattern": "(?:notification|alert).*(?:virus|malware|infected|trojan)",
+      "flags": "i",
+      "severity": "high",
+      "description": "Fake security alert or virus warning",
+      "action": "warn",
+      "category": "fake_alert",
+      "confidence": 0.8
+    }
+  ],
+  
+  "rules_metadata": {
+    "total_rules": 35,
+    "categories": [
+      "script_injection",
+      "dom_manipulation", 
+      "system_access",
+      "obfuscation",
+      "domain_spoofing",
+      "social_engineering",
+      "brand_impersonation",
+      "scam",
+      "credential_harvesting",
+      "network",
+      "cryptomining",
+      "data_theft",
+      "anonymization",
+      "piracy",
+      "adult_content",
+      "gambling",
+      "redirect_chain",
+      "popup_spam",
+      "automation",
+      "insecure_connection",
+      "insecure_protocol",
+      "network_anomaly",
+      "data_collection",
+      "privacy",
+      "fake_alert"
+    ],
+    "severity_levels": ["low", "medium", "high", "critical"],
+    "actions": ["monitor", "warn", "block"],
+    "confidence_range": [0.0, 1.0],
+    "update_frequency": "weekly",
+    "source": "CyberShield Security Research Team"
+  },
+  
+  "custom_rules": [],
+  
+  "whitelist_patterns": [
+    {
+      "pattern": "(?:google\\.com|googleapis\\.com|gstatic\\.com)",
+      "description": "Google services whitelist"
+    },
+    {
+      "pattern": "(?:microsoft\\.com|live\\.com|outlook\\.com)",
+      "description": "Microsoft services whitelist"
+    },
+    {
+      "pattern": "(?:mozilla\\.org|firefox\\.com)",
+      "description": "Mozilla services whitelist"
+    }
+  ],
+  
+  "configuration": {
+    "enable_machine_learning": false,
+    "ml_confidence_threshold": 0.7,
+    "enable_heuristic_analysis": true,
+    "heuristic_weight": 0.3,
+    "enable_reputation_check": true,
+    "reputation_weight": 0.4,
+    "pattern_match_weight": 0.3,
+    "cache_results": true,
+    "cache_ttl": 300000,
+    "max_analysis_time": 5000,
+    "enable_context_analysis": true,
+    "context_window_size": 1000
+  }
+}
