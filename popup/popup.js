@@ -15,6 +15,7 @@ class CheckPopup {
     };
     this.activityItems = [];
     this.isLoading = false;
+    this.isBlockedRoute = false;
 
     this.elements = {};
     this.bindElements();
@@ -45,6 +46,10 @@ class CheckPopup {
     this.elements.securityBadge = document.getElementById("securityBadge");
     this.elements.threatSummary = document.getElementById("threatSummary");
     this.elements.threatList = document.getElementById("threatList");
+
+    // Blocked notice
+    this.elements.blockedNotice = document.getElementById("blockedNotice");
+    this.elements.blockedUrl = document.getElementById("blockedUrl");
 
     // Statistics
     this.elements.blockedThreats = document.getElementById("blockedThreats");
@@ -151,6 +156,11 @@ class CheckPopup {
 
       // Get current tab
       this.currentTab = await this.getCurrentTab();
+      this.isBlockedRoute = this.currentTab?.url?.includes("blocked.html");
+
+      if (this.isBlockedRoute) {
+        this.handleBlockedRoute();
+      }
 
       // Load configuration and branding
       await this.loadConfiguration();
@@ -427,7 +437,23 @@ class CheckPopup {
     }
   }
 
+  handleBlockedRoute() {
+    this.elements.scanCurrentPage.style.display = "none";
+    this.elements.pageInfoSection.style.display = "none";
+
+    const urlParam = new URL(this.currentTab.url).searchParams.get("url");
+    if (urlParam) {
+      const defanged = urlParam.replace(/\./g, "[.]");
+      this.elements.blockedUrl.textContent = defanged;
+      this.elements.blockedNotice.style.display = "block";
+    }
+  }
+
   async loadCurrentPageInfo() {
+    if (this.isBlockedRoute) {
+      return;
+    }
+
     if (!this.currentTab || !this.currentTab.url) {
       this.elements.currentUrl.textContent = "No active tab";
       return;
@@ -652,7 +678,7 @@ class CheckPopup {
   }
 
   async scanCurrentPage() {
-    if (!this.currentTab) return;
+    if (this.isBlockedRoute || !this.currentTab) return;
 
     try {
       this.showLoading("Scanning page...");

@@ -284,6 +284,21 @@ body {
   text-align: left;
 }
 
+/* Blocked notice */
+.blocked-notice {
+  background: var(--theme-bg-secondary);
+  border: 1px solid var(--theme-error);
+  border-radius: 8px;
+  padding: 16px;
+  color: var(--theme-error);
+  margin-bottom: 16px;
+}
+
+.blocked-notice .blocked-url {
+  font-weight: 600;
+  word-break: break-all;
+}
+
 /* Page info */
 .page-info {
   background: var(--theme-bg-secondary);
