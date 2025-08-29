@@ -33,8 +33,6 @@ class CheckPopup {
     this.elements.statusText = document.getElementById("statusText");
 
     // Action buttons
-    this.elements.toggleExtension = document.getElementById("toggleExtension");
-    this.elements.toggleText = document.getElementById("toggleText");
     this.elements.scanCurrentPage = document.getElementById("scanCurrentPage");
     this.elements.viewLogs = document.getElementById("viewLogs");
     this.elements.openSettings = document.getElementById("openSettings");
@@ -92,9 +90,6 @@ class CheckPopup {
 
   setupEventListeners() {
     // Action button listeners
-    this.elements.toggleExtension.addEventListener("click", () =>
-      this.toggleExtension()
-    );
     this.elements.scanCurrentPage.addEventListener("click", () =>
       this.scanCurrentPage()
     );
@@ -156,7 +151,6 @@ class CheckPopup {
 
       // Update UI
       this.updateStatusIndicator();
-      this.updateExtensionToggle();
 
       this.hideLoading();
     } catch (error) {
@@ -602,44 +596,6 @@ class CheckPopup {
     } else {
       this.elements.statusDot.className = "status-dot inactive";
       this.elements.statusText.textContent = "Disabled";
-    }
-  }
-
-  updateExtensionToggle() {
-    if (this.config.extensionEnabled) {
-      this.elements.toggleText.textContent = "Disable Protection";
-      this.elements.toggleExtension.classList.remove("disabled");
-    } else {
-      this.elements.toggleText.textContent = "Enable Protection";
-      this.elements.toggleExtension.classList.add("disabled");
-    }
-  }
-
-  async toggleExtension() {
-    try {
-      const newState = !this.config.extensionEnabled;
-
-      // Update configuration
-      const response = await this.sendMessage({
-        type: "UPDATE_CONFIG",
-        config: { extensionEnabled: newState },
-      });
-
-      if (response.success) {
-        this.config.extensionEnabled = newState;
-        this.updateStatusIndicator();
-        this.updateExtensionToggle();
-
-        this.showNotification(
-          newState ? "Protection enabled" : "Protection disabled",
-          newState ? "success" : "warning"
-        );
-      } else {
-        throw new Error(response.error || "Failed to update configuration");
-      }
-    } catch (error) {
-      console.error("Failed to toggle extension:", error);
-      this.showNotification("Failed to toggle protection", "error");
     }
   }
 
