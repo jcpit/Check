@@ -19,6 +19,9 @@ class CheckBackground {
     // CyberDrain integration
     this.policy = null;
     this.extraWhitelist = new Set();
+    this.tabHeaders = new Map();
+    this.HEADER_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+    this.MAX_HEADER_CACHE_ENTRIES = 100;
 
     // Set up message handlers immediately to handle early connections
     this.setupMessageHandlers();
@@ -182,6 +185,36 @@ class CheckBackground {
     chrome.webNavigation?.onCompleted?.addListener((details) => {
       this.handleNavigationCompleted(details);
     });
+
+    // Capture response headers for top-level requests
+    chrome.webRequest.onHeadersReceived.addListener(
+      (details) => {
+        if (details.tabId >= 0) {
+          const headers = {};
+          for (const h of details.responseHeaders || []) {
+            headers[h.name.toLowerCase()] = h.value;
+          }
+          this.tabHeaders.set(details.tabId, { headers, ts: Date.now() });
+          if (this.tabHeaders.size > this.MAX_HEADER_CACHE_ENTRIES) {
+            let oldestId = null;
+            let oldestTs = Infinity;
+            for (const [id, data] of this.tabHeaders) {
+              if (data.ts < oldestTs) {
+                oldestTs = data.ts;
+                oldestId = id;
+              }
+            }
+            if (oldestId !== null) this.tabHeaders.delete(oldestId);
+          }
+        }
+      },
+      { urls: ["<all_urls>"], types: ["main_frame"] },
+      ["responseHeaders"]
+    );
+
+    chrome.tabs.onRemoved.addListener((tabId) => {
+      this.tabHeaders.delete(tabId);
+    });
   }
 
   async handleStartup() {
@@ -304,10 +337,18 @@ class CheckBackground {
           }
           break;
 
-        case "GET_DETECTION_RULES":
+        case "GET_PAGE_HEADERS":
           try {
-            const rules = this.detectionEngine.detectionRules;
-            sendResponse({ success: true, rules });
+            const data =
+              sender.tab?.id != null
+                ? this.tabHeaders.get(sender.tab.id)
+                : null;
+            if (data && Date.now() - data.ts > this.HEADER_CACHE_TTL) {
+              this.tabHeaders.delete(sender.tab.id);
+              sendResponse({ success: true, headers: {} });
+            } else {
+              sendResponse({ success: true, headers: data?.headers || {} });
+            }
           } catch (error) {
             sendResponse({ success: false, error: error.message });
           }

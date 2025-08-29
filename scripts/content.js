@@ -2,6 +2,10 @@
  * Check - Content Script
  * Handles page manipulation, monitoring, and security enforcement
  * Enhanced with CyberDrain Microsoft 365 phishing detection
+ *
+ * NOTE: An early lightweight detection (startDetection) runs before the
+ * full DetectionEngine initializes. This quick pass flags obviously
+ * suspicious pages, then the full engine performs deeper analysis.
  */
 
 import logger from "./utils/logger.js";
@@ -32,6 +36,142 @@ function isTrustedReferrer(ref) {
   return ref && TRUSTED_ORIGINS.has(urlOrigin(ref));
 }
 
+// Load detection rules: prefer cached rules, fall back to bundled JSON
+async function loadRulesFast() {
+  try {
+    const { rulesCached } = await chrome.storage.local.get("rulesCached");
+    if (rulesCached && (rulesCached.rules || rulesCached.signals)) {
+      return rulesCached;
+    }
+  } catch {}
+
+  try {
+    const res = await fetch(
+      chrome.runtime.getURL("rules/detection-rules.json"),
+      { cache: "no-cache" }
+    );
+    return res.ok ? await res.json() : { rules: [], thresholds: {} };
+  } catch {
+    return { rules: [], thresholds: {} };
+  }
+}
+
+// Shared promise for detection rules so early scan and main script use same data
+const rulesPromise = loadRulesFast();
+
+// Basic rule scoring and block action.
+// This is a lightweight early pass; the full DetectionEngine runs later.
+async function startDetection(rules) {
+  if (isTrustedOrigin(location.origin)) return;
+  if (!rules) return;
+  try {
+    const html = document.documentElement.outerHTML;
+    let score = 0;
+    let headersCache = null;
+
+    for (const rule of rules.rules || []) {
+      switch (rule.type) {
+        case "url":
+          if (
+            rule.condition?.domains?.some((d) => location.hostname === d)
+          ) {
+            score += rule.weight || 0;
+          }
+          break;
+        case "form_action": {
+          const forms = document.querySelectorAll(
+            rule.condition?.form_selector || "form"
+          );
+          for (const f of forms) {
+            if ((f.action || "").includes(rule.condition?.contains || "")) {
+              score += rule.weight || 0;
+              break;
+            }
+          }
+          break;
+        }
+        case "dom":
+          if (
+            rule.condition?.selectors?.some((s) => document.querySelector(s))
+          ) {
+            score += rule.weight || 0;
+          }
+          break;
+        case "content":
+          if (html.includes(rule.condition?.contains || "")) {
+            score += rule.weight || 0;
+          }
+          break;
+        case "network": {
+          // Treat matching resources from the required domain as legitimate.
+          // We intentionally add points only for required domains; non-matching
+          // domains simply don't contribute to the score and are handled by the
+          // full DetectionEngine.
+          const nodes = document.querySelectorAll(
+            "[src], link[rel='stylesheet'][href]"
+          );
+          for (const n of nodes) {
+            const url = n.src || n.href;
+            if (!url) continue;
+            if (url.includes(rule.condition?.network_pattern || "")) {
+              if (url.startsWith(rule.condition?.required_domain || "")) {
+                score += rule.weight || 0;
+              }
+              break;
+            }
+          }
+          break;
+        }
+        case "header": {
+          if (!headersCache) {
+            headersCache = await new Promise((resolve) => {
+              chrome.runtime.sendMessage(
+                { type: "GET_PAGE_HEADERS" },
+                (resp) => resolve(resp?.headers || {})
+              );
+            });
+          }
+          const headerName = rule.condition?.header_name?.toLowerCase();
+          const value = headerName ? headersCache[headerName] : undefined;
+          let valid = false;
+          if (value) {
+            if (rule.condition?.required_domains) {
+              valid = rule.condition.required_domains.every((d) => {
+                const pattern = d
+                  .replace(/\*/g, "[^\\s]*")
+                  .replace(/\./g, "\\.");
+                const regex = new RegExp(pattern, "i");
+                return regex.test(value);
+              });
+            } else if (rule.condition?.allowed_referrers) {
+              valid = rule.condition.allowed_referrers.some((r) =>
+                value.startsWith(r)
+              );
+            }
+          }
+          if (valid) score += rule.weight || 0;
+          break;
+        }
+        default:
+          break;
+      }
+    }
+
+    const threshold = rules.thresholds?.legitimate || 100;
+    // Scores accumulate legitimacy points; failing to meet the legitimate
+    // threshold marks the page as suspicious during this early pass.
+    if (score < threshold) {
+      const banner = document.createElement("div");
+      banner.textContent = "Suspicious page detected";
+      banner.style.cssText =
+        "position:fixed;top:0;left:0;right:0;background:#a00;color:#fff;padding:8px;text-align:center;z-index:2147483647";
+      document.documentElement.appendChild(banner);
+    }
+  } catch (e) {
+    // ignore rule errors
+  }
+}
+
 class CheckContent {
   constructor() {
     this.isInitialized = false;
@@ -58,7 +198,7 @@ class CheckContent {
       this.policy = await this.getPolicyFromBackground();
       
       // Load detection rules for settings
-      this.detectionRules = await this.getDetectionRulesFromBackground();
+      this.detectionRules = await rulesPromise;
 
       // Initialize components
       this.securityMonitor = new SecurityMonitor(this.config);
@@ -94,22 +234,6 @@ class CheckContent {
             resolve(response.policy);
           } else {
             resolve(this.getDefaultPolicy());
-          }
-        }
-      );
-    });
-  }
-
-  // Get detection rules from background
-  async getDetectionRulesFromBackground() {
-    return new Promise((resolve) => {
-      chrome.runtime.sendMessage(
-        { type: "GET_DETECTION_RULES" },
-        (response) => {
-          if (response && response.success) {
-            resolve(response.rules);
-          } else {
-            resolve(null);
           }
         }
       );
@@ -1400,6 +1524,17 @@ CheckContent.prototype.showToast = function(msg) {
   if (document.body) document.body.appendChild(t);
   setTimeout(() => t.remove(), 3000);
 };
+
+// Start detection early using locally loaded rules
+(async () => {
+  const rules = await rulesPromise;
+  const run = () => startDetection(rules);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", run, { once: true });
+  } else {
+    run();
+  }
+})();
 
 // Initialize content script (prevent multiple initializations)
 if (!window.checkContentInitialized) {
