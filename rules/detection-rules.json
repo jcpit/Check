@@ -112,6 +112,24 @@
         ]
       },
       "description": "BeginAuth request must contain proper content-security-policy-report-only header"
+    },
+    {
+      "id": "check_valid_referrer",
+      "type": "header",
+      "weight": 25,
+      "condition": {
+        "header_name": "referer",
+        "allowed_referrers": [
+          "https://login.microsoftonline.com",
+          "https://login.microsoft.net",
+          "https://login.microsoft.com",
+          "https://autologon.microsoftazuread-sso.com",
+          "https://tasks.office.com",
+          "https://login.windows.net",
+          "https://planner.cloud.microsoft"
+        ]
+      },
+      "description": "Validate referrer against custom allow list of valid Microsoft referrers"
     }
   ],
   "thresholds": {
@@ -199,6 +217,16 @@
       "action": "block",
       "category": "header_manipulation",
       "confidence": 0.9
+    },
+    {
+      "id": "phi_009",
+      "pattern": "referer.*(?!login\\.microsoftonline\\.com|login\\.microsoft\\.net|login\\.microsoft\\.com|autologon\\.microsoftazuread-sso\\.com|tasks\\.office\\.com|login\\.windows\\.net|planner\\.cloud\\.microsoft)",
+      "flags": "i",
+      "severity": "high",
+      "description": "Invalid referrer not in custom allow list",
+      "action": "warn",
+      "category": "referrer_spoofing",
+      "confidence": 0.85
     }
   ],
   "legitimate_patterns": [
@@ -255,6 +283,20 @@
       ],
       "description": "Required domains in content-security-policy-report-only header",
       "confidence": 1.0
+    },
+    {
+      "id": "leg_006",
+      "referrer_patterns": [
+        "https://login\\.microsoftonline\\.com",
+        "https://login\\.microsoft\\.net",
+        "https://login\\.microsoft\\.com",
+        "https://autologon\\.microsoftazuread-sso\\.com",
+        "https://tasks\\.office\\.com",
+        "https://login\\.windows\\.net",
+        "https://planner\\.cloud\\.microsoft"
+      ],
+      "description": "Valid Microsoft referrers from custom allow list",
+      "confidence": 0.95
     }
   ],
   "suspicious_behaviors": [
@@ -327,6 +369,13 @@
       "description": "BeginAuth request missing proper content-security-policy-report-only header",
       "severity": "critical",
       "action": "block"
+    },
+    {
+      "id": "sus_011",
+      "behavior": "invalid_referrer",
+      "description": "Request contains referrer not in custom allow list",
+      "severity": "high",
+      "action": "warn"
     }
   ],
   "whitelist_domains": [
@@ -346,6 +395,21 @@
     "*.outlook.com",
     "*.bing.com"
   ],
+  "valid_referrers": {
+    "description": "Custom allow list of valid Microsoft referrers for authentication flows",
+    "referrers": [
+      "https://login.microsoftonline.com",
+      "https://login.microsoft.net",
+      "https://login.microsoft.com",
+      "https://autologon.microsoftazuread-sso.com",
+      "https://tasks.office.com",
+      "https://login.windows.net",
+      "https://planner.cloud.microsoft"
+    ],
+    "enforcement": "strict",
+    "allow_missing_referrer": false,
+    "case_sensitive": false
+  },
   "detection_settings": {
     "enable_real_time_scanning": true,
     "enable_form_monitoring": true,
@@ -373,7 +437,7 @@
     "context_window_size": 500
   },
   "rules_metadata": {
-    "total_rules": 19,
+    "total_rules": 21,
     "categories": [
       "domain_spoofing",
       "brand_impersonation",
@@ -381,7 +445,8 @@
       "credential_harvesting",
       "suspicious_behavior",
       "resource_hijacking",
-      "header_manipulation"
+      "header_manipulation",
+      "referrer_spoofing"
     ],
     "severity_levels": [
       "low",
