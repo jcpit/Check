@@ -133,6 +133,22 @@ class CheckPopup {
     try {
       this.showLoading("Initializing...");
 
+      // Wait for background script to be ready
+      this.showLoading("Connecting to background script...");
+      const backgroundReady = await this.waitForBackgroundScript();
+
+      if (!backgroundReady) {
+        console.warn(
+          "Check: Background script not available, using fallback mode"
+        );
+        this.config = this.getDefaultConfig();
+        this.brandingConfig = { companyName: "Check", productName: "Check" };
+        this.applyBranding();
+        this.showNotification("Extension running in limited mode", "warning");
+        this.hideLoading();
+        return;
+      }
+
       // Get current tab
       this.currentTab = await this.getCurrentTab();
 
@@ -167,19 +183,48 @@ class CheckPopup {
 
   async loadConfiguration() {
     return new Promise((resolve) => {
-      chrome.runtime.sendMessage(
-        {
-          type: "GET_CONFIG",
-        },
-        (response) => {
-          if (response && response.success) {
-            this.config = response.config;
-          } else {
-            this.config = this.getDefaultConfig();
+      // Add a timeout and retry mechanism
+      const attemptConnection = (retryCount = 0) => {
+        chrome.runtime.sendMessage(
+          {
+            type: "GET_CONFIG",
+          },
+          (response) => {
+            // Check for connection errors
+            if (chrome.runtime.lastError) {
+              console.warn(
+                "Check: Background script connection failed:",
+                chrome.runtime.lastError.message
+              );
+
+              // Retry up to 3 times with increasing delay
+              if (retryCount < 3) {
+                setTimeout(
+                  () => attemptConnection(retryCount + 1),
+                  500 * (retryCount + 1)
+                );
+                return;
+              } else {
+                console.warn(
+                  "Check: Using default configuration after connection failures"
+                );
+                this.config = this.getDefaultConfig();
+                resolve();
+                return;
+              }
+            }
+
+            if (response && response.success) {
+              this.config = response.config;
+            } else {
+              this.config = this.getDefaultConfig();
+            }
+            resolve();
           }
-          resolve();
-        }
-      );
+        );
+      };
+
+      attemptConnection();
     });
   }
 
@@ -396,19 +441,21 @@ class CheckPopup {
       // Request page analysis from background
       this.showSecurityBadge("analyzing", "Analyzing...");
 
-      chrome.runtime.sendMessage(
-        {
+      try {
+        const response = await this.sendMessage({
           type: "URL_ANALYSIS_REQUEST",
           url: this.currentTab.url,
-        },
-        (response) => {
-          if (response && response.success && response.analysis) {
-            this.updateSecurityStatus(response.analysis);
-          } else {
-            this.showSecurityBadge("safe", "Analysis unavailable");
-          }
+        });
+
+        if (response && response.success && response.analysis) {
+          this.updateSecurityStatus(response.analysis);
+        } else {
+          this.showSecurityBadge("safe", "Analysis unavailable");
         }
-      );
+      } catch (error) {
+        console.warn("Check: Failed to get URL analysis:", error);
+        this.showSecurityBadge("safe", "Analysis unavailable");
+      }
 
       // Get page info from content script
       chrome.tabs.sendMessage(
@@ -692,9 +739,77 @@ Issue Description:
     }
   }
 
-  async sendMessage(message) {
+  async checkBackgroundScript() {
     return new Promise((resolve) => {
-      chrome.runtime.sendMessage(message, resolve);
+      const timeout = setTimeout(() => {
+        resolve(false);
+      }, 2000); // 2 second timeout
+
+      try {
+        chrome.runtime.sendMessage({ type: "ping" }, (response) => {
+          clearTimeout(timeout);
+          const isAvailable =
+            !chrome.runtime.lastError && response && response.success;
+          if (chrome.runtime.lastError) {
+            console.warn(
+              "Check: Background script ping failed:",
+              chrome.runtime.lastError.message
+            );
+          }
+          resolve(isAvailable);
+        });
+      } catch (error) {
+        clearTimeout(timeout);
+        console.warn("Check: Failed to ping background script:", error);
+        resolve(false);
+      }
+    });
+  }
+
+  async waitForBackgroundScript(maxAttempts = 5) {
+    for (let i = 0; i < maxAttempts; i++) {
+      const isAvailable = await this.checkBackgroundScript();
+      if (isAvailable) {
+        return true;
+      }
+      // Wait before next attempt (shorter delay since we have timeout in checkBackgroundScript)
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+    return false;
+  }
+
+  async sendMessage(message, retryCount = 0) {
+    return new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage(message, (response) => {
+        // Check for connection errors
+        if (chrome.runtime.lastError) {
+          console.warn(
+            "Check: Background script connection failed:",
+            chrome.runtime.lastError.message
+          );
+
+          // Retry up to 3 times with increasing delay
+          if (retryCount < 3) {
+            setTimeout(() => {
+              this.sendMessage(message, retryCount + 1)
+                .then(resolve)
+                .catch(reject);
+            }, 500 * (retryCount + 1));
+            return;
+          } else {
+            reject(
+              new Error(
+                `Connection failed after ${retryCount + 1} attempts: ${
+                  chrome.runtime.lastError.message
+                }`
+              )
+            );
+            return;
+          }
+        }
+
+        resolve(response);
+      });
     });
   }
 
@@ -1031,5 +1146,8 @@ Issue Description:
 
 // Initialize popup when DOM is loaded
 document.addEventListener("DOMContentLoaded", () => {
-  new CheckPopup();
+  // Add a small delay to ensure background script is ready
+  setTimeout(() => {
+    new CheckPopup();
+  }, 100);
 });

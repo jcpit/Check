@@ -13,11 +13,24 @@ class CheckBackground {
     this.detectionEngine = new DetectionEngine();
     this.policyManager = new PolicyManager();
     this.isInitialized = false;
+
+    // Set up message handlers immediately to handle early connections
+    this.setupMessageHandlers();
+  }
+
+  setupMessageHandlers() {
+    // Handle messages from content scripts and popups
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      this.handleMessage(message, sender, sendResponse);
+      return true; // Keep message channel open for async responses
+    });
   }
 
   async initialize() {
     try {
-      console.log("Check: Initializing background service worker..."); // Load configuration and policies
+      console.log("Check: Initializing background service worker...");
+
+      // Load configuration and policies
       await this.configManager.loadConfig();
       await this.policyManager.loadPolicies();
       await this.detectionEngine.initialize();
@@ -49,11 +62,7 @@ class CheckBackground {
       this.handleTabUpdate(tabId, changeInfo, tab);
     });
 
-    // Handle messages from content scripts
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      this.handleMessage(message, sender, sendResponse);
-      return true; // Keep message channel open for async responses
-    });
+    // Note: Message handler is set up in constructor for immediate availability
 
     // Handle storage changes (for enterprise policy updates)
     chrome.storage.onChanged.addListener((changes, namespace) => {
@@ -222,8 +231,13 @@ class CheckBackground {
           break;
 
         case "GET_CONFIG":
-          const config = await this.configManager.getConfig();
-          sendResponse({ success: true, config });
+          try {
+            const config = await this.configManager.getConfig();
+            sendResponse({ success: true, config });
+          } catch (error) {
+            console.error("Check: Failed to get config:", error);
+            sendResponse({ success: false, error: error.message });
+          }
           break;
 
         case "TEST_DETECTION_RULES":
