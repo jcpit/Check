@@ -1,5 +1,5 @@
 /**
- * Policy Manager for CyberShield Drain
+ * Policy Manager for Check
  * Handles enterprise policies, permissions, and compliance enforcement
  */
 
@@ -15,9 +15,9 @@ export class PolicyManager {
     try {
       await this.loadPolicies();
       this.isInitialized = true;
-      console.log('CyberShield Drain: Policy manager initialized successfully');
+      console.log('Check: Policy manager initialized successfully');
     } catch (error) {
-      console.error('CyberShield Drain: Failed to initialize policy manager:', error);
+      console.error('Check: Failed to initialize policy manager:', error);
       throw error;
     }
   }
@@ -36,9 +36,9 @@ export class PolicyManager {
       // Set compliance mode based on enterprise policies
       this.complianceMode = this.enterprisePolicies?.complianceMode || false;
       
-      console.log('CyberShield Drain: Policies loaded successfully');
+      console.log('Check: Policies loaded successfully');
     } catch (error) {
-      console.error('CyberShield Drain: Failed to load policies:', error);
+      console.error('Check: Failed to load policies:', error);
       this.loadDefaultPolicies();
     }
   }
@@ -48,7 +48,7 @@ export class PolicyManager {
       const managedPolicies = await chrome.storage.managed.get(['policies']);
       return managedPolicies.policies || {};
     } catch (error) {
-      console.log('CyberShield Drain: No enterprise policies available');
+      console.log('Check: No enterprise policies available');
       return {};
     }
   }
@@ -191,7 +191,7 @@ export class PolicyManager {
           return result;
       }
     } catch (error) {
-      console.error('CyberShield Drain: Policy check failed:', error);
+      console.error('Check: Policy check failed:', error);
       result.allowed = false;
       result.reason = 'Policy check failed';
       return result;
@@ -448,9 +448,9 @@ export class PolicyManager {
       await chrome.storage.local.set({ policies: updatedPolicies });
       this.policies = updatedPolicies;
       
-      console.log('CyberShield Drain: Policies updated');
+      console.log('Check: Policies updated');
     } catch (error) {
-      console.error('CyberShield Drain: Failed to update policies:', error);
+      console.error('Check: Failed to update policies:', error);
       throw error;
     }
   }
@@ -498,7 +498,7 @@ export class PolicyManager {
       const auditLog = await chrome.storage.local.get(['auditLog']);
       return auditLog.auditLog || [];
     } catch (error) {
-      console.error('CyberShield Drain: Failed to get audit log:', error);
+      console.error('Check: Failed to get audit log:', error);
       return [];
     }
   }
@@ -523,12 +523,13 @@ export class PolicyManager {
 
       await chrome.storage.local.set({ auditLog: logs });
     } catch (error) {
-      console.error('CyberShield Drain: Failed to log audit event:', error);
+      console.error('Check: Failed to log audit event:', error);
     }
   }
 
   loadDefaultPolicies() {
     this.policies = this.getDefaultPolicies();
-    console.log('CyberShield Drain: Using default policies');
+    console.log('Check: Using default policies');
   }
 }
+

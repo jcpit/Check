@@ -1,6 +1,6 @@
 /**
- * CyberShield Drain - Popup Styles
- * Modern, clean interface for the extension popup
+ * Check - Popup Styles
+ * Modern, enterprise-grade styling for the extension popup interface
  */
 
 /* Theme Variables */
@@ -10,30 +10,30 @@
   --theme-primary-hover: #E56F00;
   --theme-primary-light: rgba(247, 127, 0, 0.1);
   --theme-primary-dark: #D96800;
-  
+
   /* Secondary Theme Colors */
   --theme-secondary: #003049;
   --theme-secondary-hover: #004B73;
   --theme-secondary-light: rgba(0, 48, 73, 0.1);
   --theme-secondary-dark: #002236;
-  
+
   /* Supporting Colors */
   --theme-accent: #005C63;
   --theme-success: #005C63;
   --theme-warning: #F77F00;
   --theme-error: #DC2626;
-  
+
   /* Text Colors */
   --theme-text-primary: #FFFFFF;
   --theme-text-secondary: #9CA3AF;
   --theme-text-muted: #6B7280;
   --theme-text-inverse: #003049;
-  
+
   /* Background Colors */
   --theme-bg-primary: #003049;
   --theme-bg-secondary: rgba(255, 255, 255, 0.05);
   --theme-bg-surface: rgba(255, 255, 255, 0.03);
-  
+
   /* Border Colors */
   --theme-border: rgba(255, 255, 255, 0.1);
   --theme-border-hover: rgba(247, 127, 0, 0.3);
@@ -674,7 +674,7 @@ body {
   .popup-main {
     gap: 16px;
   }
-  
+
   .activity-list {
     max-height: 80px;
   }
@@ -685,7 +685,7 @@ body {
   .action-btn.secondary {
     border-width: 2px;
   }
-  
+
   .page-info,
   .stats-section,
   .activity-section {
@@ -700,12 +700,12 @@ body {
   .notification-close {
     transition: none;
   }
-  
+
   .status-dot,
   .loading-spinner {
     animation: none;
   }
-  
+
   .notification-toast {
     animation: none;
   }
@@ -717,29 +717,29 @@ body {
     background: #111827;
     color: #f9fafb;
   }
-  
+
   .popup-header {
     background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
   }
-  
+
   .page-info,
   .stats-section,
   .activity-section {
     background: #1f2937;
     border-color: #374151;
   }
-  
+
   .action-btn.secondary {
     background: #374151;
     color: #f9fafb;
     border-color: #4b5563;
   }
-  
+
   .action-btn.secondary:hover {
     background: #4b5563;
     border-color: #6b7280;
   }
-  
+
   .popup-footer {
     background: #1f2937;
     border-color: #374151;

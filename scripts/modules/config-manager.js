@@ -1,5 +1,5 @@
 /**
- * Configuration Manager for CyberShield Drain
+ * Configuration Manager for Check
  * Handles enterprise configuration, branding, and settings management
  */
 
@@ -24,10 +24,10 @@ export class ConfigManager {
       // Merge configurations with enterprise taking precedence
       this.config = this.mergeConfigurations(localConfig.config, this.enterpriseConfig, this.brandingConfig);
       
-      console.log('CyberShield Drain: Configuration loaded successfully');
+      console.log('Check: Configuration loaded successfully');
       return this.config;
     } catch (error) {
-      console.error('CyberShield Drain: Failed to load configuration:', error);
+      console.error('Check: Failed to load configuration:', error);
       throw error;
     }
   }
@@ -38,13 +38,13 @@ export class ConfigManager {
       const managedConfig = await chrome.storage.managed.get(null);
       
       if (Object.keys(managedConfig).length > 0) {
-        console.log('CyberShield Drain: Enterprise configuration found');
+        console.log('Check: Enterprise configuration found');
         return managedConfig;
       }
       
       return {};
     } catch (error) {
-      console.log('CyberShield Drain: No enterprise configuration available');
+      console.log('Check: No enterprise configuration available');
       return {};
     }
   }
@@ -56,7 +56,7 @@ export class ConfigManager {
       const brandingConfig = await response.json();
       return brandingConfig;
     } catch (error) {
-      console.log('CyberShield Drain: Using default branding configuration');
+      console.log('Check: Using default branding configuration');
       return this.getDefaultBrandingConfig();
     }
   }
@@ -142,8 +142,8 @@ export class ConfigManager {
   getDefaultBrandingConfig() {
     return {
       // Company branding
-      companyName: 'CyberShield',
-      productName: 'CyberShield Drain',
+      companyName: 'Check',
+      productName: 'Check',
       version: '1.0.0',
       
       // Visual branding
@@ -153,14 +153,14 @@ export class ConfigManager {
       faviconUrl: 'images/favicon.ico',
       
       // Contact information
-      supportEmail: 'support@cybershield.com',
-      supportUrl: 'https://support.cybershield.com',
-      privacyPolicyUrl: 'https://cybershield.com/privacy',
-      termsOfServiceUrl: 'https://cybershield.com/terms',
+      supportEmail: 'support@check.com',
+      supportUrl: 'https://support.check.com',
+      privacyPolicyUrl: 'https://check.com/privacy',
+      termsOfServiceUrl: 'https://check.com/terms',
       
       // Customizable text
-      welcomeMessage: 'Welcome to CyberShield Drain - Your Enterprise Web Security Solution',
-      blockedPageTitle: 'Access Blocked by CyberShield',
+      welcomeMessage: 'Welcome to Check - Your Enterprise Web Security Solution',
+      blockedPageTitle: 'Access Blocked by Check',
       blockedPageMessage: 'This page has been blocked by your organization\'s security policy.',
       
       // Feature customization
@@ -207,7 +207,7 @@ export class ConfigManager {
       
       return updatedConfig;
     } catch (error) {
-      console.error('CyberShield Drain: Failed to update configuration:', error);
+      console.error('Check: Failed to update configuration:', error);
       throw error;
     }
   }
@@ -235,7 +235,7 @@ export class ConfigManager {
 
   async migrateConfig(previousVersion) {
     try {
-      console.log(`CyberShield Drain: Migrating configuration from version ${previousVersion}`);
+      console.log(`Check: Migrating configuration from version ${previousVersion}`);
       
       const currentConfig = await chrome.storage.local.get(['config']);
       if (!currentConfig.config) return;
@@ -246,9 +246,9 @@ export class ConfigManager {
       //   // Migration logic for 1.1.0
       // }
 
-      console.log('CyberShield Drain: Configuration migration completed');
+      console.log('Check: Configuration migration completed');
     } catch (error) {
-      console.error('CyberShield Drain: Configuration migration failed:', error);
+      console.error('Check: Configuration migration failed:', error);
     }
   }
 
@@ -298,11 +298,12 @@ export class ConfigManager {
         this.brandingConfig = importData.branding;
       }
       
-      console.log('CyberShield Drain: Configuration imported successfully');
+      console.log('Check: Configuration imported successfully');
       return true;
     } catch (error) {
-      console.error('CyberShield Drain: Failed to import configuration:', error);
+      console.error('Check: Failed to import configuration:', error);
       throw error;
     }
   }
 }
+

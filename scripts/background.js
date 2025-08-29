@@ -1,13 +1,13 @@
 /**
- * CyberShield Drain - Background Service Worker
- * Manifest V3 compatible background script for enterprise security
+ * Check - Background Service Worker
+ * Handles core extension functionality, policy enforcement, and threat detection
  */
 
 import { ConfigManager } from "./modules/config-manager.js";
 import { DetectionEngine } from "./modules/detection-engine.js";
 import { PolicyManager } from "./modules/policy-manager.js";
 
-class CyberShieldBackground {
+class CheckBackground {
   constructor() {
     this.configManager = new ConfigManager();
     this.detectionEngine = new DetectionEngine();
@@ -17,11 +17,9 @@ class CyberShieldBackground {
 
   async initialize() {
     try {
-      console.log(
-        "CyberShield Drain: Initializing background service worker..."
-      );
-
-      // Load configuration and policies
+    console.log(
+      "Check: Initializing background service worker..."
+    );      // Load configuration and policies
       await this.configManager.loadConfig();
       await this.policyManager.loadPolicies();
       await this.detectionEngine.initialize();
@@ -30,11 +28,11 @@ class CyberShieldBackground {
       this.isInitialized = true;
 
       console.log(
-        "CyberShield Drain: Background service worker initialized successfully"
+        "Check: Background service worker initialized successfully"
       );
     } catch (error) {
       console.error(
-        "CyberShield Drain: Failed to initialize background service worker:",
+        "Check: Failed to initialize background service worker:",
         error
       );
     }
@@ -73,13 +71,13 @@ class CyberShieldBackground {
   }
 
   async handleStartup() {
-    console.log("CyberShield Drain: Extension startup detected");
+    console.log("Check: Extension startup detected");
     await this.configManager.refreshConfig();
   }
 
   async handleInstalled(details) {
     console.log(
-      "CyberShield Drain: Extension installed/updated:",
+      "Check: Extension installed/updated:",
       details.reason
     );
 
@@ -123,13 +121,79 @@ class CyberShieldBackground {
       // Log URL access for audit purposes
       await this.logUrlAccess(tab.url, tabId);
     } catch (error) {
-      console.error("CyberShield Drain: Error handling tab update:", error);
+      console.error("Check: Error handling tab update:", error);
     }
   }
 
   async handleMessage(message, sender, sendResponse) {
     try {
-      switch (message.type) {
+      // Handle both message.type and message.action for compatibility
+      const messageType = message.type || message.action;
+      
+      switch (messageType) {
+        case "ping":
+          sendResponse({ 
+            success: true, 
+            message: "Check background script is running",
+            timestamp: new Date().toISOString(),
+            initialized: this.isInitialized
+          });
+          break;
+
+        case "testDetectionEngine":
+          try {
+            const detectionTest = {
+              rulesLoaded: this.detectionEngine?.detectionRules ? 
+                Object.keys(this.detectionEngine.detectionRules).length : 0,
+              engineInitialized: this.detectionEngine?.isInitialized || false,
+              testsRun: 0
+            };
+            
+            if (message.testData) {
+              const testResults = await this.testDetectionRules([{
+                id: 'quick_test',
+                type: 'url_analysis',
+                input: { url: message.testData.url },
+                expected: { analyzed: true }
+              }]);
+              detectionTest.testsRun = testResults.summary.total;
+            }
+            
+            sendResponse({ 
+              success: true, 
+              ...detectionTest
+            });
+          } catch (error) {
+            sendResponse({ 
+              success: false, 
+              error: error.message 
+            });
+          }
+          break;
+
+        case "testConfiguration":
+          try {
+            const configTest = {
+              configModules: [],
+              initialized: this.isInitialized
+            };
+            
+            if (this.configManager) configTest.configModules.push('ConfigManager');
+            if (this.detectionEngine) configTest.configModules.push('DetectionEngine');
+            if (this.policyManager) configTest.configModules.push('PolicyManager');
+            
+            sendResponse({ 
+              success: true, 
+              ...configTest
+            });
+          } catch (error) {
+            sendResponse({ 
+              success: false, 
+              error: error.message 
+            });
+          }
+          break;
+
         case "URL_ANALYSIS_REQUEST":
           const analysis = await this.detectionEngine.analyzeUrl(message.url);
           sendResponse({ success: true, analysis });
@@ -182,7 +246,7 @@ class CyberShieldBackground {
           sendResponse({ success: false, error: "Unknown message type" });
       }
     } catch (error) {
-      console.error("CyberShield Drain: Error handling message:", error);
+      console.error("Check: Error handling message:", error);
       sendResponse({ success: false, error: error.message });
     }
   }
@@ -190,7 +254,7 @@ class CyberShieldBackground {
   async handleStorageChange(changes, namespace) {
     if (namespace === "managed") {
       // Enterprise policy changes
-      console.log("CyberShield Drain: Enterprise policy updated");
+      console.log("Check: Enterprise policy updated");
       await this.policyManager.loadPolicies();
       await this.configManager.refreshConfig();
     }
@@ -212,7 +276,7 @@ class CyberShieldBackground {
       });
     } catch (error) {
       console.error(
-        "CyberShield Drain: Failed to inject content script:",
+        "Check: Failed to inject content script:",
         error
       );
     }
@@ -248,7 +312,7 @@ class CyberShieldBackground {
       type: "security_event",
     };
 
-    console.log("CyberShield Drain: Security Event:", logEntry);
+    console.log("Check: Security Event:", logEntry);
 
     // Store security events separately
     const logs = (await chrome.storage.local.get(["securityEvents"])) || {
@@ -700,10 +764,11 @@ class CyberShieldBackground {
 }
 
 // Initialize the background service worker
-const cyberShield = new CyberShieldBackground();
-cyberShield.initialize();
+const check = new CheckBackground();
+check.initialize();
 
 // Export for testing purposes
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = CyberShieldBackground;
+  module.exports = CheckBackground;
 }
+

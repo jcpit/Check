@@ -23,7 +23,7 @@ Microsoft 365 Phishing Protection is a powerful, Manifest V3 compatible browser 
 - **Custom Branding**: Replace logos, colors, and company information
 - **Customizable UI**: Modify extension appearance with custom CSS
 - **Configurable Text**: Customize all user-facing text and messages
-- **Brand Protection**: Remove or replace CyberShield branding entirely
+- **Brand Protection**: Remove or replace Check branding entirely
 
 ### Advanced Features
 - **Custom Phishing Detection Rules**: Define and deploy custom Microsoft 365 phishing detection patterns
@@ -61,7 +61,7 @@ Microsoft 365 Phishing Protection is a powerful, Manifest V3 compatible browser 
 
 ```powershell
 # Example GPO deployment script
-$ExtensionPath = "\\domain.com\netlogon\CyberShieldDrain"
+$ExtensionPath = "\\domain.com\netlogon\CheckDrain"
 $PolicyKey = "HKLM:\SOFTWARE\Policies\Google\Chrome\ExtensionInstallForcelist"
 Set-ItemProperty -Path $PolicyKey -Name "1" -Value "extension_id;$ExtensionPath"
 ```
@@ -158,7 +158,7 @@ Customize Microsoft 365 phishing detection by modifying `rules/detection-rules.j
 1. **Preparation**
    ```bash
    # Download and verify extension package
-   wget https://releases.cybershield.com/drain/latest.zip
+   wget https://releases.Check.com/drain/latest.zip
    gpg --verify latest.zip.sig latest.zip
    ```
 
@@ -189,7 +189,7 @@ Customize Microsoft 365 phishing detection by modifying `rules/detection-rules.j
 ### Extension Components
 
 ```
-CyberShieldDrain/
+CheckDrain/
 ├── manifest.json                 # Extension manifest (MV3)
 ├── scripts/
 │   ├── background.js             # Service worker
@@ -346,7 +346,7 @@ chrome.runtime.sendMessage({
 
 ```bash
 # Clone the repository
-git clone https://github.com/cybershield/drain.git
+git clone https://github.com/Check/drain.git
 cd drain
 
 # Install dependencies (if any)
@@ -420,15 +420,15 @@ This project is licensed under the AGPL-3.0 License - see the [LICENSE](LICENSE)
 ### Enterprise Support
 
 - **24/7 Phone Support**: Available for Enterprise customers
-- **Email Support**: enterprise-support@cybershield.com
-- **Documentation**: https://docs.cybershield.com/drain
-- **Status Page**: https://status.cybershield.com
+- **Email Support**: enterprise-support@Check.com
+- **Documentation**: https://docs.Check.com/drain
+- **Status Page**: https://status.Check.com
 
 ### Community Support
 
 - **GitHub Issues**: Bug reports and feature requests
-- **Community Forum**: https://community.cybershield.com
-- **Discord**: https://discord.gg/cybershield
+- **Community Forum**: https://community.Check.com
+- **Discord**: https://discord.gg/Check
 
 ### Training & Professional Services
 
@@ -482,12 +482,13 @@ See [CHANGELOG.md](CHANGELOG.md) for detailed release notes and update informati
 
 ## 📞 Contact Information
 
-**CyberShield Technologies**
-- Website: https://cybershield.com
-- Email: info@cybershield.com
+**Check Technologies**
+- Website: https://Check.com
+- Email: info@Check.com
 - Phone: +1 (555) 123-4567
 - Address: 123 Security Blvd, Cyber City, CC 12345
 
 ---
 
-*CyberShield Drain - Protecting your digital assets, one click at a time.*
+*Check Drain - Protecting your digital assets, one click at a time.*
+

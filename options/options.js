@@ -1,9 +1,9 @@
 /**
- * CyberShield Drain - Options Page JavaScript
+ * Check - Options Page JavaScript
  * Comprehensive settings management and configuration interface
  */
 
-class CyberShieldOptions {
+class CheckOptions {
   constructor() {
     this.config = null;
     this.brandingConfig = null;
@@ -498,7 +498,7 @@ class CyberShieldOptions {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `cybershield-config-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `check-config-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -765,7 +765,7 @@ class CyberShieldOptions {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `cybershield-logs-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `check-logs-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -889,5 +889,6 @@ class CyberShieldOptions {
 
 // Initialize options page when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  new CyberShieldOptions();
+  new CheckOptions();
 });
+

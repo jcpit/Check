@@ -1,9 +1,9 @@
 /**
- * CyberShield Drain - Content Script
+ * Check - Content Script
  * Handles page manipulation, monitoring, and security enforcement
  */
 
-class CyberShieldContent {
+class CheckContent {
   constructor() {
     this.isInitialized = false;
     this.config = null;
@@ -15,43 +15,49 @@ class CyberShieldContent {
 
   async initialize() {
     try {
-      console.log('CyberShield Drain: Initializing content script...');
-      
+      console.log("Check: Initializing content script...");
+
       // Load configuration from background
       this.config = await this.getConfigFromBackground();
-      
+
       // Initialize components
       this.securityMonitor = new SecurityMonitor(this.config);
       this.pageAnalyzer = new PageAnalyzer(this.config);
       this.uiManager = new UIManager(this.config);
-      
+
       // Set up page monitoring
       this.setupPageMonitoring();
-      
+
       // Set up message handling
       this.setupMessageHandling();
-      
+
       // Perform initial page analysis
       await this.performInitialAnalysis();
-      
+
       this.isInitialized = true;
-      console.log('CyberShield Drain: Content script initialized successfully');
+      console.log("Check: Content script initialized successfully");
     } catch (error) {
-      console.error('CyberShield Drain: Failed to initialize content script:', error);
+      console.error(
+        "Check: Failed to initialize content script:",
+        error
+      );
     }
   }
 
   async getConfigFromBackground() {
     return new Promise((resolve) => {
-      chrome.runtime.sendMessage({
-        type: 'GET_CONFIG'
-      }, (response) => {
-        if (response && response.success) {
-          resolve(response.config);
-        } else {
-          resolve(this.getDefaultConfig());
+      chrome.runtime.sendMessage(
+        {
+          type: "GET_CONFIG",
+        },
+        (response) => {
+          if (response && response.success) {
+            resolve(response.config);
+          } else {
+            resolve(this.getDefaultConfig());
+          }
         }
-      });
+      );
     });
   }
 
@@ -61,7 +67,7 @@ class CyberShieldContent {
       enableContentManipulation: true,
       enableUrlMonitoring: true,
       showNotifications: true,
-      debugMode: false
+      debugMode: false,
     };
   }
 
@@ -75,18 +81,18 @@ class CyberShieldContent {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ['src', 'href', 'action', 'onclick']
+      attributeFilter: ["src", "href", "action", "onclick"],
     });
 
     this.observers.push(domObserver);
 
     // Monitor form submissions
-    document.addEventListener('submit', (event) => {
+    document.addEventListener("submit", (event) => {
       this.handleFormSubmission(event);
     });
 
     // Monitor navigation attempts
-    document.addEventListener('click', (event) => {
+    document.addEventListener("click", (event) => {
       this.handleLinkClick(event);
     });
 
@@ -99,30 +105,30 @@ class CyberShieldContent {
     const originalEval = window.eval;
     window.eval = (code) => {
       this.logSecurityEvent({
-        type: 'dynamic_script_execution',
+        type: "dynamic_script_execution",
         code: code.substring(0, 100), // Log first 100 chars only
         url: window.location.href,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
-      
+
       // Check if dynamic execution is allowed
       if (this.config.blockDynamicScripts) {
-        console.warn('CyberShield Drain: Dynamic script execution blocked');
+        console.warn("Check: Dynamic script execution blocked");
         return null;
       }
-      
+
       return originalEval.call(window, code);
     };
 
     // Monitor setTimeout/setInterval with code strings
     const originalSetTimeout = window.setTimeout;
     window.setTimeout = (handler, timeout, ...args) => {
-      if (typeof handler === 'string') {
+      if (typeof handler === "string") {
         this.logSecurityEvent({
-          type: 'dynamic_timeout_execution',
+          type: "dynamic_timeout_execution",
           code: handler.substring(0, 100),
           url: window.location.href,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
       return originalSetTimeout.call(window, handler, timeout, ...args);
@@ -136,10 +142,10 @@ class CyberShieldContent {
     });
 
     // Listen for messages from page (for testing)
-    window.addEventListener('message', (event) => {
+    window.addEventListener("message", (event) => {
       if (event.source !== window) return;
-      
-      if (event.data.type && event.data.type.startsWith('CYBERSHIELD_TEST_')) {
+
+      if (event.data.type && event.data.type.startsWith("CHECK_TEST_")) {
         this.handleTestMessage(event.data);
       }
     });
@@ -152,44 +158,53 @@ class CyberShieldContent {
     try {
       // Forward test messages to background script
       const response = await new Promise((resolve) => {
-        chrome.runtime.sendMessage({
-          type: data.type.replace('CYBERSHIELD_TEST_', ''),
-          ...data.payload
-        }, resolve);
+        chrome.runtime.sendMessage(
+          {
+            type: data.type.replace("CHECK_TEST_", ""),
+            ...data.payload,
+          },
+          resolve
+        );
       });
 
       // Send response back to page
-      window.postMessage({
-        type: 'CYBERSHIELD_TEST_RESPONSE',
-        id: data.id,
-        response
-      }, '*');
+      window.postMessage(
+        {
+          type: "CHECK_TEST_RESPONSE",
+          id: data.id,
+          response,
+        },
+        "*"
+      );
     } catch (error) {
-      window.postMessage({
-        type: 'CYBERSHIELD_TEST_RESPONSE',
-        id: data.id,
-        error: error.message
-      }, '*');
+      window.postMessage(
+        {
+          type: "CHECK_TEST_RESPONSE",
+          id: data.id,
+          error: error.message,
+        },
+        "*"
+      );
     }
   }
 
   exposeTestingInterface() {
     // Inject testing bridge into page
-    const script = document.createElement('script');
+    const script = document.createElement("script");
     script.textContent = `
       (function() {
         let messageId = 0;
         const pendingMessages = new Map();
 
-        // Create cybershield testing interface
-        window.CyberShieldTesting = {
+        // Create Check testing interface
+        window.CheckTesting = {
           sendMessage: function(message) {
             return new Promise((resolve, reject) => {
               const id = ++messageId;
               pendingMessages.set(id, { resolve, reject });
-              
+
               window.postMessage({
-                type: 'CYBERSHIELD_TEST_' + message.type,
+                type: 'CHECK_TEST_' + message.type,
                 id: id,
                 payload: message
               }, '*');
@@ -200,12 +215,12 @@ class CyberShieldContent {
         // Listen for responses
         window.addEventListener('message', (event) => {
           if (event.source !== window) return;
-          
-          if (event.data.type === 'CYBERSHIELD_TEST_RESPONSE') {
+
+          if (event.data.type === 'CHECK_TEST_RESPONSE') {
             const pending = pendingMessages.get(event.data.id);
             if (pending) {
               pendingMessages.delete(event.data.id);
-              
+
               if (event.data.error) {
                 pending.reject(new Error(event.data.error));
               } else {
@@ -216,7 +231,7 @@ class CyberShieldContent {
         });
       })();
     `;
-    
+
     document.documentElement.appendChild(script);
     script.remove();
   }
@@ -224,62 +239,69 @@ class CyberShieldContent {
   async handleMessage(message, sender, sendResponse) {
     try {
       switch (message.type) {
-        case 'ANALYZE_PAGE':
+        case "ANALYZE_PAGE":
           const analysis = await this.pageAnalyzer.analyzePage();
           sendResponse({ success: true, analysis });
           break;
 
-        case 'INJECT_SCRIPT':
-          const injectionResult = await this.injectScript(message.script, message.options);
+        case "INJECT_SCRIPT":
+          const injectionResult = await this.injectScript(
+            message.script,
+            message.options
+          );
           sendResponse({ success: true, result: injectionResult });
           break;
 
-        case 'MANIPULATE_CONTENT':
-          const manipulationResult = await this.manipulateContent(message.action, message.target, message.options);
+        case "MANIPULATE_CONTENT":
+          const manipulationResult = await this.manipulateContent(
+            message.action,
+            message.target,
+            message.options
+          );
           sendResponse({ success: true, result: manipulationResult });
           break;
 
-        case 'GET_PAGE_INFO':
+        case "GET_PAGE_INFO":
           const pageInfo = this.getPageInfo();
           sendResponse({ success: true, info: pageInfo });
           break;
 
-        case 'UPDATE_CONFIG':
+        case "UPDATE_CONFIG":
           this.config = { ...this.config, ...message.config };
           sendResponse({ success: true });
           break;
 
-        case 'SHOW_NOTIFICATION':
+        case "SHOW_NOTIFICATION":
           this.uiManager.showNotification(message.notification);
           sendResponse({ success: true });
           break;
 
-        case 'BLOCK_PAGE':
+        case "BLOCK_PAGE":
           this.blockPage(message.reason);
           sendResponse({ success: true });
           break;
 
         default:
-          sendResponse({ success: false, error: 'Unknown message type' });
+          sendResponse({ success: false, error: "Unknown message type" });
       }
     } catch (error) {
-      console.error('CyberShield Drain: Error handling message:', error);
+      console.error("Check: Error handling message:", error);
       sendResponse({ success: false, error: error.message });
     }
   }
 
   async performInitialAnalysis() {
     const analysis = await this.pageAnalyzer.analyzePage();
-    
+
     // Report analysis to background
     chrome.runtime.sendMessage({
-      type: 'LOG_EVENT',
+      type: "LOG_EVENT",
       event: {
-        type: 'page_analysis',
+        type: "page_analysis",
         url: window.location.href,
         analysis,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     });
 
     // Take action based on analysis
@@ -290,14 +312,14 @@ class CyberShieldContent {
 
   handleDOMChanges(mutations) {
     mutations.forEach((mutation) => {
-      if (mutation.type === 'childList') {
+      if (mutation.type === "childList") {
         // Check for dynamically added scripts
         mutation.addedNodes.forEach((node) => {
           if (node.nodeType === Node.ELEMENT_NODE) {
             this.checkNewElement(node);
           }
         });
-      } else if (mutation.type === 'attributes') {
+      } else if (mutation.type === "attributes") {
         // Check for suspicious attribute changes
         this.checkAttributeChange(mutation);
       }
@@ -306,28 +328,28 @@ class CyberShieldContent {
 
   checkNewElement(element) {
     // Check for script elements
-    if (element.tagName === 'SCRIPT') {
+    if (element.tagName === "SCRIPT") {
       this.logSecurityEvent({
-        type: 'dynamic_script_added',
-        src: element.src || 'inline',
+        type: "dynamic_script_added",
+        src: element.src || "inline",
         content: element.innerHTML.substring(0, 100),
         url: window.location.href,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
     // Check for iframe elements
-    if (element.tagName === 'IFRAME') {
+    if (element.tagName === "IFRAME") {
       this.analyzeIframe(element);
     }
 
     // Check for form elements
-    if (element.tagName === 'FORM') {
+    if (element.tagName === "FORM") {
       this.analyzeForm(element);
     }
 
     // Recursively check child elements
-    element.querySelectorAll('script, iframe, form').forEach((child) => {
+    element.querySelectorAll("script, iframe, form").forEach((child) => {
       this.checkNewElement(child);
     });
   }
@@ -335,28 +357,28 @@ class CyberShieldContent {
   checkAttributeChange(mutation) {
     const element = mutation.target;
     const attributeName = mutation.attributeName;
-    
+
     // Check for suspicious attribute changes
-    if (['onclick', 'onload', 'onerror'].includes(attributeName)) {
+    if (["onclick", "onload", "onerror"].includes(attributeName)) {
       this.logSecurityEvent({
-        type: 'suspicious_attribute_change',
+        type: "suspicious_attribute_change",
         element: element.tagName,
         attribute: attributeName,
         value: element.getAttribute(attributeName),
         url: window.location.href,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
   }
 
   handleFormSubmission(event) {
     const form = event.target;
-    
+
     // Analyze form for potential threats
     const formData = new FormData(form);
     const hasPasswordField = form.querySelector('input[type="password"]');
     const hasEmailField = form.querySelector('input[type="email"]');
-    
+
     if (hasPasswordField || hasEmailField) {
       // This might be a login form
       this.analyzeLoginForm(form, event);
@@ -364,13 +386,13 @@ class CyberShieldContent {
 
     // Log form submission
     this.logSecurityEvent({
-      type: 'form_submission',
+      type: "form_submission",
       action: form.action,
       method: form.method,
       hasPassword: !!hasPasswordField,
       hasEmail: !!hasEmailField,
       url: window.location.href,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -378,28 +400,30 @@ class CyberShieldContent {
     // Check if this is a suspicious login form
     const currentDomain = window.location.hostname;
     const formAction = form.action;
-    
+
     // Check if form submits to different domain
     if (formAction && !formAction.includes(currentDomain)) {
       this.logSecurityEvent({
-        type: 'suspicious_login_form',
+        type: "suspicious_login_form",
         currentDomain,
         formAction,
-        reason: 'Cross-domain form submission',
+        reason: "Cross-domain form submission",
         url: window.location.href,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       // Potentially block or warn user
       if (this.config.blockSuspiciousForms) {
         event.preventDefault();
-        this.uiManager.showWarning('Suspicious login form detected. Submission blocked.');
+        this.uiManager.showWarning(
+          "Suspicious login form detected. Submission blocked."
+        );
       }
     }
   }
 
   handleLinkClick(event) {
-    const link = event.target.closest('a');
+    const link = event.target.closest("a");
     if (!link) return;
 
     const href = link.href;
@@ -411,28 +435,37 @@ class CyberShieldContent {
 
   async analyzeLinkSafety(url, event) {
     // Request URL analysis from background
-    chrome.runtime.sendMessage({
-      type: 'URL_ANALYSIS_REQUEST',
-      url
-    }, (response) => {
-      if (response && response.success && response.analysis) {
-        if (response.analysis.isBlocked) {
-          event.preventDefault();
-          this.uiManager.showBlockedLinkWarning(url, response.analysis.reason);
-        } else if (response.analysis.isSuspicious) {
-          // Show warning but allow navigation
-          this.uiManager.showSuspiciousLinkWarning(url, response.analysis.reason);
+    chrome.runtime.sendMessage(
+      {
+        type: "URL_ANALYSIS_REQUEST",
+        url,
+      },
+      (response) => {
+        if (response && response.success && response.analysis) {
+          if (response.analysis.isBlocked) {
+            event.preventDefault();
+            this.uiManager.showBlockedLinkWarning(
+              url,
+              response.analysis.reason
+            );
+          } else if (response.analysis.isSuspicious) {
+            // Show warning but allow navigation
+            this.uiManager.showSuspiciousLinkWarning(
+              url,
+              response.analysis.reason
+            );
+          }
         }
       }
-    });
+    );
   }
 
   async injectScript(script, options = {}) {
     try {
       // Check if script injection is allowed
-      const policyCheck = await this.checkPolicy('SCRIPT_INJECTION', {
+      const policyCheck = await this.checkPolicy("SCRIPT_INJECTION", {
         domain: window.location.hostname,
-        hasCSP: this.hasContentSecurityPolicy()
+        hasCSP: this.hasContentSecurityPolicy(),
       });
 
       if (!policyCheck.allowed) {
@@ -440,8 +473,8 @@ class CyberShieldContent {
       }
 
       // Create and inject script element
-      const scriptElement = document.createElement('script');
-      
+      const scriptElement = document.createElement("script");
+
       if (options.src) {
         scriptElement.src = options.src;
       } else {
@@ -459,15 +492,15 @@ class CyberShieldContent {
       document.head.appendChild(scriptElement);
 
       this.logSecurityEvent({
-        type: 'script_injection',
-        src: options.src || 'inline',
+        type: "script_injection",
+        src: options.src || "inline",
         url: window.location.href,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       return { success: true };
     } catch (error) {
-      console.error('CyberShield Drain: Script injection failed:', error);
+      console.error("Check: Script injection failed:", error);
       return { success: false, error: error.message };
     }
   }
@@ -475,9 +508,9 @@ class CyberShieldContent {
   async manipulateContent(action, target, options = {}) {
     try {
       // Check if content manipulation is allowed
-      const policyCheck = await this.checkPolicy('CONTENT_MANIPULATION', {
+      const policyCheck = await this.checkPolicy("CONTENT_MANIPULATION", {
         domain: window.location.hostname,
-        manipulationType: action
+        manipulationType: action,
       });
 
       if (!policyCheck.allowed) {
@@ -485,21 +518,21 @@ class CyberShieldContent {
       }
 
       let result;
-      
+
       switch (action) {
-        case 'hide_element':
+        case "hide_element":
           result = this.hideElement(target, options);
           break;
-        case 'show_element':
+        case "show_element":
           result = this.showElement(target, options);
           break;
-        case 'modify_text':
+        case "modify_text":
           result = this.modifyText(target, options.text);
           break;
-        case 'inject_css':
+        case "inject_css":
           result = this.injectCSS(options.css);
           break;
-        case 'remove_element':
+        case "remove_element":
           result = this.removeElement(target);
           break;
         default:
@@ -507,29 +540,31 @@ class CyberShieldContent {
       }
 
       this.logSecurityEvent({
-        type: 'content_manipulation',
+        type: "content_manipulation",
         action,
-        target: typeof target === 'string' ? target : target.tagName,
+        target: typeof target === "string" ? target : target.tagName,
         url: window.location.href,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       return result;
     } catch (error) {
-      console.error('CyberShield Drain: Content manipulation failed:', error);
+      console.error("Check: Content manipulation failed:", error);
       return { success: false, error: error.message };
     }
   }
 
   hideElement(selector, options = {}) {
-    const elements = typeof selector === 'string' ? 
-      document.querySelectorAll(selector) : [selector];
-    
-    elements.forEach(element => {
+    const elements =
+      typeof selector === "string"
+        ? document.querySelectorAll(selector)
+        : [selector];
+
+    elements.forEach((element) => {
       if (element) {
-        element.style.display = 'none';
+        element.style.display = "none";
         if (options.addToHiddenList) {
-          element.dataset.cyberShieldHidden = 'true';
+          element.dataset.checkHidden = "true";
         }
       }
     });
@@ -538,13 +573,15 @@ class CyberShieldContent {
   }
 
   showElement(selector, options = {}) {
-    const elements = typeof selector === 'string' ? 
-      document.querySelectorAll(selector) : [selector];
-    
-    elements.forEach(element => {
+    const elements =
+      typeof selector === "string"
+        ? document.querySelectorAll(selector)
+        : [selector];
+
+    elements.forEach((element) => {
       if (element) {
-        element.style.display = '';
-        delete element.dataset.cyberShieldHidden;
+        element.style.display = "";
+        delete element.dataset.checkHidden;
       }
     });
 
@@ -552,10 +589,12 @@ class CyberShieldContent {
   }
 
   modifyText(selector, newText) {
-    const elements = typeof selector === 'string' ? 
-      document.querySelectorAll(selector) : [selector];
-    
-    elements.forEach(element => {
+    const elements =
+      typeof selector === "string"
+        ? document.querySelectorAll(selector)
+        : [selector];
+
+    elements.forEach((element) => {
       if (element) {
         element.textContent = newText;
       }
@@ -565,19 +604,21 @@ class CyberShieldContent {
   }
 
   injectCSS(css) {
-    const style = document.createElement('style');
+    const style = document.createElement("style");
     style.textContent = css;
-    style.dataset.cyberShieldInjected = 'true';
+    style.dataset.checkInjected = "true";
     document.head.appendChild(style);
 
     return { success: true };
   }
 
   removeElement(selector) {
-    const elements = typeof selector === 'string' ? 
-      document.querySelectorAll(selector) : [selector];
-    
-    elements.forEach(element => {
+    const elements =
+      typeof selector === "string"
+        ? document.querySelectorAll(selector)
+        : [selector];
+
+    elements.forEach((element) => {
       if (element && element.parentNode) {
         element.parentNode.removeChild(element);
       }
@@ -588,20 +629,23 @@ class CyberShieldContent {
 
   async checkPolicy(action, context) {
     return new Promise((resolve) => {
-      chrome.runtime.sendMessage({
-        type: 'POLICY_CHECK',
-        action,
-        context
-      }, (response) => {
-        if (response && response.success) {
-          resolve({
-            allowed: response.allowed,
-            reason: response.reason
-          });
-        } else {
-          resolve({ allowed: false, reason: 'Policy check failed' });
+      chrome.runtime.sendMessage(
+        {
+          type: "POLICY_CHECK",
+          action,
+          context,
+        },
+        (response) => {
+          if (response && response.success) {
+            resolve({
+              allowed: response.allowed,
+              reason: response.reason,
+            });
+          } else {
+            resolve({ allowed: false, reason: "Policy check failed" });
+          }
         }
-      });
+      );
     });
   }
 
@@ -611,12 +655,15 @@ class CyberShieldContent {
       title: document.title,
       domain: window.location.hostname,
       protocol: window.location.protocol,
-      hasPasswordFields: document.querySelectorAll('input[type="password"]').length > 0,
-      hasFormsWithAction: document.querySelectorAll('form[action]').length > 0,
-      hasExternalScripts: document.querySelectorAll('script[src]:not([src^="/"])').length > 0,
-      hasIframes: document.querySelectorAll('iframe').length > 0,
-      hasMetaRefresh: document.querySelector('meta[http-equiv="refresh"]') !== null,
-      contentSecurityPolicy: this.getContentSecurityPolicy()
+      hasPasswordFields:
+        document.querySelectorAll('input[type="password"]').length > 0,
+      hasFormsWithAction: document.querySelectorAll("form[action]").length > 0,
+      hasExternalScripts:
+        document.querySelectorAll('script[src]:not([src^="/"])').length > 0,
+      hasIframes: document.querySelectorAll("iframe").length > 0,
+      hasMetaRefresh:
+        document.querySelector('meta[http-equiv="refresh"]') !== null,
+      contentSecurityPolicy: this.getContentSecurityPolicy(),
     };
   }
 
@@ -625,40 +672,42 @@ class CyberShieldContent {
   }
 
   getContentSecurityPolicy() {
-    const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-    return cspMeta ? cspMeta.getAttribute('content') : null;
+    const cspMeta = document.querySelector(
+      'meta[http-equiv="Content-Security-Policy"]'
+    );
+    return cspMeta ? cspMeta.getAttribute("content") : null;
   }
 
   analyzeIframe(iframe) {
     this.logSecurityEvent({
-      type: 'iframe_detected',
+      type: "iframe_detected",
       src: iframe.src,
-      sandbox: iframe.getAttribute('sandbox'),
+      sandbox: iframe.getAttribute("sandbox"),
       url: window.location.href,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
   analyzeForm(form) {
     const hasPasswordField = form.querySelector('input[type="password"]');
     const hasFileField = form.querySelector('input[type="file"]');
-    
+
     this.logSecurityEvent({
-      type: 'form_detected',
+      type: "form_detected",
       action: form.action,
       method: form.method,
       hasPassword: !!hasPasswordField,
       hasFileUpload: !!hasFileField,
       url: window.location.href,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
   handleThreatsDetected(threats) {
-    threats.forEach(threat => {
-      if (threat.severity === 'high') {
+    threats.forEach((threat) => {
+      if (threat.severity === "high") {
         this.uiManager.showCriticalAlert(threat);
-      } else if (threat.severity === 'medium') {
+      } else if (threat.severity === "medium") {
         this.uiManager.showWarning(threat);
       } else {
         this.uiManager.showInfo(threat);
@@ -668,8 +717,8 @@ class CyberShieldContent {
 
   blockPage(reason) {
     // Create overlay to block page content
-    const overlay = document.createElement('div');
-    overlay.id = 'cybershield-block-overlay';
+    const overlay = document.createElement("div");
+    overlay.id = "check-block-overlay";
     overlay.innerHTML = `
       <div style="
         position: fixed;
@@ -705,28 +754,30 @@ class CyberShieldContent {
         </div>
       </div>
     `;
-    
+
     document.body.appendChild(overlay);
   }
 
   logSecurityEvent(event) {
     chrome.runtime.sendMessage({
-      type: 'LOG_EVENT',
-      event
+      type: "LOG_EVENT",
+      event,
     });
   }
 
   destroy() {
     // Clean up observers
-    this.observers.forEach(observer => observer.disconnect());
+    this.observers.forEach((observer) => observer.disconnect());
     this.observers = [];
-    
+
     // Remove injected styles
-    document.querySelectorAll('style[data-cyber-shield-injected]').forEach(style => {
-      style.remove();
-    });
-    
-    console.log('CyberShield Drain: Content script destroyed');
+    document
+      .querySelectorAll("style[data-cyber-shield-injected]")
+      .forEach((style) => {
+        style.remove();
+      });
+
+    console.log("Check: Content script destroyed");
   }
 }
 
@@ -747,29 +798,31 @@ class PageAnalyzer {
       url: window.location.href,
       title: document.title,
       threats: [],
-      hasPasswordFields: document.querySelectorAll('input[type="password"]').length > 0,
-      hasFileUploads: document.querySelectorAll('input[type="file"]').length > 0,
+      hasPasswordFields:
+        document.querySelectorAll('input[type="password"]').length > 0,
+      hasFileUploads:
+        document.querySelectorAll('input[type="file"]').length > 0,
       hasExternalResources: this.checkExternalResources(),
       hasSuspiciousScripts: this.checkSuspiciousScripts(),
       hasFormsWithExternalAction: this.checkExternalFormActions(),
       contentSecurityPolicy: this.getCSP(),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     // Detect potential threats
     if (analysis.hasSuspiciousScripts) {
       analysis.threats.push({
-        type: 'suspicious_scripts',
-        severity: 'medium',
-        description: 'Potentially malicious JavaScript detected'
+        type: "suspicious_scripts",
+        severity: "medium",
+        description: "Potentially malicious JavaScript detected",
       });
     }
 
     if (analysis.hasFormsWithExternalAction) {
       analysis.threats.push({
-        type: 'external_form_action',
-        severity: 'medium',
-        description: 'Form submitting to external domain detected'
+        type: "external_form_action",
+        severity: "medium",
+        description: "Form submitting to external domain detected",
       });
     }
 
@@ -778,12 +831,14 @@ class PageAnalyzer {
 
   checkExternalResources() {
     const currentDomain = window.location.hostname;
-    const externalResources = document.querySelectorAll('script[src], link[href], img[src]');
-    
-    return Array.from(externalResources).some(element => {
+    const externalResources = document.querySelectorAll(
+      "script[src], link[href], img[src]"
+    );
+
+    return Array.from(externalResources).some((element) => {
       const src = element.src || element.href;
       if (!src) return false;
-      
+
       try {
         const url = new URL(src);
         return url.hostname !== currentDomain;
@@ -794,16 +849,16 @@ class PageAnalyzer {
   }
 
   checkSuspiciousScripts() {
-    const scripts = document.querySelectorAll('script');
+    const scripts = document.querySelectorAll("script");
     const suspiciousPatterns = [
       /eval\s*\(/,
       /document\.write\s*\(/,
       /location\.replace\s*\(/,
-      /window\.open\s*\(/
+      /window\.open\s*\(/,
     ];
 
-    return Array.from(scripts).some(script => {
-      return suspiciousPatterns.some(pattern => 
+    return Array.from(scripts).some((script) => {
+      return suspiciousPatterns.some((pattern) =>
         pattern.test(script.innerHTML)
       );
     });
@@ -811,9 +866,9 @@ class PageAnalyzer {
 
   checkExternalFormActions() {
     const currentDomain = window.location.hostname;
-    const forms = document.querySelectorAll('form[action]');
-    
-    return Array.from(forms).some(form => {
+    const forms = document.querySelectorAll("form[action]");
+
+    return Array.from(forms).some((form) => {
       try {
         const actionUrl = new URL(form.action, window.location.href);
         return actionUrl.hostname !== currentDomain;
@@ -824,8 +879,10 @@ class PageAnalyzer {
   }
 
   getCSP() {
-    const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-    return cspMeta ? cspMeta.getAttribute('content') : null;
+    const cspMeta = document.querySelector(
+      'meta[http-equiv="Content-Security-Policy"]'
+    );
+    return cspMeta ? cspMeta.getAttribute("content") : null;
   }
 }
 
@@ -849,46 +906,46 @@ class UIManager {
 
   showWarning(message) {
     this.showNotification({
-      type: 'warning',
-      message: typeof message === 'string' ? message : message.description,
-      duration: 8000
+      type: "warning",
+      message: typeof message === "string" ? message : message.description,
+      duration: 8000,
     });
   }
 
   showCriticalAlert(threat) {
     this.showNotification({
-      type: 'error',
+      type: "error",
       message: `Critical threat detected: ${threat.description}`,
-      duration: 10000
+      duration: 10000,
     });
   }
 
   showInfo(message) {
     this.showNotification({
-      type: 'info',
-      message: typeof message === 'string' ? message : message.description,
-      duration: 5000
+      type: "info",
+      message: typeof message === "string" ? message : message.description,
+      duration: 5000,
     });
   }
 
   showBlockedLinkWarning(url, reason) {
     this.showNotification({
-      type: 'error',
+      type: "error",
       message: `Link blocked: ${reason}`,
-      duration: 8000
+      duration: 8000,
     });
   }
 
   showSuspiciousLinkWarning(url, reason) {
     this.showNotification({
-      type: 'warning',
+      type: "warning",
       message: `Suspicious link detected: ${reason}`,
-      duration: 6000
+      duration: 6000,
     });
   }
 
   createNotificationElement(notification) {
-    const element = document.createElement('div');
+    const element = document.createElement("div");
     element.style.cssText = `
       position: fixed;
       top: 20px;
@@ -904,30 +961,36 @@ class UIManager {
       font-size: 14px;
       line-height: 1.4;
     `;
-    
+
     element.textContent = notification.message;
-    
+
     return element;
   }
 
   getNotificationColor(type) {
     switch (type) {
-      case 'error': return '#dc2626';
-      case 'warning': return '#d97706';
-      case 'info': return '#2563eb';
-      case 'success': return '#059669';
-      default: return '#6b7280';
+      case "error":
+        return "#dc2626";
+      case "warning":
+        return "#d97706";
+      case "info":
+        return "#2563eb";
+      case "success":
+        return "#059669";
+      default:
+        return "#6b7280";
     }
   }
 }
 
 // Initialize content script
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    const cyberShield = new CyberShieldContent();
-    cyberShield.initialize();
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => {
+    const check = new CheckContent();
+    check.initialize();
   });
 } else {
-  const cyberShield = new CyberShieldContent();
-  cyberShield.initialize();
+  const check = new CheckContent();
+  check.initialize();
 }
+

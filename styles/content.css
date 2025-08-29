@@ -1,10 +1,10 @@
 /**
- * CyberShield Drain - Content Script Styles
- * Styles for injected UI elements and security overlays
+ * Check - Content Script Styles
+ * Styles for overlays, notifications, and page modifications
  */
 
-/* Notification styles */
-.cybershield-notification {
+/* Main notification styles */
+.check-notification {
   position: fixed !important;
   bottom: 20px !important;
   right: 20px !important;
@@ -18,41 +18,41 @@
   font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
   font-size: 14px !important;
   line-height: 1.5 !important;
-  animation: cybershield-slide-up 0.3s ease-out !important;
+  animation: check-slide-up 0.3s ease-out !important;
 }
 
-.cybershield-notification.error {
+.check-notification.error {
   border-left: 4px solid #003049 !important;
   background: #EBF0DF !important;
 }
 
-.cybershield-notification.warning {
+.check-notification.warning {
   border-left: 4px solid #F77F00 !important;
   background: #fffbeb !important;
 }
 
-.cybershield-notification.info {
+.check-notification.info {
   border-left: 4px solid #005C63 !important;
   background: #EBF0DF !important;
 }
 
-.cybershield-notification.success {
+.check-notification.success {
   border-left: 4px solid #005C63 !important;
   background: #EBF0DF !important;
 }
 
-.cybershield-notification .title {
+.check-notification .title {
   font-weight: 600 !important;
   margin-bottom: 4px !important;
   color: #111827 !important;
 }
 
-.cybershield-notification .message {
+.check-notification .message {
   color: #374151 !important;
   margin: 0 !important;
 }
 
-.cybershield-notification .close-btn {
+.check-notification .close-btn {
   position: absolute !important;
   top: 8px !important;
   right: 8px !important;
@@ -65,12 +65,12 @@
   padding: 4px !important;
 }
 
-.cybershield-notification .close-btn:hover {
+.check-notification .close-btn:hover {
   color: #374151 !important;
 }
 
 /* Block overlay styles */
-.cybershield-block-overlay {
+.check-block-overlay {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
@@ -84,7 +84,7 @@
   font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
 }
 
-.cybershield-block-content {
+.check-block-content {
   background: white !important;
   padding: 40px !important;
   border-radius: 12px !important;
@@ -94,21 +94,21 @@
   border: 1px solid #e5e7eb !important;
 }
 
-.cybershield-block-content h1 {
+.check-block-content h1 {
   color: #dc2626 !important;
   margin: 0 0 20px 0 !important;
   font-size: 24px !important;
   font-weight: 600 !important;
 }
 
-.cybershield-block-content p {
+.check-block-content p {
   color: #374151 !important;
   margin: 0 0 24px 0 !important;
   font-size: 16px !important;
   line-height: 1.6 !important;
 }
 
-.cybershield-block-content button {
+.check-block-content button {
   background: #F77F00 !important;
   color: white !important;
   border: none !important;
@@ -120,23 +120,23 @@
   transition: background-color 0.2s !important;
 }
 
-.cybershield-block-content button:hover {
+.check-block-content button:hover {
   background: #E56F00 !important;
 }
 
-.cybershield-block-content .secondary-btn {
+.check-block-content .secondary-btn {
   background: #f3f4f6 !important;
   color: #374151 !important;
   margin-left: 12px !important;
 }
 
-.cybershield-block-content .secondary-btn:hover {
+.check-block-content .secondary-btn:hover {
   background: #e5e7eb !important;
   color: #1f2937 !important;
 }
 
 /* Warning overlay styles */
-.cybershield-warning-overlay {
+.check-warning-overlay {
   position: fixed !important;
   bottom: 20px !important;
   left: 50% !important;
@@ -150,22 +150,22 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
   font-size: 14px !important;
   font-weight: 500 !important;
-  animation: cybershield-slide-up 0.3s ease-out !important;
+  animation: check-slide-up 0.3s ease-out !important;
 }
 
 /* Suspicious element highlighting */
-.cybershield-suspicious {
+.check-suspicious {
   outline: 2px dashed #F77F00 !important;
   outline-offset: 2px !important;
   background-color: rgba(247, 127, 0, 0.1) !important;
 }
 
-.cybershield-hidden {
+.check-hidden {
   display: none !important;
 }
 
 /* Loading indicator */
-.cybershield-loading {
+.check-loading {
   position: fixed !important;
   top: 50% !important;
   left: 50% !important;
@@ -179,7 +179,7 @@
   font-size: 14px !important;
 }
 
-.cybershield-loading::after {
+.check-loading::after {
   content: '' !important;
   display: inline-block !important;
   width: 16px !important;
@@ -187,13 +187,13 @@
   border: 2px solid #ffffff !important;
   border-top: 2px solid transparent !important;
   border-radius: 50% !important;
-  animation: cybershield-spin 1s linear infinite !important;
+  animation: check-spin 1s linear infinite !important;
   margin-left: 10px !important;
   vertical-align: middle !important;
 }
 
 /* Modal styles */
-.cybershield-modal {
+.check-modal {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
@@ -207,7 +207,7 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
-.cybershield-modal-content {
+.check-modal-content {
   background: white !important;
   padding: 30px !important;
   border-radius: 12px !important;
@@ -218,27 +218,27 @@
   overflow-y: auto !important;
 }
 
-.cybershield-modal h2 {
+.check-modal h2 {
   margin: 0 0 20px 0 !important;
   color: #111827 !important;
   font-size: 20px !important;
   font-weight: 600 !important;
 }
 
-.cybershield-modal p {
+.check-modal p {
   color: #374151 !important;
   margin: 0 0 16px 0 !important;
   line-height: 1.6 !important;
 }
 
-.cybershield-modal .button-group {
+.check-modal .button-group {
   display: flex !important;
   gap: 12px !important;
   justify-content: flex-end !important;
   margin-top: 24px !important;
 }
 
-.cybershield-modal button {
+.check-modal button {
   padding: 10px 20px !important;
   border-radius: 6px !important;
   border: 1px solid #d1d5db !important;
@@ -248,29 +248,29 @@
   transition: all 0.2s !important;
 }
 
-.cybershield-modal .primary-btn {
+.check-modal .primary-btn {
   background: #2563eb !important;
   color: white !important;
   border-color: #2563eb !important;
 }
 
-.cybershield-modal .primary-btn:hover {
+.check-modal .primary-btn:hover {
   background: #1d4ed8 !important;
   border-color: #1d4ed8 !important;
 }
 
-.cybershield-modal .secondary-btn {
+.check-modal .secondary-btn {
   background: white !important;
   color: #374151 !important;
 }
 
-.cybershield-modal .secondary-btn:hover {
+.check-modal .secondary-btn:hover {
   background: #f9fafb !important;
   color: #111827 !important;
 }
 
 /* Tooltip styles */
-.cybershield-tooltip {
+.check-tooltip {
   position: absolute !important;
   background: #111827 !important;
   color: white !important;
@@ -283,7 +283,7 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
-.cybershield-tooltip::after {
+.check-tooltip::after {
   content: '' !important;
   position: absolute !important;
   top: 100% !important;
@@ -294,7 +294,7 @@
 }
 
 /* Progress bar */
-.cybershield-progress {
+.check-progress {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
@@ -304,14 +304,14 @@
   z-index: 999999 !important;
 }
 
-.cybershield-progress-bar {
+.check-progress-bar {
   height: 100% !important;
   background: linear-gradient(90deg, #2563eb, #3b82f6) !important;
   transition: width 0.3s ease !important;
 }
 
 /* Animations */
-@keyframes cybershield-slide-in {
+@keyframes check-slide-in {
   from {
     transform: translateX(100%) !important;
     opacity: 0 !important;
@@ -322,7 +322,7 @@
   }
 }
 
-@keyframes cybershield-slide-up {
+@keyframes check-slide-up {
   from {
     transform: translateY(100%) !important;
     opacity: 0 !important;
@@ -333,7 +333,7 @@
   }
 }
 
-@keyframes cybershield-spin {
+@keyframes check-spin {
   from {
     transform: rotate(0deg) !important;
   }
@@ -342,7 +342,7 @@
   }
 }
 
-@keyframes cybershield-fade-in {
+@keyframes check-fade-in {
   from {
     opacity: 0 !important;
   }
@@ -351,7 +351,7 @@
   }
 }
 
-@keyframes cybershield-pulse {
+@keyframes check-pulse {
   0%, 100% {
     opacity: 1 !important;
   }
@@ -361,7 +361,7 @@
 }
 
 /* Security badge */
-.cybershield-security-badge {
+.check-security-badge {
   position: fixed !important;
   bottom: 20px !important;
   right: 20px !important;
@@ -374,38 +374,38 @@
   z-index: 999998 !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-  animation: cybershield-fade-in 0.5s ease-out !important;
+  animation: check-fade-in 0.5s ease-out !important;
 }
 
-.cybershield-security-badge.warning {
+.check-security-badge.warning {
   background: #d97706 !important;
 }
 
-.cybershield-security-badge.error {
+.check-security-badge.error {
   background: #dc2626 !important;
-  animation: cybershield-pulse 2s infinite !important;
+  animation: check-pulse 2s infinite !important;
 }
 
 /* Responsive design */
 @media (max-width: 768px) {
-  .cybershield-notification {
+  .check-notification {
     bottom: 10px !important;
     right: 10px !important;
     left: 10px !important;
     max-width: none !important;
   }
 
-  .cybershield-block-content {
+  .check-block-content {
     margin: 20px !important;
     padding: 30px 20px !important;
   }
 
-  .cybershield-modal-content {
+  .check-modal-content {
     margin: 20px !important;
     padding: 20px !important;
   }
 
-  .cybershield-warning-overlay {
+  .check-warning-overlay {
     left: 10px !important;
     right: 10px !important;
     transform: none !important;
@@ -414,33 +414,34 @@
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {
-  .cybershield-notification {
+  .check-notification {
     border-width: 2px !important;
   }
 
-  .cybershield-block-content {
+  .check-block-content {
     border-width: 2px !important;
   }
 
-  .cybershield-suspicious {
+  .check-suspicious {
     outline-width: 3px !important;
   }
 }
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
-  .cybershield-notification,
-  .cybershield-warning-overlay,
-  .cybershield-modal,
-  .cybershield-security-badge {
+  .check-notification,
+  .check-warning-overlay,
+  .check-modal,
+  .check-security-badge {
     animation: none !important;
   }
 
-  .cybershield-loading::after {
+  .check-loading::after {
     animation: none !important;
   }
 
-  .cybershield-progress-bar {
+  .check-progress-bar {
     transition: none !important;
   }
 }
+

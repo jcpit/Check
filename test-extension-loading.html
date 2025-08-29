@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Extension Loading Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background-color: #fafafa;
+        }
+        .test-title {
+            font-weight: bold;
+            color: #34495e;
+            margin-bottom: 10px;
+        }
+        .result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .progress {
+            margin: 10px 0;
+        }
+        .loading {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛡️ Check Extension Loading Test</h1>
+        
+        <div class="test-section">
+            <div class="test-title">Extension Installation Check</div>
+            <div id="installationResult" class="result info">Testing extension installation...</div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">Content Script Injection Test</div>
+            <div id="contentScriptResult" class="result info">Testing content script availability...</div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">Background Script Communication Test</div>
+            <div id="backgroundResult" class="result info">Testing background script communication...</div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">Detection Engine Test</div>
+            <div id="detectionResult" class="result info">Testing detection engine functionality...</div>
+            <button id="testDetection" onclick="testDetectionEngine()">Test Detection Rules</button>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">Configuration Load Test</div>
+            <div id="configResult" class="result info">Testing configuration loading...</div>
+            <button id="testConfig" onclick="testConfiguration()">Test Configuration</button>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">Overall Status</div>
+            <div id="overallStatus" class="result info">Running tests...</div>
+            <div class="progress">
+                <span id="loadingIndicator" class="loading">⏳</span>
+                <span id="progressText">Initializing tests...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let testResults = {
+            installation: false,
+            contentScript: false,
+            background: false,
+            detection: false,
+            configuration: false
+        };
+
+        function updateResult(elementId, success, message) {
+            const element = document.getElementById(elementId);
+            element.className = 'result ' + (success ? 'success' : 'error');
+            element.textContent = (success ? '✅ ' : '❌ ') + message;
+        }
+
+        function updateProgress(text) {
+            document.getElementById('progressText').textContent = text;
+        }
+
+        async function checkExtensionInstallation() {
+            updateProgress('Checking extension installation...');
+            
+            try {
+                // Check if we're in an extension context
+                if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
+                    updateResult('installationResult', true, 'Extension is installed and accessible');
+                    testResults.installation = true;
+                    return true;
+                } else {
+                    updateResult('installationResult', false, 'Extension not detected - Chrome APIs not available');
+                    return false;
+                }
+            } catch (error) {
+                updateResult('installationResult', false, 'Extension check failed: ' + error.message);
+                return false;
+            }
+        }
+
+        async function checkContentScript() {
+            updateProgress('Checking content script injection...');
+            
+            try {
+                // Wait a moment for content script to load
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Check if content script created the testing bridge
+                if (window.CheckTesting) {
+                    updateResult('contentScriptResult', true, 'Content script loaded and testing bridge available');
+                    testResults.contentScript = true;
+                    return true;
+                } else {
+                    updateResult('contentScriptResult', false, 'Content script not detected - testing bridge not available');
+                    return false;
+                }
+            } catch (error) {
+                updateResult('contentScriptResult', false, 'Content script check failed: ' + error.message);
+                return false;
+            }
+        }
+
+        async function checkBackgroundScript() {
+            updateProgress('Testing background script communication...');
+            
+            try {
+                if (!testResults.installation) {
+                    updateResult('backgroundResult', false, 'Cannot test - extension not installed');
+                    return false;
+                }
+
+                // Try to ping the background script
+                const response = await chrome.runtime.sendMessage({
+                    action: 'ping',
+                    timestamp: Date.now()
+                });
+
+                if (response && response.success) {
+                    updateResult('backgroundResult', true, 'Background script responding: ' + response.message);
+                    testResults.background = true;
+                    return true;
+                } else {
+                    updateResult('backgroundResult', false, 'Background script not responding properly');
+                    return false;
+                }
+            } catch (error) {
+                updateResult('backgroundResult', false, 'Background script communication failed: ' + error.message);
+                return false;
+            }
+        }
+
+        async function testDetectionEngine() {
+            updateProgress('Testing detection engine...');
+            
+            try {
+                if (!testResults.background) {
+                    updateResult('detectionResult', false, 'Cannot test - background script not available');
+                    return false;
+                }
+
+                const response = await chrome.runtime.sendMessage({
+                    action: 'testDetectionEngine',
+                    testData: {
+                        url: window.location.href,
+                        content: document.documentElement.outerHTML.substring(0, 1000)
+                    }
+                });
+
+                if (response && response.success) {
+                    updateResult('detectionResult', true, 
+                        `Detection engine working: ${response.rulesLoaded} rules loaded, ` +
+                        `${response.testsRun} tests completed`);
+                    testResults.detection = true;
+                    return true;
+                } else {
+                    updateResult('detectionResult', false, 
+                        'Detection engine test failed: ' + (response?.error || 'Unknown error'));
+                    return false;
+                }
+            } catch (error) {
+                updateResult('detectionResult', false, 'Detection engine test failed: ' + error.message);
+                return false;
+            }
+        }
+
+        async function testConfiguration() {
+            updateProgress('Testing configuration loading...');
+            
+            try {
+                if (!testResults.background) {
+                    updateResult('configResult', false, 'Cannot test - background script not available');
+                    return false;
+                }
+
+                const response = await chrome.runtime.sendMessage({
+                    action: 'testConfiguration'
+                });
+
+                if (response && response.success) {
+                    updateResult('configResult', true, 
+                        `Configuration loaded: ${response.configModules.join(', ')} modules active`);
+                    testResults.configuration = true;
+                    return true;
+                } else {
+                    updateResult('configResult', false, 
+                        'Configuration test failed: ' + (response?.error || 'Unknown error'));
+                    return false;
+                }
+            } catch (error) {
+                updateResult('configResult', false, 'Configuration test failed: ' + error.message);
+                return false;
+            }
+        }
+
+        function updateOverallStatus() {
+            const passedTests = Object.values(testResults).filter(result => result).length;
+            const totalTests = Object.keys(testResults).length;
+            
+            const element = document.getElementById('overallStatus');
+            const loading = document.getElementById('loadingIndicator');
+            
+            if (passedTests === totalTests) {
+                element.className = 'result success';
+                element.textContent = `✅ All tests passed (${passedTests}/${totalTests}) - Extension is working properly!`;
+                loading.style.display = 'none';
+            } else if (passedTests === 0) {
+                element.className = 'result error';
+                element.textContent = `❌ All tests failed (${passedTests}/${totalTests}) - Extension not working`;
+                loading.style.display = 'none';
+            } else {
+                element.className = 'result warning';
+                element.textContent = `⚠️ Partial functionality (${passedTests}/${totalTests}) - Some components not working`;
+                loading.style.display = 'none';
+            }
+        }
+
+        // Auto-run basic tests when page loads
+        async function runBasicTests() {
+            try {
+                await checkExtensionInstallation();
+                await checkContentScript();
+                await checkBackgroundScript();
+                
+                // Auto-run detection and config tests if background is working
+                if (testResults.background) {
+                    await testDetectionEngine();
+                    await testConfiguration();
+                }
+                
+                updateProgress('Tests completed');
+                updateOverallStatus();
+            } catch (error) {
+                console.error('Test execution error:', error);
+                updateProgress('Test execution failed: ' + error.message);
+                updateOverallStatus();
+            }
+        }
+
+        // Start tests when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(runBasicTests, 500);
+        });
+
+        // Provide manual test functions for buttons
+        window.testDetectionEngine = testDetectionEngine;
+        window.testConfiguration = testConfiguration;
+    </script>
+</body>
+</html>

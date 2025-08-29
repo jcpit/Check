@@ -1,4 +1,4 @@
-# CyberShield Detection Rules Testing Guide
+# Check Detection Rules Testing Guide
 
 ## 🚀 Quick Start
 
@@ -29,7 +29,7 @@ You now have multiple ways to test your detection rules:
 - ❌ Phishing domains (`secure-microsoft-login.com`)
 - Tests the `check_legitimate_domain` rule
 
-### 2. Content Analysis  
+### 2. Content Analysis
 - ✅ Required elements: `loginfmt`, `idPartnerPL`, `urlMsaSignUp`, `flowToken`
 - ✅ Microsoft authentication patterns
 - Tests content detection rules
@@ -92,7 +92,7 @@ Your detection rules are working correctly if:
 Once testing confirms your rules are working:
 
 1. **Deploy to production** - Rules are ready for real-world use
-2. **Monitor performance** - Use the popup statistics to track effectiveness  
+2. **Monitor performance** - Use the popup statistics to track effectiveness
 3. **Refine rules** - Adjust based on false positives/negatives
 4. **Add custom rules** - Extend detection for organization-specific threats
 
@@ -101,7 +101,7 @@ Once testing confirms your rules are working:
 **Fastest way to verify everything works:**
 
 1. Open `test-detection-rules-standalone.html`
-2. Click "Run All Tests" 
+2. Click "Run All Tests"
 3. Look for "✅ DETECTION RULES WORKING" in the summary
 
 This will validate all your detection rules in under 30 seconds!

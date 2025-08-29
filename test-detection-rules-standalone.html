@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberShield Detection Rules - Standalone Test</title>
+    <title>Check Detection Rules - Standalone Test</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -101,7 +101,7 @@
     </div>
 
     <div class="container" style="margin-top: 60px;">
-        <h1>CyberShield Detection Rules - Standalone Test</h1>
+        <h1>Check Detection Rules - Standalone Test</h1>
         <p>This page tests the detection rules logic without requiring the browser extension. Results show how the rules would behave when properly integrated.</p>
 
         <div class="test-grid">
@@ -186,7 +186,7 @@
                 },
                 {
                     id: "check_loginfmt_field",
-                    type: "dom", 
+                    type: "dom",
                     condition: { selectors: ["input[name='loginfmt']"] },
                     description: "Check for loginfmt input field"
                 }
@@ -226,7 +226,7 @@
                 // Check legitimate domains
                 const legitimateDomains = detectionRules.rules
                     .find(r => r.id === 'check_legitimate_domain')?.condition.domains || [];
-                
+
                 for (const domain of legitimateDomains) {
                     if (url.includes(domain)) {
                         analysis.isLegitimate = true;
@@ -279,7 +279,7 @@
 
             static validateReferrer(referrer) {
                 const validReferrers = detectionRules.valid_referrers.referrers;
-                return validReferrers.some(validRef => 
+                return validReferrers.some(validRef =>
                     referrer === validRef || referrer.startsWith(validRef)
                 );
             }
@@ -478,7 +478,7 @@
             for (const result of results) {
                 const status = result.passed ? '✓' : '✗';
                 const statusClass = result.passed ? 'success' : 'error';
-                
+
                 html += `
                     <div style="margin: 5px 0; padding: 5px; border-left: 3px solid ${result.passed ? '#28a745' : '#dc3545'};">
                         <span style="font-weight: bold;">${status}</span>
@@ -497,7 +497,7 @@
         function updateSummary() {
             const summaryDiv = document.getElementById('test-summary');
             const contentDiv = document.getElementById('summary-content');
-            
+
             if (testResults.length === 0) return;
 
             const passed = testResults.filter(r => r.passed).length;
@@ -536,10 +536,10 @@
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 const banner = document.getElementById('statusBanner');
-                
-                if (typeof window.CyberShieldTesting !== 'undefined') {
+
+                if (typeof window.CheckTesting !== 'undefined') {
                     banner.className = 'status-banner extension-connected';
-                    banner.innerHTML = '✅ CyberShield Extension Connected - Live Testing Available';
+                    banner.innerHTML = '✅ Check Extension Connected - Live Testing Available';
                 } else if (typeof chrome !== 'undefined' && chrome.runtime) {
                     banner.className = 'status-banner extension-connected';
                     banner.innerHTML = '🔗 Extension API Available - Limited Live Testing';
