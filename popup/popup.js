@@ -441,11 +441,16 @@ class CheckPopup {
     this.elements.scanCurrentPage.style.display = "none";
     this.elements.pageInfoSection.style.display = "none";
 
-    const urlParam = new URL(this.currentTab.url).searchParams.get("url");
-    if (urlParam) {
-      const defanged = urlParam.replace(/\./g, "[.]");
-      this.elements.blockedUrl.textContent = defanged;
-      this.elements.blockedNotice.style.display = "block";
+    try {
+      const urlParam = new URL(this.currentTab.url).searchParams.get("url");
+      if (urlParam) {
+        const originalUrl = decodeURIComponent(urlParam);
+        const defanged = originalUrl.replace(/\./g, "[.]");
+        this.elements.blockedUrl.textContent = defanged;
+        this.elements.blockedNotice.style.display = "block";
+      }
+    } catch (error) {
+      console.warn("Check: Failed to parse blocked URL:", error);
     }
   }
 
