@@ -408,12 +408,12 @@ We welcome contributions from the community! Please read our [Contributing Guide
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the AGPL-3.0 License - see the [LICENSE](LICENSE) file for details.
 
 ### Third-Party Licenses
 
 - Chrome Extension APIs: Google Chrome License
-- Icons: Various open source licenses (see ATTRIBUTIONS.md)
+- Icons: Various open source licenses (see [ATTRIBUTIONS.md](ATTRIBUTIONS.md))
 
 ## 🆘 Support
 
