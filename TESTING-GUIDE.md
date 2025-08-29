@@ -15,13 +15,13 @@ This guide will help you verify that your Check extension is working properly.
 
 ### 2. Run the Extension Loading Test
 
-1. Open the test page: `test-extension-loading.html` 
-   - Right-click the file in VS Code and select "Open with Live Server" 
+1. Open the test page: `test-extension-loading.html`
+   - Right-click the file in VS Code and select "Open with Live Server"
    - Or navigate to: `file:///c:/Users/JohnDupreyCyberDrain/Documents/GitHub/ProjectX/test-extension-loading.html`
 
 2. The test page will automatically:
    - ✅ Check if extension is installed
-   - ✅ Verify content script injection  
+   - ✅ Verify content script injection
    - ✅ Test background script communication
    - ✅ Test detection engine functionality
    - ✅ Test configuration loading
@@ -30,7 +30,7 @@ This guide will help you verify that your Check extension is working properly.
 
 If everything is working properly, you should see:
 - **Extension Installation Check**: ✅ Extension is installed and accessible
-- **Content Script Injection Test**: ✅ Content script loaded and testing bridge available  
+- **Content Script Injection Test**: ✅ Content script loaded and testing bridge available
 - **Background Script Communication Test**: ✅ Background script responding
 - **Detection Engine Test**: ✅ Detection engine working: X rules loaded, Y tests completed
 - **Configuration Load Test**: ✅ Configuration loaded: ConfigManager, DetectionEngine, PolicyManager modules active
@@ -61,7 +61,7 @@ If tests fail:
 - Check for any error messages in extension details
 - Reload the extension if needed
 
-#### Content Script Issues  
+#### Content Script Issues
 - Check browser console for errors
 - Verify manifest.json has proper content script configuration
 - Reload the page after loading extension

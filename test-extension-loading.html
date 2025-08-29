@@ -93,7 +93,7 @@
 <body>
     <div class="container">
         <h1>🛡️ Check Extension Loading Test</h1>
-        
+
         <div class="test-section">
             <div class="test-title">Extension Installation Check</div>
             <div id="installationResult" class="result info">Testing extension installation...</div>
@@ -152,7 +152,7 @@
 
         async function checkExtensionInstallation() {
             updateProgress('Checking extension installation...');
-            
+
             try {
                 // Check if we're in an extension context
                 if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
@@ -171,11 +171,11 @@
 
         async function checkContentScript() {
             updateProgress('Checking content script injection...');
-            
+
             try {
                 // Wait a moment for content script to load
                 await new Promise(resolve => setTimeout(resolve, 1000));
-                
+
                 // Check if content script created the testing bridge
                 if (window.CheckTesting) {
                     updateResult('contentScriptResult', true, 'Content script loaded and testing bridge available');
@@ -193,7 +193,7 @@
 
         async function checkBackgroundScript() {
             updateProgress('Testing background script communication...');
-            
+
             try {
                 if (!testResults.installation) {
                     updateResult('backgroundResult', false, 'Cannot test - extension not installed');
@@ -222,7 +222,7 @@
 
         async function testDetectionEngine() {
             updateProgress('Testing detection engine...');
-            
+
             try {
                 if (!testResults.background) {
                     updateResult('detectionResult', false, 'Cannot test - background script not available');
@@ -238,13 +238,13 @@
                 });
 
                 if (response && response.success) {
-                    updateResult('detectionResult', true, 
+                    updateResult('detectionResult', true,
                         `Detection engine working: ${response.rulesLoaded} rules loaded, ` +
                         `${response.testsRun} tests completed`);
                     testResults.detection = true;
                     return true;
                 } else {
-                    updateResult('detectionResult', false, 
+                    updateResult('detectionResult', false,
                         'Detection engine test failed: ' + (response?.error || 'Unknown error'));
                     return false;
                 }
@@ -256,7 +256,7 @@
 
         async function testConfiguration() {
             updateProgress('Testing configuration loading...');
-            
+
             try {
                 if (!testResults.background) {
                     updateResult('configResult', false, 'Cannot test - background script not available');
@@ -268,12 +268,12 @@
                 });
 
                 if (response && response.success) {
-                    updateResult('configResult', true, 
+                    updateResult('configResult', true,
                         `Configuration loaded: ${response.configModules.join(', ')} modules active`);
                     testResults.configuration = true;
                     return true;
                 } else {
-                    updateResult('configResult', false, 
+                    updateResult('configResult', false,
                         'Configuration test failed: ' + (response?.error || 'Unknown error'));
                     return false;
                 }
@@ -286,10 +286,10 @@
         function updateOverallStatus() {
             const passedTests = Object.values(testResults).filter(result => result).length;
             const totalTests = Object.keys(testResults).length;
-            
+
             const element = document.getElementById('overallStatus');
             const loading = document.getElementById('loadingIndicator');
-            
+
             if (passedTests === totalTests) {
                 element.className = 'result success';
                 element.textContent = `✅ All tests passed (${passedTests}/${totalTests}) - Extension is working properly!`;
@@ -311,13 +311,13 @@
                 await checkExtensionInstallation();
                 await checkContentScript();
                 await checkBackgroundScript();
-                
+
                 // Auto-run detection and config tests if background is working
                 if (testResults.background) {
                     await testDetectionEngine();
                     await testConfiguration();
                 }
-                
+
                 updateProgress('Tests completed');
                 updateOverallStatus();
             } catch (error) {

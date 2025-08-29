@@ -19,14 +19,9 @@ export class DetectionEngine {
       await this.loadDetectionRules();
       await this.loadDomainLists();
       this.isInitialized = true;
-      console.log(
-        "Check: Detection engine initialized successfully"
-      );
+      console.log("Check: Detection engine initialized successfully");
     } catch (error) {
-      console.error(
-        "Check: Failed to initialize detection engine:",
-        error
-      );
+      console.error("Check: Failed to initialize detection engine:", error);
       throw error;
     }
   }
@@ -52,9 +47,7 @@ export class DetectionEngine {
 
       console.log("Check: Detection rules loaded");
     } catch (error) {
-      console.warn(
-        "Check: Failed to load detection rules, using defaults"
-      );
+      console.warn("Check: Failed to load detection rules, using defaults");
       this.loadDefaultRules();
     }
   }
@@ -420,10 +413,7 @@ export class DetectionEngine {
 
       console.log("Check: Detection rules updated");
     } catch (error) {
-      console.error(
-        "Check: Failed to update detection rules:",
-        error
-      );
+      console.error("Check: Failed to update detection rules:", error);
       throw error;
     }
   }
@@ -803,4 +793,3 @@ export class DetectionEngine {
     }
   }
 }
-

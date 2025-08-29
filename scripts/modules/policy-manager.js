@@ -15,9 +15,9 @@ export class PolicyManager {
     try {
       await this.loadPolicies();
       this.isInitialized = true;
-      console.log('Check: Policy manager initialized successfully');
+      console.log("Check: Policy manager initialized successfully");
     } catch (error) {
-      console.error('Check: Failed to initialize policy manager:', error);
+      console.error("Check: Failed to initialize policy manager:", error);
       throw error;
     }
   }
@@ -26,54 +26,57 @@ export class PolicyManager {
     try {
       // Load enterprise policies from managed storage
       this.enterprisePolicies = await this.loadEnterprisePolicies();
-      
+
       // Load local policies
-      const localPolicies = await chrome.storage.local.get(['policies']);
-      
+      const localPolicies = await chrome.storage.local.get(["policies"]);
+
       // Merge policies with enterprise taking precedence
-      this.policies = this.mergePolicies(localPolicies.policies, this.enterprisePolicies);
-      
+      this.policies = this.mergePolicies(
+        localPolicies.policies,
+        this.enterprisePolicies
+      );
+
       // Set compliance mode based on enterprise policies
       this.complianceMode = this.enterprisePolicies?.complianceMode || false;
-      
-      console.log('Check: Policies loaded successfully');
+
+      console.log("Check: Policies loaded successfully");
     } catch (error) {
-      console.error('Check: Failed to load policies:', error);
+      console.error("Check: Failed to load policies:", error);
       this.loadDefaultPolicies();
     }
   }
 
   async loadEnterprisePolicies() {
     try {
-      const managedPolicies = await chrome.storage.managed.get(['policies']);
+      const managedPolicies = await chrome.storage.managed.get(["policies"]);
       return managedPolicies.policies || {};
     } catch (error) {
-      console.log('Check: No enterprise policies available');
+      console.log("Check: No enterprise policies available");
       return {};
     }
   }
 
   mergePolicies(localPolicies, enterprisePolicies) {
     const defaultPolicies = this.getDefaultPolicies();
-    
+
     // Start with defaults
     let merged = { ...defaultPolicies };
-    
+
     // Apply local policies
     if (localPolicies) {
       merged = { ...merged, ...localPolicies };
     }
-    
+
     // Apply enterprise policies (highest precedence)
     if (enterprisePolicies) {
       merged = { ...merged, ...enterprisePolicies };
-      
+
       // Mark enterprise-enforced policies
       if (enterprisePolicies.enforcedPolicies) {
         merged.enforcedPolicies = enterprisePolicies.enforcedPolicies;
       }
     }
-    
+
     return merged;
   }
 
@@ -82,23 +85,23 @@ export class PolicyManager {
       // Content manipulation policies
       contentManipulation: {
         enabled: true,
-        allowedDomains: ['*'],
+        allowedDomains: ["*"],
         blockedDomains: [],
         allowScriptInjection: true,
         allowStyleInjection: true,
         allowDomModification: true,
-        requireUserConfirmation: false
+        requireUserConfirmation: false,
       },
-      
+
       // URL access policies
       urlAccess: {
         blockMaliciousUrls: true,
         blockPhishingUrls: true,
         allowBypassForAdmins: false,
         logAllAccess: true,
-        enableRealTimeScanning: true
+        enableRealTimeScanning: true,
       },
-      
+
       // Data collection policies
       dataCollection: {
         collectBrowsingHistory: false,
@@ -106,51 +109,51 @@ export class PolicyManager {
         collectUserInput: false,
         logSecurityEvents: true,
         anonymizeData: true,
-        retentionPeriod: 30 // days
+        retentionPeriod: 30, // days
       },
-      
+
       // Privacy policies
       privacy: {
         respectDoNotTrack: true,
         enableIncognitoMode: true,
         disableInPrivateBrowsing: false,
-        shareDataWithThirdParties: false
+        shareDataWithThirdParties: false,
       },
-      
+
       // Security policies
       security: {
         enableCSPEnforcement: true,
         blockMixedContent: true,
         enforceHTTPS: false,
         validateCertificates: true,
-        enableHSTS: true
+        enableHSTS: true,
       },
-      
+
       // User interface policies
       userInterface: {
         showSecurityWarnings: true,
         allowUserOverrides: true,
         enableNotifications: true,
         showBrandingElements: true,
-        customizableTheme: true
+        customizableTheme: true,
       },
-      
+
       // Administrative policies
       administration: {
         allowConfigurationChanges: true,
         requireAdminPassword: false,
         enableRemoteManagement: false,
         autoUpdate: true,
-        telemetryEnabled: false
+        telemetryEnabled: false,
       },
-      
+
       // Compliance policies
       compliance: {
         enableAuditLogging: false,
         requireDigitalSignatures: false,
         enforceDataRetention: false,
-        enableComplianceReporting: false
-      }
+        enableComplianceReporting: false,
+      },
     };
   }
 
@@ -161,39 +164,39 @@ export class PolicyManager {
 
     const result = {
       allowed: true,
-      reason: '',
+      reason: "",
       requiresConfirmation: false,
-      restrictions: []
+      restrictions: [],
     };
 
     try {
       switch (action) {
-        case 'CONTENT_MANIPULATION':
+        case "CONTENT_MANIPULATION":
           return this.checkContentManipulationPolicy(context);
-        
-        case 'URL_ACCESS':
+
+        case "URL_ACCESS":
           return this.checkUrlAccessPolicy(context);
-        
-        case 'DATA_COLLECTION':
+
+        case "DATA_COLLECTION":
           return this.checkDataCollectionPolicy(context);
-        
-        case 'SCRIPT_INJECTION':
+
+        case "SCRIPT_INJECTION":
           return this.checkScriptInjectionPolicy(context);
-        
-        case 'CONFIGURATION_CHANGE':
+
+        case "CONFIGURATION_CHANGE":
           return this.checkConfigurationChangePolicy(context);
-        
-        case 'PRIVACY_MODE':
+
+        case "PRIVACY_MODE":
           return this.checkPrivacyModePolicy(context);
-        
+
         default:
-          result.reason = 'Unknown action';
+          result.reason = "Unknown action";
           return result;
       }
     } catch (error) {
-      console.error('Check: Policy check failed:', error);
+      console.error("Check: Policy check failed:", error);
       result.allowed = false;
-      result.reason = 'Policy check failed';
+      result.reason = "Policy check failed";
       return result;
     }
   }
@@ -202,36 +205,37 @@ export class PolicyManager {
     const policy = this.policies.contentManipulation;
     const result = {
       allowed: policy.enabled,
-      reason: '',
+      reason: "",
       requiresConfirmation: policy.requireUserConfirmation,
-      restrictions: []
+      restrictions: [],
     };
 
     if (!policy.enabled) {
-      result.reason = 'Content manipulation disabled by policy';
+      result.reason = "Content manipulation disabled by policy";
       return result;
     }
 
     // Check domain restrictions
     if (context.domain) {
-      const isBlocked = policy.blockedDomains.some(domain => 
+      const isBlocked = policy.blockedDomains.some((domain) =>
         this.matchesDomain(context.domain, domain)
       );
-      
+
       if (isBlocked) {
         result.allowed = false;
-        result.reason = 'Domain blocked for content manipulation';
+        result.reason = "Domain blocked for content manipulation";
         return result;
       }
 
-      const isAllowed = policy.allowedDomains.includes('*') || 
-        policy.allowedDomains.some(domain => 
+      const isAllowed =
+        policy.allowedDomains.includes("*") ||
+        policy.allowedDomains.some((domain) =>
           this.matchesDomain(context.domain, domain)
         );
-      
+
       if (!isAllowed) {
         result.allowed = false;
-        result.reason = 'Domain not in allowed list for content manipulation';
+        result.reason = "Domain not in allowed list for content manipulation";
         return result;
       }
     }
@@ -239,22 +243,22 @@ export class PolicyManager {
     // Check manipulation type restrictions
     if (context.manipulationType) {
       switch (context.manipulationType) {
-        case 'script':
+        case "script":
           if (!policy.allowScriptInjection) {
             result.allowed = false;
-            result.reason = 'Script injection disabled by policy';
+            result.reason = "Script injection disabled by policy";
           }
           break;
-        case 'style':
+        case "style":
           if (!policy.allowStyleInjection) {
             result.allowed = false;
-            result.reason = 'Style injection disabled by policy';
+            result.reason = "Style injection disabled by policy";
           }
           break;
-        case 'dom':
+        case "dom":
           if (!policy.allowDomModification) {
             result.allowed = false;
-            result.reason = 'DOM modification disabled by policy';
+            result.reason = "DOM modification disabled by policy";
           }
           break;
       }
@@ -267,25 +271,28 @@ export class PolicyManager {
     const policy = this.policies.urlAccess;
     const result = {
       allowed: true,
-      reason: '',
+      reason: "",
       requiresConfirmation: false,
-      restrictions: []
+      restrictions: [],
     };
 
     // Check if URL blocking is enabled
     if (!policy.blockMaliciousUrls && !policy.blockPhishingUrls) {
-      result.reason = 'URL blocking disabled';
+      result.reason = "URL blocking disabled";
       return result;
     }
 
     // Check threat level
     if (context.threatLevel) {
-      if (context.threatLevel === 'malicious' && policy.blockMaliciousUrls) {
+      if (context.threatLevel === "malicious" && policy.blockMaliciousUrls) {
         result.allowed = false;
-        result.reason = 'Malicious URL blocked by policy';
-      } else if (context.threatLevel === 'phishing' && policy.blockPhishingUrls) {
+        result.reason = "Malicious URL blocked by policy";
+      } else if (
+        context.threatLevel === "phishing" &&
+        policy.blockPhishingUrls
+      ) {
         result.allowed = false;
-        result.reason = 'Phishing URL blocked by policy';
+        result.reason = "Phishing URL blocked by policy";
       }
     }
 
@@ -293,7 +300,7 @@ export class PolicyManager {
     if (!result.allowed && policy.allowBypassForAdmins && context.isAdmin) {
       result.allowed = true;
       result.requiresConfirmation = true;
-      result.reason = 'Admin bypass available';
+      result.reason = "Admin bypass available";
     }
 
     return result;
@@ -303,42 +310,42 @@ export class PolicyManager {
     const policy = this.policies.dataCollection;
     const result = {
       allowed: false,
-      reason: '',
+      reason: "",
       requiresConfirmation: false,
-      restrictions: []
+      restrictions: [],
     };
 
     switch (context.dataType) {
-      case 'browsing_history':
+      case "browsing_history":
         result.allowed = policy.collectBrowsingHistory;
-        result.reason = policy.collectBrowsingHistory ? 
-          'Browsing history collection allowed' : 
-          'Browsing history collection disabled';
+        result.reason = policy.collectBrowsingHistory
+          ? "Browsing history collection allowed"
+          : "Browsing history collection disabled";
         break;
-      
-      case 'form_data':
+
+      case "form_data":
         result.allowed = policy.collectFormData;
-        result.reason = policy.collectFormData ? 
-          'Form data collection allowed' : 
-          'Form data collection disabled';
+        result.reason = policy.collectFormData
+          ? "Form data collection allowed"
+          : "Form data collection disabled";
         break;
-      
-      case 'user_input':
+
+      case "user_input":
         result.allowed = policy.collectUserInput;
-        result.reason = policy.collectUserInput ? 
-          'User input collection allowed' : 
-          'User input collection disabled';
+        result.reason = policy.collectUserInput
+          ? "User input collection allowed"
+          : "User input collection disabled";
         break;
-      
-      case 'security_events':
+
+      case "security_events":
         result.allowed = policy.logSecurityEvents;
-        result.reason = policy.logSecurityEvents ? 
-          'Security event logging allowed' : 
-          'Security event logging disabled';
+        result.reason = policy.logSecurityEvents
+          ? "Security event logging allowed"
+          : "Security event logging disabled";
         break;
-      
+
       default:
-        result.reason = 'Unknown data type';
+        result.reason = "Unknown data type";
     }
 
     return result;
@@ -347,23 +354,23 @@ export class PolicyManager {
   checkScriptInjectionPolicy(context) {
     const policy = this.policies.contentManipulation;
     const securityPolicy = this.policies.security;
-    
+
     const result = {
       allowed: policy.allowScriptInjection,
-      reason: '',
+      reason: "",
       requiresConfirmation: policy.requireUserConfirmation,
-      restrictions: []
+      restrictions: [],
     };
 
     if (!policy.allowScriptInjection) {
-      result.reason = 'Script injection disabled by policy';
+      result.reason = "Script injection disabled by policy";
       return result;
     }
 
     // Check CSP enforcement
     if (securityPolicy.enableCSPEnforcement && context.hasCSP) {
-      result.restrictions.push('CSP_ENFORCEMENT');
-      result.reason = 'Script injection restricted by CSP policy';
+      result.restrictions.push("CSP_ENFORCEMENT");
+      result.reason = "Script injection restricted by CSP policy";
     }
 
     return result;
@@ -373,22 +380,24 @@ export class PolicyManager {
     const policy = this.policies.administration;
     const result = {
       allowed: policy.allowConfigurationChanges,
-      reason: '',
+      reason: "",
       requiresConfirmation: policy.requireAdminPassword,
-      restrictions: []
+      restrictions: [],
     };
 
     if (!policy.allowConfigurationChanges) {
-      result.reason = 'Configuration changes disabled by policy';
+      result.reason = "Configuration changes disabled by policy";
       return result;
     }
 
     // Check if this is an enterprise-enforced setting
-    if (this.policies.enforcedPolicies && 
-        context.configKey && 
-        this.policies.enforcedPolicies[context.configKey]?.locked) {
+    if (
+      this.policies.enforcedPolicies &&
+      context.configKey &&
+      this.policies.enforcedPolicies[context.configKey]?.locked
+    ) {
       result.allowed = false;
-      result.reason = 'Configuration locked by enterprise policy';
+      result.reason = "Configuration locked by enterprise policy";
       return result;
     }
 
@@ -399,32 +408,32 @@ export class PolicyManager {
     const policy = this.policies.privacy;
     const result = {
       allowed: true,
-      reason: '',
+      reason: "",
       requiresConfirmation: false,
-      restrictions: []
+      restrictions: [],
     };
 
     if (context.isIncognito && policy.disableInPrivateBrowsing) {
       result.allowed = false;
-      result.reason = 'Extension disabled in private browsing mode';
+      result.reason = "Extension disabled in private browsing mode";
       return result;
     }
 
     if (context.doNotTrack && policy.respectDoNotTrack) {
-      result.restrictions.push('DO_NOT_TRACK');
-      result.reason = 'Respecting Do Not Track preference';
+      result.restrictions.push("DO_NOT_TRACK");
+      result.reason = "Respecting Do Not Track preference";
     }
 
     return result;
   }
 
   async checkContentManipulation(domain) {
-    return this.checkPolicy('CONTENT_MANIPULATION', { domain });
+    return this.checkPolicy("CONTENT_MANIPULATION", { domain });
   }
 
   matchesDomain(testDomain, policyDomain) {
-    if (policyDomain === '*') return true;
-    if (policyDomain.startsWith('*.')) {
+    if (policyDomain === "*") return true;
+    if (policyDomain.startsWith("*.")) {
       return testDomain.endsWith(policyDomain.substring(2));
     }
     return testDomain === policyDomain;
@@ -434,23 +443,25 @@ export class PolicyManager {
     try {
       // Prevent updating enterprise-enforced policies
       if (this.enterprisePolicies?.enforcedPolicies) {
-        Object.keys(this.enterprisePolicies.enforcedPolicies).forEach(policy => {
-          if (this.enterprisePolicies.enforcedPolicies[policy].locked) {
-            delete newPolicies[policy];
+        Object.keys(this.enterprisePolicies.enforcedPolicies).forEach(
+          (policy) => {
+            if (this.enterprisePolicies.enforcedPolicies[policy].locked) {
+              delete newPolicies[policy];
+            }
           }
-        });
+        );
       }
 
       // Merge with existing policies
       const updatedPolicies = { ...this.policies, ...newPolicies };
-      
+
       // Save to storage
       await chrome.storage.local.set({ policies: updatedPolicies });
       this.policies = updatedPolicies;
-      
-      console.log('Check: Policies updated');
+
+      console.log("Check: Policies updated");
     } catch (error) {
-      console.error('Check: Failed to update policies:', error);
+      console.error("Check: Failed to update policies:", error);
       throw error;
     }
   }
@@ -472,7 +483,7 @@ export class PolicyManager {
 
   async generateComplianceReport() {
     if (!this.complianceMode) {
-      throw new Error('Compliance mode not enabled');
+      throw new Error("Compliance mode not enabled");
     }
 
     const report = {
@@ -481,7 +492,7 @@ export class PolicyManager {
       policies: this.policies,
       enforcedPolicies: this.policies?.enforcedPolicies || {},
       violations: await this.getComplianceViolations(),
-      auditLog: await this.getAuditLog()
+      auditLog: await this.getAuditLog(),
     };
 
     return report;
@@ -495,10 +506,10 @@ export class PolicyManager {
 
   async getAuditLog() {
     try {
-      const auditLog = await chrome.storage.local.get(['auditLog']);
+      const auditLog = await chrome.storage.local.get(["auditLog"]);
       return auditLog.auditLog || [];
     } catch (error) {
-      console.error('Check: Failed to get audit log:', error);
+      console.error("Check: Failed to get audit log:", error);
       return [];
     }
   }
@@ -508,11 +519,11 @@ export class PolicyManager {
       const auditEntry = {
         timestamp: new Date().toISOString(),
         event,
-        user: 'system', // Could be enhanced to track actual users
-        source: 'policy_manager'
+        user: "system", // Could be enhanced to track actual users
+        source: "policy_manager",
       };
 
-      const auditLog = await chrome.storage.local.get(['auditLog']);
+      const auditLog = await chrome.storage.local.get(["auditLog"]);
       const logs = auditLog.auditLog || [];
       logs.push(auditEntry);
 
@@ -523,13 +534,12 @@ export class PolicyManager {
 
       await chrome.storage.local.set({ auditLog: logs });
     } catch (error) {
-      console.error('Check: Failed to log audit event:', error);
+      console.error("Check: Failed to log audit event:", error);
     }
   }
 
   loadDefaultPolicies() {
     this.policies = this.getDefaultPolicies();
-    console.log('Check: Using default policies');
+    console.log("Check: Using default policies");
   }
 }
-

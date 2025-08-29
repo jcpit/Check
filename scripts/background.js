@@ -17,9 +17,7 @@ class CheckBackground {
 
   async initialize() {
     try {
-    console.log(
-      "Check: Initializing background service worker..."
-    );      // Load configuration and policies
+      console.log("Check: Initializing background service worker..."); // Load configuration and policies
       await this.configManager.loadConfig();
       await this.policyManager.loadPolicies();
       await this.detectionEngine.initialize();
@@ -27,9 +25,7 @@ class CheckBackground {
       this.setupEventListeners();
       this.isInitialized = true;
 
-      console.log(
-        "Check: Background service worker initialized successfully"
-      );
+      console.log("Check: Background service worker initialized successfully");
     } catch (error) {
       console.error(
         "Check: Failed to initialize background service worker:",
@@ -76,10 +72,7 @@ class CheckBackground {
   }
 
   async handleInstalled(details) {
-    console.log(
-      "Check: Extension installed/updated:",
-      details.reason
-    );
+    console.log("Check: Extension installed/updated:", details.reason);
 
     if (details.reason === "install") {
       // Set default configuration
@@ -129,44 +122,47 @@ class CheckBackground {
     try {
       // Handle both message.type and message.action for compatibility
       const messageType = message.type || message.action;
-      
+
       switch (messageType) {
         case "ping":
-          sendResponse({ 
-            success: true, 
+          sendResponse({
+            success: true,
             message: "Check background script is running",
             timestamp: new Date().toISOString(),
-            initialized: this.isInitialized
+            initialized: this.isInitialized,
           });
           break;
 
         case "testDetectionEngine":
           try {
             const detectionTest = {
-              rulesLoaded: this.detectionEngine?.detectionRules ? 
-                Object.keys(this.detectionEngine.detectionRules).length : 0,
+              rulesLoaded: this.detectionEngine?.detectionRules
+                ? Object.keys(this.detectionEngine.detectionRules).length
+                : 0,
               engineInitialized: this.detectionEngine?.isInitialized || false,
-              testsRun: 0
+              testsRun: 0,
             };
-            
+
             if (message.testData) {
-              const testResults = await this.testDetectionRules([{
-                id: 'quick_test',
-                type: 'url_analysis',
-                input: { url: message.testData.url },
-                expected: { analyzed: true }
-              }]);
+              const testResults = await this.testDetectionRules([
+                {
+                  id: "quick_test",
+                  type: "url_analysis",
+                  input: { url: message.testData.url },
+                  expected: { analyzed: true },
+                },
+              ]);
               detectionTest.testsRun = testResults.summary.total;
             }
-            
-            sendResponse({ 
-              success: true, 
-              ...detectionTest
+
+            sendResponse({
+              success: true,
+              ...detectionTest,
             });
           } catch (error) {
-            sendResponse({ 
-              success: false, 
-              error: error.message 
+            sendResponse({
+              success: false,
+              error: error.message,
             });
           }
           break;
@@ -175,21 +171,24 @@ class CheckBackground {
           try {
             const configTest = {
               configModules: [],
-              initialized: this.isInitialized
+              initialized: this.isInitialized,
             };
-            
-            if (this.configManager) configTest.configModules.push('ConfigManager');
-            if (this.detectionEngine) configTest.configModules.push('DetectionEngine');
-            if (this.policyManager) configTest.configModules.push('PolicyManager');
-            
-            sendResponse({ 
-              success: true, 
-              ...configTest
+
+            if (this.configManager)
+              configTest.configModules.push("ConfigManager");
+            if (this.detectionEngine)
+              configTest.configModules.push("DetectionEngine");
+            if (this.policyManager)
+              configTest.configModules.push("PolicyManager");
+
+            sendResponse({
+              success: true,
+              ...configTest,
             });
           } catch (error) {
-            sendResponse({ 
-              success: false, 
-              error: error.message 
+            sendResponse({
+              success: false,
+              error: error.message,
             });
           }
           break;
@@ -275,10 +274,7 @@ class CheckBackground {
         files: ["scripts/content.js"],
       });
     } catch (error) {
-      console.error(
-        "Check: Failed to inject content script:",
-        error
-      );
+      console.error("Check: Failed to inject content script:", error);
     }
   }
 
@@ -771,4 +767,3 @@ check.initialize();
 if (typeof module !== "undefined" && module.exports) {
   module.exports = CheckBackground;
 }
-

@@ -14,20 +14,24 @@ export class ConfigManager {
     try {
       // Load enterprise configuration from managed storage (GPO/Intune)
       this.enterpriseConfig = await this.loadEnterpriseConfig();
-      
+
       // Load local configuration
-      const localConfig = await chrome.storage.local.get(['config']);
-      
+      const localConfig = await chrome.storage.local.get(["config"]);
+
       // Load branding configuration
       this.brandingConfig = await this.loadBrandingConfig();
-      
+
       // Merge configurations with enterprise taking precedence
-      this.config = this.mergeConfigurations(localConfig.config, this.enterpriseConfig, this.brandingConfig);
-      
-      console.log('Check: Configuration loaded successfully');
+      this.config = this.mergeConfigurations(
+        localConfig.config,
+        this.enterpriseConfig,
+        this.brandingConfig
+      );
+
+      console.log("Check: Configuration loaded successfully");
       return this.config;
     } catch (error) {
-      console.error('Check: Failed to load configuration:', error);
+      console.error("Check: Failed to load configuration:", error);
       throw error;
     }
   }
@@ -36,15 +40,15 @@ export class ConfigManager {
     try {
       // Attempt to load from managed storage (deployed via GPO/Intune)
       const managedConfig = await chrome.storage.managed.get(null);
-      
+
       if (Object.keys(managedConfig).length > 0) {
-        console.log('Check: Enterprise configuration found');
+        console.log("Check: Enterprise configuration found");
         return managedConfig;
       }
-      
+
       return {};
     } catch (error) {
-      console.log('Check: No enterprise configuration available');
+      console.log("Check: No enterprise configuration available");
       return {};
     }
   }
@@ -52,32 +56,34 @@ export class ConfigManager {
   async loadBrandingConfig() {
     try {
       // Load branding configuration from config file
-      const response = await fetch(chrome.runtime.getURL('config/branding.json'));
+      const response = await fetch(
+        chrome.runtime.getURL("config/branding.json")
+      );
       const brandingConfig = await response.json();
       return brandingConfig;
     } catch (error) {
-      console.log('Check: Using default branding configuration');
+      console.log("Check: Using default branding configuration");
       return this.getDefaultBrandingConfig();
     }
   }
 
   mergeConfigurations(localConfig, enterpriseConfig, brandingConfig) {
     const defaultConfig = this.getDefaultConfig();
-    
+
     // Merge in order of precedence: enterprise > local > branding > default
     const merged = {
       ...defaultConfig,
       ...brandingConfig,
       ...localConfig,
-      ...enterpriseConfig
+      ...enterpriseConfig,
     };
 
     // Ensure enterprise policies cannot be overridden
     if (enterpriseConfig.enforcedPolicies) {
       merged.enforcedPolicies = enterpriseConfig.enforcedPolicies;
-      
+
       // Lock configuration options that are enterprise-managed
-      Object.keys(enterpriseConfig.enforcedPolicies).forEach(policy => {
+      Object.keys(enterpriseConfig.enforcedPolicies).forEach((policy) => {
         if (enterpriseConfig.enforcedPolicies[policy].locked) {
           merged[policy] = enterpriseConfig[policy];
         }
@@ -92,85 +98,87 @@ export class ConfigManager {
       // Extension settings
       extensionEnabled: true,
       debugMode: false,
-      
+
       // Security settings
       blockMaliciousUrls: true,
       blockPhishingAttempts: true,
       enableContentManipulation: true,
       enableUrlMonitoring: true,
-      
+
       // Detection settings
       detectionRules: {
         enableCustomRules: true,
-        customRulesUrl: '',
+        customRulesUrl: "",
         updateInterval: 3600000, // 1 hour
-        strictMode: false
+        strictMode: false,
       },
-      
+
       // Logging settings
       enableLogging: true,
-      logLevel: 'info',
+      logLevel: "info",
       maxLogEntries: 1000,
-      
+
       // UI settings
       showNotifications: true,
       notificationDuration: 5000,
-      
+
       // Performance settings
       scanDelay: 100,
       maxScanDepth: 10,
-      
+
       // Whitelist/Blacklist
       whitelistedDomains: [],
       blacklistedDomains: [],
-      
+
       // Enterprise features
       enterpriseMode: false,
       centralManagement: false,
-      reportingEndpoint: '',
-      
+      reportingEndpoint: "",
+
       // Feature flags
       features: {
         urlBlocking: true,
         contentInjection: true,
         realTimeScanning: true,
-        behaviorAnalysis: false
-      }
+        behaviorAnalysis: false,
+      },
     };
   }
 
   getDefaultBrandingConfig() {
     return {
       // Company branding
-      companyName: 'Check',
-      productName: 'Check',
-      version: '1.0.0',
-      
+      companyName: "Check",
+      productName: "Check",
+      version: "1.0.0",
+
       // Visual branding
-      primaryColor: '#2563eb',
-      secondaryColor: '#64748b',
-      logoUrl: 'images/logo.png',
-      faviconUrl: 'images/favicon.ico',
-      
+      primaryColor: "#2563eb",
+      secondaryColor: "#64748b",
+      logoUrl: "images/logo.png",
+      faviconUrl: "images/favicon.ico",
+
       // Contact information
-      supportEmail: 'support@check.com',
-      supportUrl: 'https://support.check.com',
-      privacyPolicyUrl: 'https://check.com/privacy',
-      termsOfServiceUrl: 'https://check.com/terms',
-      
+      supportEmail: "support@check.com",
+      supportUrl: "https://support.check.com",
+      privacyPolicyUrl: "https://check.com/privacy",
+      termsOfServiceUrl: "https://check.com/terms",
+
       // Customizable text
-      welcomeMessage: 'Welcome to Check - Your Enterprise Web Security Solution',
-      blockedPageTitle: 'Access Blocked by Check',
-      blockedPageMessage: 'This page has been blocked by your organization\'s security policy.',
-      
+      welcomeMessage:
+        "Welcome to Check - Your Enterprise Web Security Solution",
+      blockedPageTitle: "Access Blocked by Check",
+      blockedPageMessage:
+        "This page has been blocked by your organization's security policy.",
+
       // Feature customization
       showCompanyBranding: true,
-      customCss: '',
-      
+      customCss: "",
+
       // License information
-      licenseKey: '',
-      licensedTo: '',
-      licenseExpiry: null
+      licenseKey: "",
+      licensedTo: "",
+      licenseExpiry: null,
     };
   }
 
@@ -184,30 +192,36 @@ export class ConfigManager {
     try {
       const currentConfig = await this.getConfig();
       const updatedConfig = { ...currentConfig, ...updates };
-      
+
       // Validate that enterprise-enforced policies are not being modified
       if (this.enterpriseConfig?.enforcedPolicies) {
-        Object.keys(this.enterpriseConfig.enforcedPolicies).forEach(policy => {
-          if (this.enterpriseConfig.enforcedPolicies[policy].locked && 
-              updates[policy] !== undefined && 
-              updates[policy] !== this.enterpriseConfig[policy]) {
-            throw new Error(`Policy '${policy}' is locked by enterprise configuration`);
+        Object.keys(this.enterpriseConfig.enforcedPolicies).forEach(
+          (policy) => {
+            if (
+              this.enterpriseConfig.enforcedPolicies[policy].locked &&
+              updates[policy] !== undefined &&
+              updates[policy] !== this.enterpriseConfig[policy]
+            ) {
+              throw new Error(
+                `Policy '${policy}' is locked by enterprise configuration`
+              );
+            }
           }
-        });
+        );
       }
-      
+
       await chrome.storage.local.set({ config: updatedConfig });
       this.config = updatedConfig;
-      
+
       // Notify other components of configuration change
       chrome.runtime.sendMessage({
-        type: 'CONFIG_UPDATED',
-        config: updatedConfig
+        type: "CONFIG_UPDATED",
+        config: updatedConfig,
       });
-      
+
       return updatedConfig;
     } catch (error) {
-      console.error('Check: Failed to update configuration:', error);
+      console.error("Check: Failed to update configuration:", error);
       throw error;
     }
   }
@@ -235,9 +249,11 @@ export class ConfigManager {
 
   async migrateConfig(previousVersion) {
     try {
-      console.log(`Check: Migrating configuration from version ${previousVersion}`);
-      
-      const currentConfig = await chrome.storage.local.get(['config']);
+      console.log(
+        `Check: Migrating configuration from version ${previousVersion}`
+      );
+
+      const currentConfig = await chrome.storage.local.get(["config"]);
       if (!currentConfig.config) return;
 
       // Add migration logic here for future versions
@@ -246,24 +262,24 @@ export class ConfigManager {
       //   // Migration logic for 1.1.0
       // }
 
-      console.log('Check: Configuration migration completed');
+      console.log("Check: Configuration migration completed");
     } catch (error) {
-      console.error('Check: Configuration migration failed:', error);
+      console.error("Check: Configuration migration failed:", error);
     }
   }
 
   isVersionLessThan(version1, version2) {
-    const v1Parts = version1.split('.').map(Number);
-    const v2Parts = version2.split('.').map(Number);
-    
+    const v1Parts = version1.split(".").map(Number);
+    const v2Parts = version2.split(".").map(Number);
+
     for (let i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
       const v1Part = v1Parts[i] || 0;
       const v2Part = v2Parts[i] || 0;
-      
+
       if (v1Part < v2Part) return true;
       if (v1Part > v2Part) return false;
     }
-    
+
     return false;
   }
 
@@ -274,36 +290,35 @@ export class ConfigManager {
       config,
       branding: this.brandingConfig,
       timestamp: new Date().toISOString(),
-      version: chrome.runtime.getManifest().version
+      version: chrome.runtime.getManifest().version,
     };
-    
+
     return JSON.stringify(exportData, null, 2);
   }
 
   async importConfiguration(configJson) {
     try {
       const importData = JSON.parse(configJson);
-      
+
       // Validate import data
       if (!importData.config) {
-        throw new Error('Invalid configuration format');
+        throw new Error("Invalid configuration format");
       }
-      
+
       // Update configuration
       await this.updateConfig(importData.config);
-      
+
       // Update branding if provided
       if (importData.branding) {
         await chrome.storage.local.set({ branding: importData.branding });
         this.brandingConfig = importData.branding;
       }
-      
-      console.log('Check: Configuration imported successfully');
+
+      console.log("Check: Configuration imported successfully");
       return true;
     } catch (error) {
-      console.error('Check: Failed to import configuration:', error);
+      console.error("Check: Failed to import configuration:", error);
       throw error;
     }
   }
 }
-

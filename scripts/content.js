@@ -37,10 +37,7 @@ class CheckContent {
       this.isInitialized = true;
       console.log("Check: Content script initialized successfully");
     } catch (error) {
-      console.error(
-        "Check: Failed to initialize content script:",
-        error
-      );
+      console.error("Check: Failed to initialize content script:", error);
     }
   }
 
@@ -993,4 +990,3 @@ if (document.readyState === "loading") {
   const check = new CheckContent();
   check.initialize();
 }
-
