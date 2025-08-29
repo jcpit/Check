@@ -158,11 +158,11 @@
   },
   
   "support": {
-    "documentationUrl": "https://docs.cybershield.com/drain",
-    "knowledgeBaseUrl": "https://support.cybershield.com/kb",
-    "communityForumUrl": "https://community.cybershield.com",
-    "statusPageUrl": "https://status.cybershield.com",
-    "feedbackUrl": "https://feedback.cybershield.com",
+    "documentationUrl": "https://docs.check.com/drain",
+    "knowledgeBaseUrl": "https://support.check.com/kb",
+    "communityForumUrl": "https://community.check.com",
+    "statusPageUrl": "https://status.check.com",
+    "feedbackUrl": "https://feedback.check.com",
     "supportHours": "24/7 for Enterprise customers, Business hours for Standard",
     "supportChannels": [
       "email",
@@ -189,14 +189,14 @@
     "autoUpdateEnabled": true,
     "updateChannel": "stable",
     "updateCheckInterval": 86400000,
-    "releaseNotesUrl": "https://releases.cybershield.com/drain"
+    "releaseNotesUrl": "https://releases.check.com/drain"
   },
   
   "metadata": {
     "created": "2024-01-01T00:00:00Z",
     "modified": "2024-01-01T00:00:00Z",
-    "author": "CyberShield Technologies",
-    "maintainer": "security-team@cybershield.com",
+    "author": "Check Technologies",
+    "maintainer": "security-team@check.com",
     "schema_version": "1.0"
   }
 }
