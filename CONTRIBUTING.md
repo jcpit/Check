@@ -23,6 +23,10 @@ Thanks for taking the time to contribute! These guidelines help keep contributio
   - Options and popup pages function correctly.
 - Include a brief summary of manual testing in your pull request.
 
+## Reporting Security Issues
+
+Security vulnerabilities should be reported privately. Refer to [SECURITY.md](SECURITY.md) for disclosure instructions instead of opening public issues or pull requests.
+
 ## Pull Request Workflow
 1. Create a topic branch from `main`.
 2. Make your changes and commit them following the guidelines above.

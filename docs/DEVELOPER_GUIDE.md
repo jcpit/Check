@@ -16,3 +16,7 @@ The extension runs directly in the browser without a build step. During developm
 
 ## Testing
 This repository does not include an automated test suite or npm scripts. Validate changes by loading the extension and exercising features manually.
+
+## Security Reporting
+
+If you encounter a potential security issue while developing or reviewing code, please follow the guidelines in [SECURITY.md](../SECURITY.md) and report it privately.
