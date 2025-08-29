@@ -4,7 +4,7 @@ This project is an open source Chrome extension and we take its security serious
 
 ## Reporting a Vulnerability
 
-Email details to [security@cybershield.com](mailto:security@cybershield.com). Please include steps to reproduce, extension version, browser version, and any relevant logs. You may request our PGP key for encrypted communication. Avoid publicly disclosing the issue until we confirm a fix.
+Email details to [security@check.com](mailto:security@check.com). Please include steps to reproduce, extension version, browser version, and any relevant logs. You may request our PGP key for encrypted communication. Avoid publicly disclosing the issue until we confirm a fix.
 
 ## Disclosure Guidelines
 
@@ -21,7 +21,7 @@ Email details to [security@cybershield.com](mailto:security@cybershield.com). Pl
 
 ## Contact
 
-- Email: [security@cybershield.com](mailto:security@cybershield.com)
+- Email: [security@check.com](mailto:security@check.com)
 - GitHub Security Advisories: use the repository's "Report a vulnerability" feature.
 
 Thank you for helping keep ProjectX secure.

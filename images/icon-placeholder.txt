@@ -1,4 +1,4 @@
-# CyberShield Drain - Icon Placeholders
+# Check - Icon Placeholders
 
 This directory should contain the following icon files for the extension:
 

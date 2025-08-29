@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Access Blocked - CyberShield Drain</title>
+    <title>Access Blocked - Check</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <style>
         * {
@@ -223,7 +223,7 @@
 
         <div class="footer">
             <div id="companyBranding">
-                Protected by <strong id="companyName">CyberDrain</strong>
+                Protected by <strong id="companyName">Check</strong>
             </div>
             <div style="margin-top: 8px;">
                 For support, contact your IT administrator
@@ -278,7 +278,7 @@
         }
 
         function reportIssue() {
-            const subject = encodeURIComponent('CyberShield Drain - False Positive Report');
+            const subject = encodeURIComponent('Check - False Positive Report');
             const body = encodeURIComponent(`
 Blocked URL: ${document.getElementById('blockedUrl').textContent}
 Block Reason: ${document.getElementById('blockReason').textContent}
@@ -290,7 +290,7 @@ Additional details:
 [Please provide any additional context about why you believe this is a false positive]
             `);
             
-            window.location.href = `mailto:support@cybershield.com?subject=${subject}&body=${body}`;
+            window.location.href = `mailto:support@check.com?subject=${subject}&body=${body}`;
         }
 
         function contactAdmin() {
@@ -302,7 +302,7 @@ Additional details:
             try {
                 // This would normally load from chrome.storage or extension API
                 // For now, we'll use default branding
-                const companyName = 'CyberShield Drain';
+                const companyName = 'Check';
                 document.getElementById('companyName').textContent = companyName;
                 document.title = `Access Blocked - ${companyName}`;
             } catch (error) {

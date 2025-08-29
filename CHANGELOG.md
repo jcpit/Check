@@ -146,7 +146,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - test-detection-rules-standalone.html
   - test-detection-rules.html
   - test-extension-loading.html
-- Renamed CyberShield references to Check across code and documentation.
+- Renamed legacy references to Check across code and documentation.
 
 ### d94508e - Merge branch 'main' of https://github.com/CyberDrain/ProjectX
 - Contributor: rvdwegen
@@ -440,7 +440,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.0] - 2025-08-29
 
-### 3573df9 - Initial commit: CyberShield Drain MV3 Extension - Enterprise-grade web security and content manipulation extension with white-label capabilities
+### 3573df9 - Initial commit: Check MV3 Extension - Enterprise-grade web security and content manipulation extension with white-label capabilities
 - Contributor: rvdwegen
 - Date: 2025-08-29T11:51:42+02:00
 - Files changed:
