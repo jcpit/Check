@@ -103,6 +103,8 @@ async function startDetection(rules) {
           }
           break;
         case "network": {
+          // Treat matching resources from the required domain as legitimate.
+          // Suspicious sources simply don't contribute to the score.
           const nodes = document.querySelectorAll("[src], link[rel='stylesheet'][href]");
           for (const n of nodes) {
             const url = n.src || n.href;
