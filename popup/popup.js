@@ -477,10 +477,15 @@ class CheckPopup {
   }
 
   updateSecurityStatus(analysis) {
-    if (analysis.isBlocked) {
+    const hasThreats = analysis.threats && analysis.threats.length > 0;
+    const isBlocked = analysis.isBlocked;
+    const isSuspicious =
+      analysis.isSuspicious !== undefined ? analysis.isSuspicious : hasThreats;
+
+    if (isBlocked) {
       this.showSecurityBadge("danger", "Blocked");
       this.showThreats(analysis.threats);
-    } else if (analysis.isSuspicious) {
+    } else if (isSuspicious) {
       this.showSecurityBadge("warning", "Suspicious");
       this.showThreats(analysis.threats);
     } else {
