@@ -255,11 +255,13 @@ class CheckContent {
             );
           });
 
-          if (urlAnalysis) {
-            analysis.isBlocked =
-              analysis.isBlocked || urlAnalysis.isBlocked;
-            analysis.isSuspicious =
-              analysis.isSuspicious || urlAnalysis.isSuspicious;
+          if (urlAnalysis.isBlocked !== undefined || urlAnalysis.isSuspicious !== undefined) {
+            if (urlAnalysis.isBlocked !== undefined) {
+              analysis.isBlocked = analysis.isBlocked || urlAnalysis.isBlocked;
+            }
+            if (urlAnalysis.isSuspicious !== undefined) {
+              analysis.isSuspicious = analysis.isSuspicious || urlAnalysis.isSuspicious;
+            }
           }
 
           sendResponse({ success: true, analysis });
