@@ -104,8 +104,12 @@ async function startDetection(rules) {
           break;
         case "network": {
           // Treat matching resources from the required domain as legitimate.
-          // Suspicious sources simply don't contribute to the score.
-          const nodes = document.querySelectorAll("[src], link[rel='stylesheet'][href]");
+          // We intentionally add points only for required domains; non-matching
+          // domains simply don't contribute to the score and are handled by the
+          // full DetectionEngine.
+          const nodes = document.querySelectorAll(
+            "[src], link[rel='stylesheet'][href]"
+          );
           for (const n of nodes) {
             const url = n.src || n.href;
             if (!url) continue;
@@ -150,6 +154,8 @@ async function startDetection(rules) {
     }
 
     const threshold = rules.thresholds?.legitimate || 100;
+    // Scores accumulate legitimacy points; failing to meet the legitimate
+    // threshold marks the page as suspicious during this early pass.
     if (score < threshold) {
       const banner = document.createElement("div");
       banner.textContent = "Suspicious page detected";
