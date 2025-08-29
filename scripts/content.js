@@ -138,15 +138,6 @@ class CheckContent {
       return true; // Keep message channel open
     });
 
-    // Listen for messages from page (for testing)
-    window.addEventListener("message", (event) => {
-      if (event.source !== window) return;
-
-      if (event.data.type && event.data.type.startsWith("CHECK_TEST_")) {
-        this.handleTestMessage(event.data);
-      }
-    });
-
     // Expose testing interface to page
     this.exposeTestingInterface();
   }
@@ -164,73 +155,83 @@ class CheckContent {
         );
       });
 
-      // Send response back to page
-      window.postMessage(
-        {
-          type: "CHECK_TEST_RESPONSE",
-          id: data.id,
-          response,
-        },
-        "*"
-      );
+      return response;
     } catch (error) {
-      window.postMessage(
-        {
-          type: "CHECK_TEST_RESPONSE",
-          id: data.id,
-          error: error.message,
-        },
-        "*"
-      );
+      throw error;
     }
   }
 
   exposeTestingInterface() {
-    // Inject testing bridge into page
-    const script = document.createElement("script");
-    script.textContent = `
-      (function() {
-        let messageId = 0;
-        const pendingMessages = new Map();
+    // Expose testing interface directly in content script context to avoid CSP violations
+    // This creates a bridge between page context and extension without inline script injection
 
-        // Create Check testing interface
-        window.CheckTesting = {
-          sendMessage: function(message) {
-            return new Promise((resolve, reject) => {
-              const id = ++messageId;
-              pendingMessages.set(id, { resolve, reject });
+    let messageId = 0;
+    const pendingMessages = new Map();
 
-              window.postMessage({
-                type: 'CHECK_TEST_' + message.type,
-                id: id,
-                payload: message
-              }, '*');
-            });
-          }
-        };
+    // Define the testing interface that will be accessible from page context
+    const testingInterface = {
+      sendMessage: function (message) {
+        return new Promise((resolve, reject) => {
+          const id = ++messageId;
+          pendingMessages.set(id, { resolve, reject });
 
-        // Listen for responses
-        window.addEventListener('message', (event) => {
-          if (event.source !== window) return;
-
-          if (event.data.type === 'CHECK_TEST_RESPONSE') {
-            const pending = pendingMessages.get(event.data.id);
-            if (pending) {
-              pendingMessages.delete(event.data.id);
-
-              if (event.data.error) {
-                pending.reject(new Error(event.data.error));
-              } else {
-                pending.resolve(event.data.response);
-              }
-            }
-          }
+          // Dispatch custom event that content script can catch
+          const event = new CustomEvent("checkTestRequest", {
+            detail: {
+              type: "CHECK_TEST_" + message.type,
+              id: id,
+              payload: message,
+            },
+          });
+          document.dispatchEvent(event);
         });
-      })();
-    `;
+      },
+    };
 
-    document.documentElement.appendChild(script);
-    script.remove();
+    // Inject interface into page context safely using defineProperty
+    Object.defineProperty(window, "CheckTesting", {
+      value: testingInterface,
+      writable: false,
+      configurable: false,
+    });
+
+    // Listen for test requests from page context
+    document.addEventListener("checkTestRequest", async (event) => {
+      try {
+        const response = await this.handleTestMessage(event.detail);
+
+        // Send response back to page context
+        const responseEvent = new CustomEvent("checkTestResponse", {
+          detail: {
+            id: event.detail.id,
+            response: response,
+          },
+        });
+        document.dispatchEvent(responseEvent);
+      } catch (error) {
+        const errorEvent = new CustomEvent("checkTestResponse", {
+          detail: {
+            id: event.detail.id,
+            error: error.message,
+          },
+        });
+        document.dispatchEvent(errorEvent);
+      }
+    });
+
+    // Listen for responses in the testing interface
+    document.addEventListener("checkTestResponse", (event) => {
+      const pending = pendingMessages.get(event.detail.id);
+      if (pending) {
+        pendingMessages.delete(event.detail.id);
+
+        if (event.detail.error) {
+          pending.reject(new Error(event.detail.error));
+        } else {
+          pending.resolve(event.detail.response);
+        }
+      }
+    });
   }
 
   async handleMessage(message, sender, sendResponse) {
@@ -980,13 +981,17 @@ class UIManager {
   }
 }
 
-// Initialize content script
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", () => {
+// Initialize content script (prevent multiple initializations)
+if (!window.checkContentInitialized) {
+  window.checkContentInitialized = true;
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+      const check = new CheckContent();
+      check.initialize();
+    });
+  } else {
     const check = new CheckContent();
     check.initialize();
-  });
-} else {
-  const check = new CheckContent();
-  check.initialize();
+  }
 }
