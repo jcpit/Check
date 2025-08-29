@@ -134,6 +134,91 @@ class CyberShieldContent {
       this.handleMessage(message, sender, sendResponse);
       return true; // Keep message channel open
     });
+
+    // Listen for messages from page (for testing)
+    window.addEventListener('message', (event) => {
+      if (event.source !== window) return;
+      
+      if (event.data.type && event.data.type.startsWith('CYBERSHIELD_TEST_')) {
+        this.handleTestMessage(event.data);
+      }
+    });
+
+    // Expose testing interface to page
+    this.exposeTestingInterface();
+  }
+
+  async handleTestMessage(data) {
+    try {
+      // Forward test messages to background script
+      const response = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({
+          type: data.type.replace('CYBERSHIELD_TEST_', ''),
+          ...data.payload
+        }, resolve);
+      });
+
+      // Send response back to page
+      window.postMessage({
+        type: 'CYBERSHIELD_TEST_RESPONSE',
+        id: data.id,
+        response
+      }, '*');
+    } catch (error) {
+      window.postMessage({
+        type: 'CYBERSHIELD_TEST_RESPONSE',
+        id: data.id,
+        error: error.message
+      }, '*');
+    }
+  }
+
+  exposeTestingInterface() {
+    // Inject testing bridge into page
+    const script = document.createElement('script');
+    script.textContent = `
+      (function() {
+        let messageId = 0;
+        const pendingMessages = new Map();
+
+        // Create cybershield testing interface
+        window.CyberShieldTesting = {
+          sendMessage: function(message) {
+            return new Promise((resolve, reject) => {
+              const id = ++messageId;
+              pendingMessages.set(id, { resolve, reject });
+              
+              window.postMessage({
+                type: 'CYBERSHIELD_TEST_' + message.type,
+                id: id,
+                payload: message
+              }, '*');
+            });
+          }
+        };
+
+        // Listen for responses
+        window.addEventListener('message', (event) => {
+          if (event.source !== window) return;
+          
+          if (event.data.type === 'CYBERSHIELD_TEST_RESPONSE') {
+            const pending = pendingMessages.get(event.data.id);
+            if (pending) {
+              pendingMessages.delete(event.data.id);
+              
+              if (event.data.error) {
+                pending.reject(new Error(event.data.error));
+              } else {
+                pending.resolve(event.data.response);
+              }
+            }
+          }
+        });
+      })();
+    `;
+    
+    document.documentElement.appendChild(script);
+    script.remove();
   }
 
   async handleMessage(message, sender, sendResponse) {

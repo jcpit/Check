@@ -72,6 +72,15 @@ class CyberShieldPopup {
     this.elements.notificationToast = document.getElementById('notificationToast');
     this.elements.notificationText = document.getElementById('notificationText');
     this.elements.notificationClose = document.getElementById('notificationClose');
+
+    // Testing elements
+    this.elements.testRules = document.getElementById('testRules');
+    this.elements.testingSection = document.getElementById('testingSection');
+    this.elements.runComprehensiveTest = document.getElementById('runComprehensiveTest');
+    this.elements.validateEngine = document.getElementById('validateEngine');
+    this.elements.testResults = document.getElementById('testResults');
+    this.elements.testSummary = document.getElementById('testSummary');
+    this.elements.testDetails = document.getElementById('testDetails');
   }
 
   setupEventListeners() {
@@ -81,6 +90,11 @@ class CyberShieldPopup {
     this.elements.viewLogs.addEventListener('click', () => this.viewLogs());
     this.elements.openSettings.addEventListener('click', () => this.openSettings());
     this.elements.reportIssue.addEventListener('click', () => this.reportIssue());
+
+    // Testing button listeners
+    this.elements.testRules?.addEventListener('click', () => this.toggleTestingSection());
+    this.elements.runComprehensiveTest?.addEventListener('click', () => this.runComprehensiveTest());
+    this.elements.validateEngine?.addEventListener('click', () => this.validateDetectionEngine());
 
     // Footer link listeners
     this.elements.supportLink.addEventListener('click', (e) => this.handleFooterLink(e, 'support'));
@@ -695,6 +709,249 @@ Issue Description:
 
   hideNotification() {
     this.elements.notificationToast.style.display = 'none';
+  }
+
+  // Testing Methods
+  toggleTestingSection() {
+    const testingSection = this.elements.testingSection;
+    if (testingSection.style.display === 'none') {
+      testingSection.style.display = 'block';
+      this.elements.testRules.classList.add('active');
+    } else {
+      testingSection.style.display = 'none';
+      this.elements.testRules.classList.remove('active');
+    }
+  }
+
+  async runComprehensiveTest() {
+    this.showLoading('Running comprehensive test...');
+    this.elements.testResults.style.display = 'none';
+
+    try {
+      const response = await this.sendMessage({
+        type: 'RUN_COMPREHENSIVE_TEST'
+      });
+
+      if (response && response.success) {
+        this.displayTestResults(response.tests);
+        this.showNotification('Comprehensive test completed', 'success');
+      } else {
+        this.showNotification('Test failed: ' + (response?.error || 'Unknown error'), 'error');
+      }
+    } catch (error) {
+      console.error('Failed to run comprehensive test:', error);
+      this.showNotification('Test execution failed', 'error');
+    } finally {
+      this.hideLoading();
+    }
+  }
+
+  async validateDetectionEngine() {
+    this.showLoading('Validating detection engine...');
+    this.elements.testResults.style.display = 'none';
+
+    try {
+      const response = await this.sendMessage({
+        type: 'VALIDATE_DETECTION_ENGINE'
+      });
+
+      if (response && response.success) {
+        this.displayValidationResults(response.validation);
+        this.showNotification('Engine validation completed', 'success');
+      } else {
+        this.showNotification('Validation failed: ' + (response?.error || 'Unknown error'), 'error');
+      }
+    } catch (error) {
+      console.error('Failed to validate detection engine:', error);
+      this.showNotification('Validation execution failed', 'error');
+    } finally {
+      this.hideLoading();
+    }
+  }
+
+  displayTestResults(testSuites) {
+    const summary = this.elements.testSummary;
+    const details = this.elements.testDetails;
+
+    // Clear previous results
+    summary.innerHTML = '';
+    details.innerHTML = '';
+
+    // Calculate overall statistics
+    let totalTests = 0;
+    let passedTests = 0;
+    let failedTests = 0;
+
+    for (const suite of testSuites) {
+      const suiteResults = suite.results;
+      if (Array.isArray(suiteResults)) {
+        totalTests += suiteResults.length;
+        passedTests += suiteResults.filter(test => test.passed).length;
+        failedTests += suiteResults.filter(test => !test.passed).length;
+      }
+    }
+
+    // Display summary
+    const passRate = totalTests > 0 ? Math.round((passedTests / totalTests) * 100) : 0;
+    summary.innerHTML = `
+      <div class="test-summary-stats">
+        <div class="test-stat">
+          <span class="test-stat-number">${totalTests}</span>
+          <span class="test-stat-label">Total Tests</span>
+        </div>
+        <div class="test-stat success">
+          <span class="test-stat-number">${passedTests}</span>
+          <span class="test-stat-label">Passed</span>
+        </div>
+        <div class="test-stat error">
+          <span class="test-stat-number">${failedTests}</span>
+          <span class="test-stat-label">Failed</span>
+        </div>
+        <div class="test-stat">
+          <span class="test-stat-number">${passRate}%</span>
+          <span class="test-stat-label">Pass Rate</span>
+        </div>
+      </div>
+    `;
+
+    // Display detailed results
+    let detailsHtml = '';
+    for (const suite of testSuites) {
+      const suitePassed = Array.isArray(suite.results) ? 
+        suite.results.filter(test => test.passed).length : 0;
+      const suiteTotal = Array.isArray(suite.results) ? suite.results.length : 0;
+      
+      detailsHtml += `
+        <div class="test-suite">
+          <h4 class="test-suite-title">
+            ${suite.suite} 
+            <span class="test-suite-stats">(${suitePassed}/${suiteTotal})</span>
+          </h4>
+          <div class="test-suite-results">
+      `;
+
+      if (Array.isArray(suite.results)) {
+        for (const test of suite.results) {
+          const statusIcon = test.passed ? '✓' : '✗';
+          const statusClass = test.passed ? 'success' : 'error';
+          
+          detailsHtml += `
+            <div class="test-result ${statusClass}">
+              <span class="test-status">${statusIcon}</span>
+              <span class="test-description">${test.url || test.referrer || test.expected || 'Test'}</span>
+              ${test.error ? `<span class="test-error">${test.error}</span>` : ''}
+            </div>
+          `;
+        }
+      }
+
+      detailsHtml += `
+          </div>
+        </div>
+      `;
+    }
+
+    details.innerHTML = detailsHtml;
+    this.elements.testResults.style.display = 'block';
+  }
+
+  displayValidationResults(validation) {
+    const summary = this.elements.testSummary;
+    const details = this.elements.testDetails;
+
+    // Clear previous results
+    summary.innerHTML = '';
+    details.innerHTML = '';
+
+    // Display validation summary
+    const engineStatus = validation.engineInitialized ? 'Initialized' : 'Not Initialized';
+    const engineClass = validation.engineInitialized ? 'success' : 'error';
+
+    summary.innerHTML = `
+      <div class="validation-summary">
+        <div class="validation-item ${engineClass}">
+          <span class="validation-label">Detection Engine:</span>
+          <span class="validation-value">${engineStatus}</span>
+        </div>
+        <div class="validation-item">
+          <span class="validation-label">Status:</span>
+          <span class="validation-value">${validation.detectionEngineStatus}</span>
+        </div>
+        <div class="validation-item">
+          <span class="validation-label">Timestamp:</span>
+          <span class="validation-value">${new Date(validation.timestamp).toLocaleString()}</span>
+        </div>
+      </div>
+    `;
+
+    // Display detailed validation results
+    let detailsHtml = '<div class="validation-details">';
+
+    // Rules validation
+    if (validation.rulesValidation) {
+      const rules = validation.rulesValidation;
+      detailsHtml += `
+        <div class="validation-section">
+          <h4>Rules Validation</h4>
+          <div class="validation-grid">
+            <div class="validation-stat">
+              <span class="validation-number">${rules.rulesCount || 0}</span>
+              <span class="validation-label">Total Rules</span>
+            </div>
+            <div class="validation-stat success">
+              <span class="validation-number">${rules.validRules || 0}</span>
+              <span class="validation-label">Valid Rules</span>
+            </div>
+            <div class="validation-stat error">
+              <span class="validation-number">${rules.invalidRules || 0}</span>
+              <span class="validation-label">Invalid Rules</span>
+            </div>
+          </div>
+          ${rules.issues && rules.issues.length > 0 ? 
+            `<div class="validation-issues">
+              <h5>Issues:</h5>
+              <ul>${rules.issues.map(issue => `<li>${issue}</li>`).join('')}</ul>
+            </div>` : ''
+          }
+        </div>
+      `;
+    }
+
+    // Components validation
+    if (validation.componentsStatus) {
+      const components = validation.componentsStatus;
+      detailsHtml += `
+        <div class="validation-section">
+          <h4>Components Status</h4>
+          <div class="component-status">
+            <div class="component-item">Config Manager: <span class="${components.configManager === 'loaded' ? 'success' : 'error'}">${components.configManager}</span></div>
+            <div class="component-item">Detection Engine: <span class="${components.detectionEngine === 'loaded' ? 'success' : 'error'}">${components.detectionEngine}</span></div>
+            <div class="component-item">Policy Manager: <span class="${components.policyManager === 'loaded' ? 'success' : 'error'}">${components.policyManager}</span></div>
+            <div class="component-item">Engine Initialized: <span class="${components.detectionEngineInitialized ? 'success' : 'error'}">${components.detectionEngineInitialized ? 'Yes' : 'No'}</span></div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Configuration validation
+    if (validation.configurationStatus) {
+      const config = validation.configurationStatus;
+      detailsHtml += `
+        <div class="validation-section">
+          <h4>Configuration Status</h4>
+          <div class="config-status">
+            <div class="config-item">Config Loaded: <span class="${config.configLoaded ? 'success' : 'error'}">${config.configLoaded ? 'Yes' : 'No'}</span></div>
+            <div class="config-item">Valid Referrers: <span class="${config.hasValidReferrers ? 'success' : 'warning'}">${config.hasValidReferrers ? 'Configured' : 'Not Configured'}</span></div>
+            <div class="config-item">Whitelist Domains: <span class="${config.hasWhitelistDomains ? 'success' : 'warning'}">${config.hasWhitelistDomains ? 'Configured' : 'Not Configured'}</span></div>
+            <div class="config-item">Detection Enabled: <span class="${config.detectionEnabled ? 'success' : 'error'}">${config.detectionEnabled ? 'Yes' : 'No'}</span></div>
+          </div>
+        </div>
+      `;
+    }
+
+    detailsHtml += '</div>';
+    details.innerHTML = detailsHtml;
+    this.elements.testResults.style.display = 'block';
   }
 }
 
