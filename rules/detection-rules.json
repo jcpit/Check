@@ -79,10 +79,10 @@
       "type": "form_action",
       "weight": 30,
       "condition": {
-        "not_contains": "login.microsoftonline.com",
+        "contains": "login.microsoftonline.com",
         "form_selector": "form[action]"
       },
-      "description": "Form POST URL must NOT be login.microsoftonline.com for legitimate pages"
+      "description": "Form POST URL must be login.microsoftonline.com for legitimate pages"
     },
     {
       "id": "detect_idpartnerpl_field",
