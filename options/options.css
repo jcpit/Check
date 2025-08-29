@@ -537,6 +537,11 @@ body {
   color: #92400e;
 }
 
+.log-type.debug {
+  background: #e5e7eb;
+  color: #374151;
+}
+
 .log-message {
   color: var(--text-primary);
 }
