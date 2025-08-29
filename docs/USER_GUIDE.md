@@ -11,6 +11,11 @@
 - Customize branding by editing `config/branding.json`.
 - Edit `rules/detection-rules.json` to define custom phishing detection patterns.
 
+## Using the Popup and Options
+- Click the extension icon to open the popup. It shows current page status and quick actions such as **Scan Page**, **View Logs** and **Test Rules**.
+- The **Test Rules** button exercises the detection engine against sample URLs to confirm rule processing.
+- Open **Settings** from the popup or navigate to `chrome-extension://<extension-id>/options/options.html` to edit configuration and branding. Changes are saved through `options/options.js` and immediately applied by the background service worker.
+
 ## Troubleshooting
 - **Extension fails to load**: Ensure Developer mode is enabled and the manifest is valid.
 - **Policies not applying**: Confirm the browser received the correct GPO or Intune configuration.
