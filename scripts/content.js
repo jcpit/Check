@@ -239,6 +239,29 @@ class CheckContent {
       switch (message.type) {
         case "ANALYZE_PAGE":
           const analysis = await this.pageAnalyzer.analyzePage();
+          const urlAnalysis = await new Promise((resolve) => {
+            chrome.runtime.sendMessage(
+              {
+                type: "URL_ANALYSIS_REQUEST",
+                url: window.location.href,
+              },
+              (response) => {
+                if (response && response.success && response.analysis) {
+                  resolve(response.analysis);
+                } else {
+                  resolve({});
+                }
+              }
+            );
+          });
+
+          if (urlAnalysis) {
+            analysis.isBlocked =
+              analysis.isBlocked || urlAnalysis.isBlocked;
+            analysis.isSuspicious =
+              analysis.isSuspicious || urlAnalysis.isSuspicious;
+          }
+
           sendResponse({ success: true, analysis });
           break;
 
@@ -823,6 +846,8 @@ class PageAnalyzer {
         description: "Form submitting to external domain detected",
       });
     }
+
+    analysis.isSuspicious = analysis.threats.length > 0;
 
     return analysis;
   }
