@@ -15,3 +15,7 @@
 - **Extension fails to load**: Ensure Developer mode is enabled and the manifest is valid.
 - **Policies not applying**: Confirm the browser received the correct GPO or Intune configuration.
 - **Phishing detection not triggering**: Verify rules in the `rules/` directory and check that Microsoft 365 domains are accessible.
+
+## Security
+
+For information on reporting security vulnerabilities, see [SECURITY.md](../SECURITY.md). Please do not disclose issues publicly until a fix is available.
