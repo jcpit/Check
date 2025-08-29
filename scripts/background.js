@@ -7,6 +7,7 @@
 import { ConfigManager } from "./modules/config-manager.js";
 import { DetectionEngine } from "./modules/detection-engine.js";
 import { PolicyManager } from "./modules/policy-manager.js";
+import logger from "./utils/logger.js";
 
 class CheckBackground {
   constructor() {
@@ -33,7 +34,7 @@ class CheckBackground {
 
   async initialize() {
     try {
-      console.log("Check: Initializing background service worker...");
+      logger.log("Check: Initializing background service worker...");
 
       // Load configuration and policies
       await this.configManager.loadConfig();
@@ -46,9 +47,9 @@ class CheckBackground {
       this.setupEventListeners();
       this.isInitialized = true;
 
-      console.log("Check: Background service worker initialized successfully");
+      logger.log("Check: Background service worker initialized successfully");
     } catch (error) {
-      console.error(
+      logger.error(
         "Check: Failed to initialize background service worker:",
         error
       );
@@ -184,12 +185,12 @@ class CheckBackground {
   }
 
   async handleStartup() {
-    console.log("Check: Extension startup detected");
+    logger.log("Check: Extension startup detected");
     await this.configManager.refreshConfig();
   }
 
   async handleInstalled(details) {
-    console.log("Check: Extension installed/updated:", details.reason);
+    logger.log("Check: Extension installed/updated:", details.reason);
 
     if (details.reason === "install") {
       // Set default configuration
@@ -245,7 +246,7 @@ class CheckBackground {
       // Log URL access for audit purposes
       await this.logUrlAccess(tab.url, tabId);
     } catch (error) {
-      console.error("Check: Error handling tab update:", error);
+      logger.error("Check: Error handling tab update:", error);
     }
   }
 
@@ -405,7 +406,7 @@ class CheckBackground {
             const config = await this.configManager.getConfig();
             sendResponse({ success: true, config });
           } catch (error) {
-            console.error("Check: Failed to get config:", error);
+            logger.error("Check: Failed to get config:", error);
             sendResponse({ success: false, error: error.message });
           }
           break;
@@ -415,7 +416,7 @@ class CheckBackground {
             await this.configManager.updateConfig(message.config);
             sendResponse({ success: true });
           } catch (error) {
-            console.error("Check: Failed to update config:", error);
+            logger.error("Check: Failed to update config:", error);
             sendResponse({ success: false, error: error.message });
           }
           break;
@@ -439,7 +440,7 @@ class CheckBackground {
           sendResponse({ success: false, error: "Unknown message type" });
       }
     } catch (error) {
-      console.error("Check: Error handling message:", error);
+      logger.error("Check: Error handling message:", error);
       sendResponse({ success: false, error: error.message });
     }
   }
@@ -447,7 +448,7 @@ class CheckBackground {
   async handleStorageChange(changes, namespace) {
     if (namespace === "managed") {
       // Enterprise policy changes
-      console.log("Check: Enterprise policy updated");
+      logger.log("Check: Enterprise policy updated");
       await this.policyManager.loadPolicies();
       await this.configManager.refreshConfig();
       // CyberDrain integration - Refresh policy
@@ -470,7 +471,7 @@ class CheckBackground {
         files: ["scripts/content.js"],
       });
     } catch (error) {
-      console.error("Check: Failed to inject content script:", error);
+      logger.error("Check: Failed to inject content script:", error);
     }
   }
 
@@ -503,7 +504,7 @@ class CheckBackground {
       type: "security_event",
     };
 
-    console.log("Check: Security Event:", logEntry);
+    logger.log("Check: Security Event:", logEntry);
 
     // Store security events separately
     const result = await chrome.storage.local.get(["securityEvents"]);

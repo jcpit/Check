@@ -779,14 +779,17 @@ class CheckOptions {
       const result = await chrome.storage.local.get([
         "securityEvents",
         "accessLogs",
+        "debugLogs",
       ]);
       const securityEvents = result.securityEvents || [];
       const accessLogs = result.accessLogs || [];
+      const debugLogs = result.debugLogs || [];
 
       // Combine and sort logs
       const allLogs = [
         ...securityEvents.map((event) => ({ ...event, category: "security" })),
         ...accessLogs.map((event) => ({ ...event, category: "access" })),
+        ...debugLogs.map((log) => ({ ...log, category: "debug" })),
       ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
       this.displayLogs(allLogs);
@@ -818,7 +821,10 @@ class CheckOptions {
 
       const type = document.createElement("span");
       type.className = `log-type ${log.category}`;
-      type.textContent = log.event?.type || log.type || "unknown";
+      type.textContent =
+        log.category === "debug"
+          ? log.level
+          : log.event?.type || log.type || "unknown";
 
       const message = document.createElement("span");
       message.className = "log-message";
@@ -833,6 +839,9 @@ class CheckOptions {
   }
 
   formatLogMessage(log) {
+    if (log.category === "debug") {
+      return log.message || "";
+    }
     if (log.event) {
       switch (log.event.type) {
         case "url_access":
@@ -863,7 +872,11 @@ class CheckOptions {
 
     if (confirmed) {
       try {
-        await chrome.storage.local.remove(["securityEvents", "accessLogs"]);
+        await chrome.storage.local.remove([
+          "securityEvents",
+          "accessLogs",
+          "debugLogs",
+        ]);
         this.loadLogs();
         this.showToast("Logs cleared successfully", "success");
       } catch (error) {
@@ -878,10 +891,12 @@ class CheckOptions {
       const result = await chrome.storage.local.get([
         "securityEvents",
         "accessLogs",
+        "debugLogs",
       ]);
       const exportData = {
         securityEvents: result.securityEvents || [],
         accessLogs: result.accessLogs || [],
+        debugLogs: result.debugLogs || [],
         timestamp: new Date().toISOString(),
         version: chrome.runtime.getManifest().version,
       };
