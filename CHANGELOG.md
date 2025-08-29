@@ -7,6 +7,109 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+### 387b7fe - fix error
+- Contributor: John Duprey
+- Date: 2025-08-29T14:02:47+02:00
+- Files changed:
+  - scripts/content.js
+- Fixed error in content script.
+
+### 65b5476 - Merge branch 'main' of https://github.com/CyberDrain/ProjectX
+- Contributor: John Duprey
+- Date: 2025-08-29T13:56:03+02:00
+- Files changed:
+  - CHANGELOG.md (244 lines)
+- Synchronized with upstream main, incorporating expanded changelog details.
+
+### cdf7e6f - fix communications between background and page
+- Contributor: John Duprey
+- Date: 2025-08-29T13:55:25+02:00
+- Files changed:
+  - popup/popup.js
+  - scripts/background.js
+- Resolved message-passing issues between popup and background scripts.
+
+### 69275c6 - Merge pull request #11 from CyberDrain/codex/update-changelog-with-contributor-and-timestamp
+- Contributor: cipp-ashe
+- Date: 2025-08-29T07:55:18-04:00
+- Files changed:
+  - CHANGELOG.md (244 lines)
+- Merged documentation update adding contributor and timestamp details.
+
+### f02f0b9 - docs: summarize brand asset changes
+- Contributor: cipp-ashe
+- Date: 2025-08-29T07:55:01-04:00
+- Files changed:
+  - CHANGELOG.md
+- Added comprehensive branding asset history to the changelog.
+
+### 35d2d3c - Merge branch 'main' of https://github.com/CyberDrain/ProjectX
+- Contributor: John Duprey
+- Date: 2025-08-29T13:43:39+02:00
+- Files changed:
+  - CHANGELOG.md
+  - popup/popup.html
+  - popup/popup.js
+- Pulled upstream changes, merging popup updates and changelog additions.
+
+### fa79f77 - Update background.js
+- Contributor: John Duprey
+- Date: 2025-08-29T13:43:31+02:00
+- Files changed:
+  - scripts/background.js
+- Refined background script logic (12 insertions, 14 deletions).
+
+### 3b59e74 - Merge pull request #10 from CyberDrain/codex/update-project-roadmap-with-latest-commits-un44j5
+- Contributor: cipp-ashe
+- Date: 2025-08-29T07:42:07-04:00
+- Files changed: (merge commit, no changes listed)
+- Integrated roadmap update PR into main branch.
+
+### ad26cc0 - Merge pull request #9 from CyberDrain/codex/update-project-roadmap-with-latest-commits
+- Contributor: cipp-ashe
+- Date: 2025-08-29T07:41:21-04:00
+- Files changed:
+  - CHANGELOG.md (24 lines)
+- Merged changelog refresh containing recent commit details.
+
+### 6b03254 - Remove disable button from popup
+- Contributor: rvdwegen
+- Date: 2025-08-29T13:41:02+02:00
+- Files changed:
+  - popup/popup.html
+  - popup/popup.js
+- Removed unused disable button functionality from the popup UI.
+
+### 5820e27 - docs: update changelog with recent commits
+- Contributor: cipp-ashe
+- Date: 2025-08-29T07:40:35-04:00
+- Files changed:
+  - CHANGELOG.md (24 lines)
+- Extended changelog to capture latest commit history.
+
+### 338f37e - docs: update changelog with recent commits
+- Contributor: cipp-ashe
+- Date: 2025-08-29T07:40:30-04:00
+- Files changed:
+  - CHANGELOG.md (24 lines)
+- Added earlier commit information to the changelog.
+
+### bd7a381 - fix quotes/linting
+- Contributor: John Duprey
+- Date: 2025-08-29T13:38:56+02:00
+- Files changed:
+  - TESTING-GUIDE.md
+  - options/options.js
+  - scripts/background.js
+  - scripts/content.js
+  - scripts/modules/config-manager.js
+  - scripts/modules/detection-engine.js
+  - scripts/modules/policy-manager.js
+  - styles/content.css
+  - test-extension-loading.html
+- Standardized quote style and corrected linting across multiple files (752 insertions, 623 deletions).
+
 ### 7efb6a5 - Merge branch 'main' of https://github.com/CyberDrain/ProjectX
 - Contributor: John Duprey
 - Date: 2025-08-29T13:36:45+02:00
