@@ -122,8 +122,10 @@ body {
 
 .menu-icon {
   width: 20px;
-  text-align: center;
-  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
 }
 
 .menu-text {
@@ -662,7 +664,10 @@ body {
 }
 
 .link-icon {
-  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
 }
 
 .link-text {
