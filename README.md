@@ -406,6 +406,10 @@ We welcome contributions from the community! Please read our [Contributing Guide
 4. **Security**: Follow secure coding practices
 5. **Performance**: Ensure minimal impact on browser performance
 
+## 🔐 Security
+
+Please report security vulnerabilities privately. See [SECURITY.md](SECURITY.md) for responsible disclosure guidelines and contact information. Do not create public GitHub issues for security-related reports.
+
 ## 📄 License
 
 This project is licensed under the AGPL-3.0 License - see the [LICENSE](LICENSE) file for details.

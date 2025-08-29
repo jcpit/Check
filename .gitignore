@@ -225,6 +225,12 @@ store-assets/screenshots/
 store-assets/promotional/
 store-assets/videos/
 
+# Brand assets and design files
+CyberDrain-Brand/
+brand-assets/
+design-assets/
+marketing-assets/
+
 # Documentation builds
 docs/_build/
 docs/build/
