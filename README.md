@@ -48,13 +48,12 @@ mechanism. Managed settings follow the schema in `config/managed_schema.json`.
 
 ## Testing
 
+For step-by-step testing instructions, see [TESTING_GUIDE.md](TESTING_GUIDE.md).
+
 Test pages included in the repository:
 
-- `test-extension-loading.html` – confirms the extension, background script,
-  and detection engine are active.
-- `test-detection-rules.html` and
-  `test-detection-rules-standalone.html` – evaluate detection rules with or
-  without loading the extension.
+- `test-extension-loading.html` – confirms the extension, background script, and detection engine are active.
+- `test-detection-rules.html` and `test-detection-rules-standalone.html` – evaluate detection rules with or without loading the extension.
 
 ## Contributing
 
