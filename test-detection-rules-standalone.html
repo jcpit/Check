@@ -253,7 +253,7 @@
                     content_length: content.length,
                     hasRequiredElements: false,
                     findings: [],
-                    legitimacy_score: 0
+                    legitimacyScore: 0
                 };
 
                 const requiredElements = [
@@ -272,7 +272,7 @@
                 }
 
                 analysis.hasRequiredElements = foundElements >= 2;
-                analysis.legitimacy_score = (foundElements / requiredElements.length) * 100;
+                analysis.legitimacyScore = (foundElements / requiredElements.length) * 100;
 
                 return analysis;
             }
@@ -483,7 +483,7 @@
                     <div style="margin: 5px 0; padding: 5px; border-left: 3px solid ${result.passed ? '#28a745' : '#dc3545'};">
                         <span style="font-weight: bold;">${status}</span>
                         ${result.url || result.referrer || result.test || 'Test'}
-                        ${result.analysis ? `<br><small>Score: ${result.analysis.legitimacy_score || 'N/A'}%</small>` : ''}
+                        ${result.analysis ? `<br><small>Score: ${result.analysis.legitimacyScore || 'N/A'}%</small>` : ''}
                     </div>
                 `;
             }

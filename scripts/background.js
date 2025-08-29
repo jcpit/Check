@@ -732,7 +732,7 @@ class CheckBackground {
             '<input name="loginfmt"><input name="idPartnerPL"><script>var urlMsaSignUp = "...";</script>',
           context: "form_analysis",
         },
-        expected: { hasRequiredElements: true, legitimacyScore: "high" },
+        expected: { hasRequiredElements: true, legitimacyLevel: "high" },
       },
     ];
   }
