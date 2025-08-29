@@ -162,9 +162,8 @@ async function startDetection(rules) {
     // threshold marks the page as suspicious during this early pass.
     if (score < threshold) {
       const banner = document.createElement("div");
+      banner.className = "check-warning-overlay";
       banner.textContent = "Suspicious page detected";
-      banner.style.cssText =
-        "position:fixed;top:0;left:0;right:0;background:#a00;color:#fff;padding:8px;text-align:center;z-index:2147483647";
       document.documentElement.appendChild(banner);
     }
   } catch (e) {
@@ -1160,42 +1159,31 @@ class CheckContent {
   blockPage(reason) {
     // Create overlay to block page content
     const overlay = document.createElement("div");
-    overlay.id = "check-block-overlay";
-    overlay.innerHTML = `
-      <div style="
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(255, 255, 255, 0.95);
-        z-index: 999999;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      ">
-        <div style="
-          background: white;
-          padding: 40px;
-          border-radius: 8px;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-          max-width: 500px;
-          text-align: center;
-        ">
-          <h1 style="color: #dc2626; margin-bottom: 20px;">Access Blocked</h1>
-          <p style="color: #374151; margin-bottom: 20px;">${reason}</p>
-          <button onclick="window.history.back()" style="
-            background: #2563eb;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-          ">Go Back</button>
-        </div>
-      </div>
-    `;
+    overlay.className = "check-block-overlay";
+    
+    const content = document.createElement("div");
+    content.className = "check-block-content";
+    
+    const title = document.createElement("h1");
+    title.textContent = "Access Blocked";
+    
+    const message = document.createElement("p");
+    message.textContent = reason;
+    
+    const goBackBtn = document.createElement("button");
+    goBackBtn.textContent = "Go Back";
+    goBackBtn.onclick = () => window.history.back();
+    
+    const continueBtn = document.createElement("button");
+    continueBtn.textContent = "Continue Anyway";
+    continueBtn.className = "secondary-btn";
+    continueBtn.onclick = () => overlay.remove();
+    
+    content.appendChild(title);
+    content.appendChild(message);
+    content.appendChild(goBackBtn);
+    content.appendChild(continueBtn);
+    overlay.appendChild(content);
 
     document.body.appendChild(overlay);
   }
@@ -1390,41 +1378,32 @@ class UIManager {
 
   createNotificationElement(notification) {
     const element = document.createElement("div");
-    element.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: ${this.getNotificationColor(notification.type)};
-      color: white;
-      padding: 15px 20px;
-      border-radius: 5px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      z-index: 999999;
-      max-width: 350px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 14px;
-      line-height: 1.4;
-    `;
-
-    element.textContent = notification.message;
+    element.className = `check-notification ${notification.type}`;
+    
+    // Create title and message structure
+    if (notification.title) {
+      const title = document.createElement("div");
+      title.className = "title";
+      title.textContent = notification.title;
+      element.appendChild(title);
+    }
+    
+    const message = document.createElement("div");
+    message.className = "message";
+    message.textContent = notification.message;
+    element.appendChild(message);
+    
+    // Add close button
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "close-btn";
+    closeBtn.innerHTML = "&times;";
+    closeBtn.onclick = () => element.remove();
+    element.appendChild(closeBtn);
 
     return element;
   }
 
-  getNotificationColor(type) {
-    switch (type) {
-      case "error":
-        return "#dc2626";
-      case "warning":
-        return "#d97706";
-      case "info":
-        return "#2563eb";
-      case "success":
-        return "#059669";
-      default:
-        return "#6b7280";
-    }
-  }
+
 }
 
 // CyberDrain integration - UI methods for badges and warnings
@@ -1434,13 +1413,12 @@ CheckContent.prototype.injectValidBadge = function(customImg, branding) {
   
   const wrap = document.createElement("div");
   wrap.id = id;
-  wrap.style.cssText = "position:fixed;right:8px;top:8px;z-index:2147483647;pointer-events:none";
+  wrap.className = "check-security-badge";
   
   if (customImg) {
     const img = document.createElement("img");
     img.src = customImg;
     img.alt = "Valid Microsoft login";
-    img.style.cssText = "height:40px;width:40px;object-fit:contain;opacity:.9";
     wrap.appendChild(img);
   } else {
     wrap.innerHTML = '<svg viewBox="0 0 24 24" width="40" height="40"><circle cx="12" cy="12" r="11" fill="#0a5"/><path d="M6 12l4 4 8-8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -1448,7 +1426,6 @@ CheckContent.prototype.injectValidBadge = function(customImg, branding) {
   
   const label = document.createElement("div");
   label.textContent = (branding || "Microsoft 365 Phishing Protection") + " • Valid M365 Login";
-  label.style.cssText = "margin-top:4px;background:rgba(0,0,0,.7);color:#fff;padding:4px 6px;border-radius:6px;font:12px system-ui;display:inline-block";
   wrap.appendChild(label);
   document.documentElement.appendChild(wrap);
 };
@@ -1458,7 +1435,7 @@ CheckContent.prototype.injectRedBanner = function(branding, actionCheck, resourc
   
   const el = document.createElement("div");
   el.id = "__cd_banner";
-  el.style.cssText = "position:fixed;z-index:2147483647;left:0;right:0;top:0;padding:10px 16px;background:#d33;color:#fff;font:14px/1.4 system-ui,Segoe UI,Arial;border-bottom:2px solid #a00;box-shadow:0 2px 6px rgba(0,0,0,.2)";
+  el.className = "check-warning-overlay";
   
   let msg = (branding || "Microsoft 365 Phishing Protection") + ": Phishing suspected – Microsoft 365 login UI on an untrusted domain.";
   if (actionCheck?.fail) msg += " (Form action not to Microsoft)";
@@ -1519,8 +1496,13 @@ CheckContent.prototype.preventSubmission = function() {
 
 CheckContent.prototype.showToast = function(msg) {
   const t = document.createElement("div");
-  t.textContent = msg;
-  t.style.cssText = "position:fixed;right:12px;bottom:12px;background:#222;color:#fff;padding:10px 12px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.3);font:13px system-ui;z-index:2147483647";
+  t.className = "check-notification info";
+  
+  const message = document.createElement("div");
+  message.className = "message";
+  message.textContent = msg;
+  t.appendChild(message);
+  
   if (document.body) document.body.appendChild(t);
   setTimeout(() => t.remove(), 3000);
 };

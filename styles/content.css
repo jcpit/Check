@@ -138,19 +138,39 @@
 /* Warning overlay styles */
 .check-warning-overlay {
   position: fixed !important;
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  padding: 10px 16px !important;
+  border-radius: 0 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
+  z-index: 2147483647 !important;
+  font-family: system-ui, 'Segoe UI', Arial, sans-serif !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  font-weight: 500 !important;
+  animation: check-slide-up 0.3s ease-out !important;
+  border-bottom: 2px solid #a00 !important;
+}
+
+/* Top warning banner variant */
+.check-warning-overlay.top-banner,
+.check-warning-overlay:not(.bottom-notification) {
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  text-align: center !important;
+}
+
+/* Bottom notification variant */
+.check-warning-overlay.bottom-notification {
   bottom: 20px !important;
   left: 50% !important;
+  right: auto !important;
   transform: translateX(-50%) !important;
   background: #fbbf24 !important;
   color: #92400e !important;
-  padding: 16px 24px !important;
   border-radius: 8px !important;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
-  z-index: 999998 !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-  font-size: 14px !important;
-  font-weight: 500 !important;
-  animation: check-slide-up 0.3s ease-out !important;
+  border-bottom: none !important;
 }
 
 /* Suspicious element highlighting */
@@ -164,164 +184,9 @@
   display: none !important;
 }
 
-/* Loading indicator */
-.check-loading {
-  position: fixed !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  background: rgba(0, 0, 0, 0.8) !important;
-  color: white !important;
-  padding: 20px 30px !important;
-  border-radius: 8px !important;
-  z-index: 999999 !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-  font-size: 14px !important;
-}
 
-.check-loading::after {
-  content: '' !important;
-  display: inline-block !important;
-  width: 16px !important;
-  height: 16px !important;
-  border: 2px solid #ffffff !important;
-  border-top: 2px solid transparent !important;
-  border-radius: 50% !important;
-  animation: check-spin 1s linear infinite !important;
-  margin-left: 10px !important;
-  vertical-align: middle !important;
-}
-
-/* Modal styles */
-.check-modal {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  background: rgba(0, 0, 0, 0.5) !important;
-  z-index: 999999 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-}
-
-.check-modal-content {
-  background: white !important;
-  padding: 30px !important;
-  border-radius: 12px !important;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
-  max-width: 600px !important;
-  width: 90% !important;
-  max-height: 80vh !important;
-  overflow-y: auto !important;
-}
-
-.check-modal h2 {
-  margin: 0 0 20px 0 !important;
-  color: #111827 !important;
-  font-size: 20px !important;
-  font-weight: 600 !important;
-}
-
-.check-modal p {
-  color: #374151 !important;
-  margin: 0 0 16px 0 !important;
-  line-height: 1.6 !important;
-}
-
-.check-modal .button-group {
-  display: flex !important;
-  gap: 12px !important;
-  justify-content: flex-end !important;
-  margin-top: 24px !important;
-}
-
-.check-modal button {
-  padding: 10px 20px !important;
-  border-radius: 6px !important;
-  border: 1px solid #d1d5db !important;
-  cursor: pointer !important;
-  font-size: 14px !important;
-  font-weight: 500 !important;
-  transition: all 0.2s !important;
-}
-
-.check-modal .primary-btn {
-  background: #2563eb !important;
-  color: white !important;
-  border-color: #2563eb !important;
-}
-
-.check-modal .primary-btn:hover {
-  background: #1d4ed8 !important;
-  border-color: #1d4ed8 !important;
-}
-
-.check-modal .secondary-btn {
-  background: white !important;
-  color: #374151 !important;
-}
-
-.check-modal .secondary-btn:hover {
-  background: #f9fafb !important;
-  color: #111827 !important;
-}
-
-/* Tooltip styles */
-.check-tooltip {
-  position: absolute !important;
-  background: #111827 !important;
-  color: white !important;
-  padding: 8px 12px !important;
-  border-radius: 6px !important;
-  font-size: 12px !important;
-  font-weight: 500 !important;
-  z-index: 999999 !important;
-  pointer-events: none !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-}
-
-.check-tooltip::after {
-  content: '' !important;
-  position: absolute !important;
-  top: 100% !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  border: 5px solid transparent !important;
-  border-top-color: #111827 !important;
-}
-
-/* Progress bar */
-.check-progress {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: 3px !important;
-  background: #e5e7eb !important;
-  z-index: 999999 !important;
-}
-
-.check-progress-bar {
-  height: 100% !important;
-  background: linear-gradient(90deg, #2563eb, #3b82f6) !important;
-  transition: width 0.3s ease !important;
-}
 
 /* Animations */
-@keyframes check-slide-in {
-  from {
-    transform: translateX(100%) !important;
-    opacity: 0 !important;
-  }
-  to {
-    transform: translateX(0) !important;
-    opacity: 1 !important;
-  }
-}
-
 @keyframes check-slide-up {
   from {
     transform: translateY(100%) !important;
@@ -330,15 +195,6 @@
   to {
     transform: translateY(0) !important;
     opacity: 1 !important;
-  }
-}
-
-@keyframes check-spin {
-  from {
-    transform: rotate(0deg) !important;
-  }
-  to {
-    transform: rotate(360deg) !important;
   }
 }
 
@@ -351,30 +207,32 @@
   }
 }
 
-@keyframes check-pulse {
-  0%, 100% {
-    opacity: 1 !important;
-  }
-  50% {
-    opacity: 0.5 !important;
-  }
-}
-
 /* Security badge */
 .check-security-badge {
   position: fixed !important;
-  bottom: 20px !important;
-  right: 20px !important;
-  background: #059669 !important;
-  color: white !important;
-  padding: 8px 12px !important;
-  border-radius: 20px !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  z-index: 999998 !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  right: 8px !important;
+  top: 8px !important;
+  z-index: 2147483647 !important;
+  pointer-events: none !important;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
   animation: check-fade-in 0.5s ease-out !important;
+}
+
+.check-security-badge img {
+  height: 40px !important;
+  width: 40px !important;
+  object-fit: contain !important;
+  opacity: 0.9 !important;
+}
+
+.check-security-badge div {
+  margin-top: 4px !important;
+  background: rgba(0, 0, 0, 0.7) !important;
+  color: #fff !important;
+  padding: 4px 6px !important;
+  border-radius: 6px !important;
+  font: 12px system-ui !important;
+  display: inline-block !important;
 }
 
 .check-security-badge.warning {
@@ -400,10 +258,7 @@
     padding: 30px 20px !important;
   }
 
-  .check-modal-content {
-    margin: 20px !important;
-    padding: 20px !important;
-  }
+
 
   .check-warning-overlay {
     left: 10px !important;
@@ -431,17 +286,8 @@
 @media (prefers-reduced-motion: reduce) {
   .check-notification,
   .check-warning-overlay,
-  .check-modal,
   .check-security-badge {
     animation: none !important;
-  }
-
-  .check-loading::after {
-    animation: none !important;
-  }
-
-  .check-progress-bar {
-    transition: none !important;
   }
 }
 
