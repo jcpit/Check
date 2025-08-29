@@ -6,17 +6,31 @@
   
   "branding": {
     "primaryColor": "#F77F00",
-    "primaryDark": "#003049",
-    "primaryWhite": "#FFFFFF",
-    "secondaryTealDark": "#005C63",
-    "secondaryTealMedium": "#3E5C66", 
-    "secondaryLightGreen": "#EBF0DF",
+    "primaryHover": "#E56F00",
+    "primaryLight": "rgba(247, 127, 0, 0.1)",
+    "primaryDark": "#D96800",
+    
+    "secondaryColor": "#003049",
+    "secondaryHover": "#004B73",
+    "secondaryLight": "rgba(0, 48, 73, 0.1)",
+    "secondaryDark": "#002236",
+    
+    "accentColor": "#005C63",
+    "successColor": "#005C63",
     "warningColor": "#F77F00",
-    "errorColor": "#003049",
-    "backgroundColor": "#FFFFFF",
-    "surfaceColor": "#FFFFFF",
-    "textPrimary": "#003049",
-    "textSecondary": "#3E5C66"
+    "errorColor": "#DC2626",
+    
+    "textPrimary": "#FFFFFF",
+    "textSecondary": "#9CA3AF",
+    "textMuted": "#6B7280",
+    "textInverse": "#003049",
+    
+    "bgPrimary": "#003049",
+    "bgSecondary": "rgba(255, 255, 255, 0.05)",
+    "bgSurface": "rgba(255, 255, 255, 0.03)",
+    
+    "border": "rgba(255, 255, 255, 0.1)",
+    "borderHover": "rgba(247, 127, 0, 0.3)"
   },
   
   "assets": {

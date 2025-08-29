@@ -168,11 +168,38 @@ class CyberShieldPopup {
       companyName: 'CyberDrain',
       productName: 'Microsoft 365 Phishing Protection',
       version: '1.0.0',
-      primaryColor: '#F77F00',
       logoUrl: 'images/icon32.png',
       supportUrl: 'https://support.cyberdrain.com',
       privacyPolicyUrl: 'https://cyberdrain.com/privacy',
-      supportEmail: 'support@cyberdrain.com'
+      supportEmail: 'support@cyberdrain.com',
+      branding: {
+        primaryColor: '#F77F00',
+        primaryHover: '#E56F00',
+        primaryLight: 'rgba(247, 127, 0, 0.1)',
+        primaryDark: '#D96800',
+        
+        secondaryColor: '#003049',
+        secondaryHover: '#004B73',
+        secondaryLight: 'rgba(0, 48, 73, 0.1)',
+        secondaryDark: '#002236',
+        
+        accentColor: '#005C63',
+        successColor: '#005C63',
+        warningColor: '#F77F00',
+        errorColor: '#DC2626',
+        
+        textPrimary: '#FFFFFF',
+        textSecondary: '#9CA3AF',
+        textMuted: '#6B7280',
+        textInverse: '#003049',
+        
+        bgPrimary: '#003049',
+        bgSecondary: 'rgba(255, 255, 255, 0.05)',
+        bgSurface: 'rgba(255, 255, 255, 0.03)',
+        
+        border: 'rgba(255, 255, 255, 0.1)',
+        borderHover: 'rgba(247, 127, 0, 0.3)'
+      }
     };
   }
 
@@ -197,9 +224,89 @@ class CyberShieldPopup {
       this.elements.privacyLink.href = this.brandingConfig.privacyPolicyUrl;
     }
 
-    // Apply custom colors if available
-    if (this.brandingConfig.primaryColor) {
-      document.documentElement.style.setProperty('--primary-color', this.brandingConfig.primaryColor);
+    // Apply custom theme colors if available
+    this.applyThemeColors();
+  }
+
+  applyThemeColors() {
+    if (!this.brandingConfig || !this.brandingConfig.branding) return;
+    
+    const branding = this.brandingConfig.branding;
+    const root = document.documentElement;
+    
+    // Apply primary theme colors
+    if (branding.primaryColor) {
+      root.style.setProperty('--theme-primary', branding.primaryColor);
+    }
+    if (branding.primaryHover) {
+      root.style.setProperty('--theme-primary-hover', branding.primaryHover);
+    }
+    if (branding.primaryLight) {
+      root.style.setProperty('--theme-primary-light', branding.primaryLight);
+    }
+    if (branding.primaryDark) {
+      root.style.setProperty('--theme-primary-dark', branding.primaryDark);
+    }
+    
+    // Apply secondary theme colors
+    if (branding.secondaryColor) {
+      root.style.setProperty('--theme-secondary', branding.secondaryColor);
+    }
+    if (branding.secondaryHover) {
+      root.style.setProperty('--theme-secondary-hover', branding.secondaryHover);
+    }
+    if (branding.secondaryLight) {
+      root.style.setProperty('--theme-secondary-light', branding.secondaryLight);
+    }
+    if (branding.secondaryDark) {
+      root.style.setProperty('--theme-secondary-dark', branding.secondaryDark);
+    }
+    
+    // Apply supporting colors
+    if (branding.accentColor) {
+      root.style.setProperty('--theme-accent', branding.accentColor);
+    }
+    if (branding.successColor) {
+      root.style.setProperty('--theme-success', branding.successColor);
+    }
+    if (branding.warningColor) {
+      root.style.setProperty('--theme-warning', branding.warningColor);
+    }
+    if (branding.errorColor) {
+      root.style.setProperty('--theme-error', branding.errorColor);
+    }
+    
+    // Apply text colors
+    if (branding.textPrimary) {
+      root.style.setProperty('--theme-text-primary', branding.textPrimary);
+    }
+    if (branding.textSecondary) {
+      root.style.setProperty('--theme-text-secondary', branding.textSecondary);
+    }
+    if (branding.textMuted) {
+      root.style.setProperty('--theme-text-muted', branding.textMuted);
+    }
+    if (branding.textInverse) {
+      root.style.setProperty('--theme-text-inverse', branding.textInverse);
+    }
+    
+    // Apply background colors
+    if (branding.bgPrimary) {
+      root.style.setProperty('--theme-bg-primary', branding.bgPrimary);
+    }
+    if (branding.bgSecondary) {
+      root.style.setProperty('--theme-bg-secondary', branding.bgSecondary);
+    }
+    if (branding.bgSurface) {
+      root.style.setProperty('--theme-bg-surface', branding.bgSurface);
+    }
+    
+    // Apply border colors
+    if (branding.border) {
+      root.style.setProperty('--theme-border', branding.border);
+    }
+    if (branding.borderHover) {
+      root.style.setProperty('--theme-border-hover', branding.borderHover);
     }
   }
 
