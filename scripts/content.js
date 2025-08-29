@@ -136,9 +136,13 @@ async function startDetection(rules) {
           let valid = false;
           if (value) {
             if (rule.condition?.required_domains) {
-              valid = rule.condition.required_domains.every((d) =>
-                value.includes(d.replace(/\*/g, ""))
-              );
+              valid = rule.condition.required_domains.every((d) => {
+                const pattern = d
+                  .replace(/\*/g, "[^\\s]*")
+                  .replace(/\./g, "\\.");
+                const regex = new RegExp(pattern, "i");
+                return regex.test(value);
+              });
             } else if (rule.condition?.allowed_referrers) {
               valid = rule.condition.allowed_referrers.some((r) =>
                 value.startsWith(r)
