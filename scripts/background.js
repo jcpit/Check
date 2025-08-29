@@ -287,17 +287,16 @@ class CheckBackground {
     };
 
     // Store in local storage for audit
-    const logs = (await chrome.storage.local.get(["accessLogs"])) || {
-      accessLogs: [],
-    };
-    logs.accessLogs.push(logEntry);
+    const result = await chrome.storage.local.get(["accessLogs"]);
+    const logs = result.accessLogs || [];
+    logs.push(logEntry);
 
     // Keep only last 1000 entries
-    if (logs.accessLogs.length > 1000) {
-      logs.accessLogs = logs.accessLogs.slice(-1000);
+    if (logs.length > 1000) {
+      logs.splice(0, logs.length - 1000);
     }
 
-    await chrome.storage.local.set({ accessLogs: logs.accessLogs });
+    await chrome.storage.local.set({ accessLogs: logs });
   }
 
   async logEvent(event, tabId) {
@@ -311,17 +310,16 @@ class CheckBackground {
     console.log("Check: Security Event:", logEntry);
 
     // Store security events separately
-    const logs = (await chrome.storage.local.get(["securityEvents"])) || {
-      securityEvents: [],
-    };
-    logs.securityEvents.push(logEntry);
+    const result = await chrome.storage.local.get(["securityEvents"]);
+    const logs = result.securityEvents || [];
+    logs.push(logEntry);
 
     // Keep only last 500 security events
-    if (logs.securityEvents.length > 500) {
-      logs.securityEvents = logs.securityEvents.slice(-500);
+    if (logs.length > 500) {
+      logs.splice(0, logs.length - 500);
     }
 
-    await chrome.storage.local.set({ securityEvents: logs.securityEvents });
+    await chrome.storage.local.set({ securityEvents: logs });
   }
 
   // Detection Rules Testing Methods
