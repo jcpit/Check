@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 7efb6a5 - Merge branch 'main' of https://github.com/CyberDrain/ProjectX
+- Synchronized with upstream main branch.
+
+### f40014a - rename
+- Renamed CyberShield references to Check across code and documentation.
+
+### d94508e - Merge branch 'main' of https://github.com/CyberDrain/ProjectX
+- Integrated changelog updates and brand asset cleanup.
+
+### 06e6ef1 - Remove CyberDrain-Brand folder and add to .gitignore
+- Removed legacy CyberDrain brand assets and updated `.gitignore`.
+
+### 270020b - Merge pull request #8 from CyberDrain/codex/update-changelog-with-retroactive-details
+- Merged PR adding retroactive changelog details.
+
+### f501f52 - docs: detail changelog per commit
+- Expanded changelog with per-commit details.
+
+### 4225354 - Merge branch 'main' of https://github.com/CyberDrain/ProjectX
+- Merged updates adding security policy references and release workflow.
+
+### 1430af4 - boilerplate release action
+- Added boilerplate GitHub release workflow.
+
 ### e04797a - Applying previous commit
 - Reapplied earlier changelog entries.
 
