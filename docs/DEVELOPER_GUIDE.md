@@ -11,11 +11,26 @@
 - `blocked.html` – page shown when a phishing attempt is blocked.
 - `manifest.json` – Chrome extension manifest.
 
+## Core Scripts and Modules
+- `scripts/background.js` – service worker that loads configuration and policies, runs the detection engine and responds to messages from other parts of the extension.
+- `scripts/content.js` – injected into pages to analyse content, display notifications and report events back to the background service worker.
+- `popup/popup.js` – popup controller that requests configuration from the background script and exposes tools such as **Scan Page** and **Test Rules**.
+- `options/options.js` – options page logic for editing configuration and branding.
+- `scripts/modules/config-manager.js` – merges local, enterprise and branding configuration.
+- `scripts/modules/detection-engine.js` – parses `rules/detection-rules.json` and performs URL/content analysis.
+- `scripts/modules/policy-manager.js` – enforces enterprise policies and compliance rules.
+
+These components communicate using `chrome.runtime.sendMessage`/`onMessage` and Chrome storage. When updating one component ensure message handlers and configuration values remain in sync.
+
 ## Build & Packaging
 The extension runs directly in the browser without a build step. During development, load the project as an unpacked extension. For distribution, archive the directory (excluding development-only files) and deploy via your preferred mechanism.
 
 ## Testing
 This repository does not include an automated test suite or npm scripts. Validate changes by loading the extension and exercising features manually.
+
+- `test-extension-loading.html` verifies service worker messaging, content script injection and configuration loading.
+- The popup's **Test Rules** button runs the detection engine against sample URLs.
+- `test-detection-rules-standalone.html` can be opened without installing the extension to validate rule parsing.
 
 ## Security Reporting
 
