@@ -4,6 +4,8 @@
  * Enhanced with CyberDrain Microsoft 365 phishing detection
  */
 
+import logger from "./utils/logger.js";
+
 // CyberDrain integration - Trusted origins
 const TRUSTED_ORIGINS = new Set([
   "https://login.microsoftonline.com",
@@ -47,7 +49,7 @@ class CheckContent {
 
   async initialize() {
     try {
-      console.log("Check: Initializing content script...");
+      logger.log("Check: Initializing content script...");
 
       // Load configuration from background
       this.config = await this.getConfigFromBackground();
@@ -76,9 +78,9 @@ class CheckContent {
       await this.performInitialAnalysis();
 
       this.isInitialized = true;
-      console.log("Check: Content script initialized successfully");
+      logger.log("Check: Content script initialized successfully");
     } catch (error) {
-      console.error("Check: Failed to initialize content script:", error);
+      logger.error("Check: Failed to initialize content script:", error);
     }
   }
 
@@ -216,7 +218,7 @@ class CheckContent {
         }
       }
     } catch (error) {
-      console.error("Check: Rule-driven analysis failed, falling back to basic detection:", error);
+      logger.error("Check: Rule-driven analysis failed, falling back to basic detection:", error);
       // Fallback to basic detection if rule-driven analysis fails
       this.evaluateAADFingerprintBasic();
     }
@@ -403,7 +405,7 @@ class CheckContent {
 
       // Check if dynamic execution is allowed
       if (this.config.blockDynamicScripts) {
-        console.warn("Check: Dynamic script execution blocked");
+        logger.warn("Check: Dynamic script execution blocked");
         return null;
       }
 
@@ -601,7 +603,7 @@ class CheckContent {
           sendResponse({ success: false, error: "Unknown message type" });
       }
     } catch (error) {
-      console.error("Check: Error handling message:", error);
+      logger.error("Check: Error handling message:", error);
       sendResponse({ success: false, error: error.message });
     }
   }
@@ -816,7 +818,7 @@ class CheckContent {
 
       return { success: true };
     } catch (error) {
-      console.error("Check: Script injection failed:", error);
+      logger.error("Check: Script injection failed:", error);
       return { success: false, error: error.message };
     }
   }
@@ -865,7 +867,7 @@ class CheckContent {
 
       return result;
     } catch (error) {
-      console.error("Check: Content manipulation failed:", error);
+      logger.error("Check: Content manipulation failed:", error);
       return { success: false, error: error.message };
     }
   }
@@ -1093,7 +1095,7 @@ class CheckContent {
         style.remove();
       });
 
-    console.log("Check: Content script destroyed");
+    logger.log("Check: Content script destroyed");
   }
 }
 

@@ -3,6 +3,8 @@
  * Handles enterprise policies, permissions, and compliance enforcement
  */
 
+import logger from "../utils/logger.js";
+
 export class PolicyManager {
   constructor() {
     this.policies = null;
@@ -15,9 +17,9 @@ export class PolicyManager {
     try {
       await this.loadPolicies();
       this.isInitialized = true;
-      console.log("Check: Policy manager initialized successfully");
+      logger.log("Check: Policy manager initialized successfully");
     } catch (error) {
-      console.error("Check: Failed to initialize policy manager:", error);
+      logger.error("Check: Failed to initialize policy manager:", error);
       throw error;
     }
   }
@@ -39,9 +41,9 @@ export class PolicyManager {
       // Set compliance mode based on enterprise policies
       this.complianceMode = this.enterprisePolicies?.complianceMode || false;
 
-      console.log("Check: Policies loaded successfully");
+      logger.log("Check: Policies loaded successfully");
     } catch (error) {
-      console.error("Check: Failed to load policies:", error);
+      logger.error("Check: Failed to load policies:", error);
       this.loadDefaultPolicies();
     }
   }
@@ -51,7 +53,7 @@ export class PolicyManager {
       const managedPolicies = await chrome.storage.managed.get(["policies"]);
       return managedPolicies.policies || {};
     } catch (error) {
-      console.log("Check: No enterprise policies available");
+      logger.log("Check: No enterprise policies available");
       return {};
     }
   }
@@ -194,7 +196,7 @@ export class PolicyManager {
           return result;
       }
     } catch (error) {
-      console.error("Check: Policy check failed:", error);
+      logger.error("Check: Policy check failed:", error);
       result.allowed = false;
       result.reason = "Policy check failed";
       return result;
@@ -459,9 +461,9 @@ export class PolicyManager {
       await chrome.storage.local.set({ policies: updatedPolicies });
       this.policies = updatedPolicies;
 
-      console.log("Check: Policies updated");
+      logger.log("Check: Policies updated");
     } catch (error) {
-      console.error("Check: Failed to update policies:", error);
+      logger.error("Check: Failed to update policies:", error);
       throw error;
     }
   }
@@ -509,7 +511,7 @@ export class PolicyManager {
       const auditLog = await chrome.storage.local.get(["auditLog"]);
       return auditLog.auditLog || [];
     } catch (error) {
-      console.error("Check: Failed to get audit log:", error);
+      logger.error("Check: Failed to get audit log:", error);
       return [];
     }
   }
@@ -534,12 +536,12 @@ export class PolicyManager {
 
       await chrome.storage.local.set({ auditLog: logs });
     } catch (error) {
-      console.error("Check: Failed to log audit event:", error);
+      logger.error("Check: Failed to log audit event:", error);
     }
   }
 
   loadDefaultPolicies() {
     this.policies = this.getDefaultPolicies();
-    console.log("Check: Using default policies");
+    logger.log("Check: Using default policies");
   }
 }

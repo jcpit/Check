@@ -4,6 +4,8 @@
  * Enhanced with CyberDrain Microsoft 365 phishing detection logic
  */
 
+import logger from "../utils/logger.js";
+
 export class DetectionEngine {
   constructor() {
     this.detectionRules = null;
@@ -31,9 +33,9 @@ export class DetectionEngine {
       await this.loadDomainLists();
       await this.loadPolicy();
       this.isInitialized = true;
-      console.log("Check: Detection engine initialized successfully");
+      logger.log("Check: Detection engine initialized successfully");
     } catch (error) {
-      console.error("Check: Failed to initialize detection engine:", error);
+      logger.error("Check: Failed to initialize detection engine:", error);
       throw error;
     }
   }
@@ -47,9 +49,9 @@ export class DetectionEngine {
       this.policy = Object.assign({}, this.getDefaultPolicy(), managed, local);
       this.extraWhitelist = new Set((this.policy.ExtraWhitelist || []).map(s => this.urlOrigin(s)).filter(Boolean));
       
-      console.log("Check: Policy loaded successfully");
+      logger.log("Check: Policy loaded successfully");
     } catch (error) {
-      console.error("Check: Failed to load policy:", error);
+      logger.error("Check: Failed to load policy:", error);
       this.policy = this.getDefaultPolicy();
     }
   }
@@ -127,9 +129,9 @@ export class DetectionEngine {
         this.detectionRules.suspicious || []
       );
 
-      console.log("Check: Detection rules loaded with CyberDrain integration");
+      logger.log("Check: Detection rules loaded with CyberDrain integration");
     } catch (error) {
-      console.warn("Check: Failed to load detection rules, using defaults");
+      logger.warn("Check: Failed to load detection rules, using defaults");
       this.loadDefaultRules();
     }
   }
@@ -148,7 +150,7 @@ export class DetectionEngine {
         );
       }
     } catch (error) {
-      console.error("Check: Failed to load domain lists:", error);
+      logger.error("Check: Failed to load domain lists:", error);
     }
   }
 
@@ -163,7 +165,7 @@ export class DetectionEngine {
             action: pattern.action || "block",
           };
         } catch (error) {
-          console.warn("Check: Invalid pattern:", pattern.pattern);
+          logger.warn("Check: Invalid pattern:", pattern.pattern);
           return null;
         }
       })
@@ -324,7 +326,7 @@ export class DetectionEngine {
         analysis
       );
     } catch (error) {
-      console.error("Check: URL analysis failed:", error);
+      logger.error("Check: URL analysis failed:", error);
       analysis.reason = "Analysis failed";
     }
 
@@ -355,7 +357,7 @@ export class DetectionEngine {
           });
         }
       } catch (error) {
-        console.warn("Check: Invalid phishing indicator pattern:", indicator.id);
+        logger.warn("Check: Invalid phishing indicator pattern:", indicator.id);
       }
     }
 
@@ -452,7 +454,7 @@ export class DetectionEngine {
         await this.processContentAnalysis(tabId, url, contentAnalysis);
       }
     } catch (error) {
-      console.error("Check: Content analysis failed:", error);
+      logger.error("Check: Content analysis failed:", error);
     }
   }
 
@@ -551,9 +553,9 @@ export class DetectionEngine {
       // Save to storage
       await chrome.storage.local.set({ detectionRules: newRules });
 
-      console.log("Check: Detection rules updated");
+      logger.log("Check: Detection rules updated");
     } catch (error) {
-      console.error("Check: Failed to update detection rules:", error);
+      logger.error("Check: Failed to update detection rules:", error);
       throw error;
     }
   }
@@ -567,9 +569,9 @@ export class DetectionEngine {
       this.detectionRules.custom.push(rule);
       await this.updateDetectionRules(this.detectionRules);
 
-      console.log("Check: Custom rule added");
+      logger.log("Check: Custom rule added");
     } catch (error) {
-      console.error("Check: Failed to add custom rule:", error);
+      logger.error("Check: Failed to add custom rule:", error);
       throw error;
     }
   }
@@ -581,10 +583,10 @@ export class DetectionEngine {
           (rule) => rule.id !== ruleId
         );
         await this.updateDetectionRules(this.detectionRules);
-        console.log("Check: Custom rule removed");
+        logger.log("Check: Custom rule removed");
       }
     } catch (error) {
-      console.error("Check: Failed to remove custom rule:", error);
+      logger.error("Check: Failed to remove custom rule:", error);
       throw error;
     }
   }
@@ -906,7 +908,7 @@ export class DetectionEngine {
         return referrer === validRef || referrer.startsWith(validRef);
       });
     } catch (error) {
-      console.error("Check: Error validating referrer:", error);
+      logger.error("Check: Error validating referrer:", error);
       return false;
     }
   }
@@ -944,7 +946,7 @@ export class DetectionEngine {
       // Require at least 80% of domains to be present
       return validDomains / requiredDomains.length >= 0.8;
     } catch (error) {
-      console.error("Check: Error validating CSP:", error);
+      logger.error("Check: Error validating CSP:", error);
       return false;
     }
   }

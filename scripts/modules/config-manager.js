@@ -3,6 +3,8 @@
  * Handles enterprise configuration, branding, and settings management
  */
 
+import logger from "../utils/logger.js";
+
 export class ConfigManager {
   constructor() {
     this.config = null;
@@ -28,10 +30,10 @@ export class ConfigManager {
         this.brandingConfig
       );
 
-      console.log("Check: Configuration loaded successfully");
+      logger.log("Check: Configuration loaded successfully");
       return this.config;
     } catch (error) {
-      console.error("Check: Failed to load configuration:", error);
+      logger.error("Check: Failed to load configuration:", error);
       throw error;
     }
   }
@@ -42,13 +44,13 @@ export class ConfigManager {
       const managedConfig = await chrome.storage.managed.get(null);
 
       if (Object.keys(managedConfig).length > 0) {
-        console.log("Check: Enterprise configuration found");
+        logger.log("Check: Enterprise configuration found");
         return managedConfig;
       }
 
       return {};
     } catch (error) {
-      console.log("Check: No enterprise configuration available");
+      logger.log("Check: No enterprise configuration available");
       return {};
     }
   }
@@ -62,7 +64,7 @@ export class ConfigManager {
       const brandingConfig = await response.json();
       return brandingConfig;
     } catch (error) {
-      console.log("Check: Using default branding configuration");
+      logger.log("Check: Using default branding configuration");
       return this.getDefaultBrandingConfig();
     }
   }
@@ -221,7 +223,7 @@ export class ConfigManager {
 
       return updatedConfig;
     } catch (error) {
-      console.error("Check: Failed to update configuration:", error);
+      logger.error("Check: Failed to update configuration:", error);
       throw error;
     }
   }
@@ -249,7 +251,7 @@ export class ConfigManager {
 
   async migrateConfig(previousVersion) {
     try {
-      console.log(
+      logger.log(
         `Check: Migrating configuration from version ${previousVersion}`
       );
 
@@ -262,9 +264,9 @@ export class ConfigManager {
       //   // Migration logic for 1.1.0
       // }
 
-      console.log("Check: Configuration migration completed");
+      logger.log("Check: Configuration migration completed");
     } catch (error) {
-      console.error("Check: Configuration migration failed:", error);
+      logger.error("Check: Configuration migration failed:", error);
     }
   }
 
@@ -314,10 +316,10 @@ export class ConfigManager {
         this.brandingConfig = importData.branding;
       }
 
-      console.log("Check: Configuration imported successfully");
+      logger.log("Check: Configuration imported successfully");
       return true;
     } catch (error) {
-      console.error("Check: Failed to import configuration:", error);
+      logger.error("Check: Failed to import configuration:", error);
       throw error;
     }
   }
