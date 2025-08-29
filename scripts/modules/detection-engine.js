@@ -598,7 +598,7 @@ export class DetectionEngine {
       content_length: content.length,
       context,
       findings: [],
-      legitimacy_score: 0,
+      legitimacyScore: 0,
       threat_level: "none",
       hasRequiredElements: false,
       // CyberDrain integration
@@ -651,7 +651,7 @@ export class DetectionEngine {
       }
 
       analysis.hasRequiredElements = foundElements >= 3; // At least 3 required elements
-      analysis.legitimacy_score =
+      analysis.legitimacyScore =
         (foundElements / requiredElements.length) * 100;
 
       // Check for phishing indicators
@@ -680,11 +680,11 @@ export class DetectionEngine {
 
       // CyberDrain integration - Enhanced legitimacy scoring
       if (analysis.aadLike && analysis.hasRequiredElements && analysis.threat_level === "none") {
-        analysis.legitimacyScore = "high";
-      } else if (analysis.legitimacy_score >= 60) {
-        analysis.legitimacyScore = "medium";
+        analysis.legitimacyLevel = "high";
+      } else if (analysis.legitimacyScore >= 60) {
+        analysis.legitimacyLevel = "medium";
       } else {
-        analysis.legitimacyScore = "low";
+        analysis.legitimacyLevel = "low";
       }
     } catch (error) {
       analysis.error = error.message;
@@ -1130,7 +1130,7 @@ export class DetectionEngine {
       content_length: content.length,
       context,
       findings: [],
-      legitimacy_score: 0,
+      legitimacyScore: 0,
       threat_level: "none",
       hasRequiredElements: false,
       // CyberDrain integration
@@ -1152,7 +1152,7 @@ export class DetectionEngine {
       
       // Calculate legitimacy score
       const totalElements = Object.keys(analysis.detectedElements).length;
-      analysis.legitimacy_score = totalElements > 0 ? (requiredCount / totalElements) * 100 : 0;
+      analysis.legitimacyScore = totalElements > 0 ? (requiredCount / totalElements) * 100 : 0;
       
       // Check for phishing indicators using rules
       if (this.detectionRules?.phishing_indicators) {
@@ -1177,11 +1177,11 @@ export class DetectionEngine {
       
       // Enhanced legitimacy scoring
       if (analysis.aadLike && analysis.hasRequiredElements && analysis.threat_level === "none") {
-        analysis.legitimacyScore = "high";
-      } else if (analysis.legitimacy_score >= 60) {
-        analysis.legitimacyScore = "medium";
+        analysis.legitimacyLevel = "high";
+      } else if (analysis.legitimacyScore >= 60) {
+        analysis.legitimacyLevel = "medium";
       } else {
-        analysis.legitimacyScore = "low";
+        analysis.legitimacyLevel = "low";
       }
       
     } catch (error) {
