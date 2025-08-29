@@ -514,7 +514,7 @@ body {
 /* Notification toast */
 .notification-toast {
   position: absolute;
-  top: 10px;
+  bottom: 10px;
   left: 10px;
   right: 10px;
   background: #1f2937;
@@ -525,12 +525,12 @@ body {
   align-items: center;
   justify-content: space-between;
   z-index: 1001;
-  animation: slideDown 0.3s ease-out;
+  animation: slideUp 0.3s ease-out;
 }
 
-@keyframes slideDown {
+@keyframes slideUp {
   from {
-    transform: translateY(-100%);
+    transform: translateY(100%);
     opacity: 0;
   }
   to {
