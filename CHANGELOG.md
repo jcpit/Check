@@ -7,6 +7,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### d02e0d1 - Merge branch 'main' of https://github.com/CyberDrain/ProjectX
+- Contributor: John Duprey
+- Date: 2025-08-29T14:27:08+02:00
+- Files changed:
+  - CHANGELOG.md
+  - README.md
+  - docs/DEVELOPER_GUIDE.md
+  - docs/USER_GUIDE.md
+- Synchronized local branch with upstream, bringing in documentation and changelog updates.
+
+### 2ed797b - Merge pull request #14 from CyberDrain/codex/review-core-extension-functionality-and-documentation
+- Contributor: cipp-ashe
+- Date: 2025-08-29T08:27:00-04:00
+- Files changed:
+  - docs/DEVELOPER_GUIDE.md
+  - docs/USER_GUIDE.md
+- Merged documentation review covering core extension functionality.
+
+### 68aabe1 - merge kelvincode
+- Contributor: John Duprey
+- Date: 2025-08-29T14:26:59+02:00
+- Files changed:
+  - KELVINCODE-INTEGRATION-SUMMARY.md
+  - config/managed_schema.json
+  - manifest-enhanced.json
+  - options/options-enhanced.html
+  - popup/popup-enhanced.html
+  - scripts/background-enhanced.js
+  - scripts/content-enhanced.js
+- Integrated KelvinCode enhancements and supporting configuration files.
+
+### 0b711a9 - Merge pull request #13 from CyberDrain/codex/validate-and-update-readme-sections
+- Contributor: cipp-ashe
+- Date: 2025-08-29T08:22:25-04:00
+- Files changed:
+  - README.md
+- Merged README validation and section updates.
+
+### 7388abe - docs: document core scripts and usage
+- Contributor: cipp-ashe
+- Date: 2025-08-29T08:22:06-04:00
+- Files changed:
+  - docs/DEVELOPER_GUIDE.md
+  - docs/USER_GUIDE.md
+- Documented core scripts and extension usage.
+
+### 2155e55 - docs: update readme
+- Contributor: cipp-ashe
+- Date: 2025-08-29T08:17:22-04:00
+- Files changed:
+  - README.md
+- Updated README with revised sections and structure.
+
+### 3b3fc34 - Merge pull request #12 from CyberDrain/codex/update-changelog-with-recent-commits
+- Contributor: cipp-ashe
+- Date: 2025-08-29T08:06:39-04:00
+- Files changed:
+  - CHANGELOG.md
+- Merged changelog refresh adding recent commit details.
+
+### 7fda06b - docs: update changelog with recent commits
+- Contributor: cipp-ashe
+- Date: 2025-08-29T08:06:22-04:00
+- Files changed:
+  - CHANGELOG.md
+- Extended changelog to capture latest commits.
 
 ### 387b7fe - fix error
 - Contributor: John Duprey
