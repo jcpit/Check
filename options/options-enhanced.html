@@ -1,0 +1,475 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Microsoft 365 Phishing Protection – Options</title>
+  <style>
+    body {
+      font: 14px system-ui, -apple-system, sans-serif;
+      line-height: 1.5;
+      padding: 0;
+      margin: 0;
+      background: #f8fafc;
+      color: #1e293b;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      min-height: 100vh;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: white;
+      padding: 24px;
+    }
+    
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    
+    .header p {
+      margin: 8px 0 0 0;
+      opacity: 0.9;
+    }
+    
+    .content {
+      padding: 24px;
+    }
+    
+    .section {
+      margin-bottom: 32px;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 24px;
+    }
+    
+    .section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+    
+    .section h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 16px 0;
+      color: #1e293b;
+    }
+    
+    .section p {
+      color: #64748b;
+      margin: 0 0 16px 0;
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    .form-grid {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    
+    .form-grid label {
+      font-weight: 500;
+      color: #374151;
+      padding-top: 8px;
+    }
+    
+    .form-grid input,
+    .form-grid textarea,
+    .form-grid select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+      transition: border-color 0.2s;
+    }
+    
+    .form-grid input:focus,
+    .form-grid textarea:focus,
+    .form-grid select:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    
+    .form-grid textarea {
+      resize: vertical;
+      font-family: monospace;
+    }
+    
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .checkbox-group input[type="checkbox"] {
+      width: auto;
+      margin: 0;
+    }
+    
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid #e2e8f0;
+    }
+    
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+    
+    .btn-secondary {
+      background: white;
+      color: #374151;
+      border-color: #d1d5db;
+    }
+    
+    .btn-secondary:hover {
+      background: #f9fafb;
+    }
+    
+    .btn-danger {
+      background: #dc2626;
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+    
+    .message {
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-top: 16px;
+      font-weight: 500;
+    }
+    
+    .message.success {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+    
+    .message.error {
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+    }
+    
+    .help-text {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    
+    .managed-notice {
+      background: #fef3c7;
+      color: #92400e;
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      border: 1px solid #fcd34d;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Microsoft 365 Phishing Protection</h1>
+      <p>Configure phishing detection and protection settings</p>
+    </div>
+    
+    <div class="content">
+      <div class="managed-notice" id="managedNotice" style="display: none;">
+        <strong>Note:</strong> Some settings are managed by your organization and cannot be changed.
+      </div>
+      
+      <form id="optionsForm">
+        <div class="section">
+          <h2>Branding & Appearance</h2>
+          <p>Customize how the extension appears to users in your organization.</p>
+          
+          <div class="form-grid">
+            <label for="BrandingName">Extension Name</label>
+            <div>
+              <input type="text" id="BrandingName" placeholder="Microsoft 365 Phishing Protection">
+              <div class="help-text">Name displayed in the extension popup and notifications</div>
+            </div>
+            
+            <label for="BrandingImage">Logo Image URL</label>
+            <div>
+              <input type="url" id="BrandingImage" placeholder="https://example.com/logo.png">
+              <div class="help-text">URL to a square logo image (32x32px recommended)</div>
+            </div>
+            
+            <label for="ValidPageBadgeImage">Valid Page Badge</label>
+            <div>
+              <input type="url" id="ValidPageBadgeImage" placeholder="https://example.com/valid-badge.png">
+              <div class="help-text">Badge shown on legitimate Microsoft login pages</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Detection Settings</h2>
+          <p>Configure how aggressively the extension detects and blocks phishing attempts.</p>
+          
+          <div class="form-grid">
+            <label for="StrictResourceAudit">Strict Resource Audit</label>
+            <div class="checkbox-group">
+              <input type="checkbox" id="StrictResourceAudit" checked>
+              <span>Flag pages with non-Microsoft resources</span>
+            </div>
+            
+            <label for="RequireMicrosoftAction">Require Microsoft Form Action</label>
+            <div class="checkbox-group">
+              <input type="checkbox" id="RequireMicrosoftAction" checked>
+              <span>Block login forms that don't submit to Microsoft</span>
+            </div>
+            
+            <label for="AlertWhenLogon">Alert on Successful Login</label>
+            <div class="checkbox-group">
+              <input type="checkbox" id="AlertWhenLogon" checked>
+              <span>Send notifications when users successfully log in</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Trusted Domains</h2>
+          <p>Additional domains that should be treated as trusted for login purposes.</p>
+          
+          <div class="form-grid">
+            <label for="ExtraWhitelist">Extra Whitelist</label>
+            <div>
+              <textarea id="ExtraWhitelist" rows="6" placeholder="https://login.partner.example.com&#10;https://idp.contoso.com"></textarea>
+              <div class="help-text">One origin per line (e.g., https://idp.contoso.com)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Reporting & Integration</h2>
+          <p>Configure integration with CIPP and other security platforms.</p>
+          
+          <div class="form-grid">
+            <label for="CIPPReportingServer">CIPP Server URL</label>
+            <div>
+              <input type="url" id="CIPPReportingServer" placeholder="https://cipp.example.com">
+              <div class="help-text">Base URL for CyberDrain CIPP reporting (optional)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Advanced Settings</h2>
+          <p>Advanced configuration options for expert users.</p>
+          
+          <div class="form-grid">
+            <label for="enablePhishingDetection">Phishing Detection</label>
+            <div class="checkbox-group">
+              <input type="checkbox" id="enablePhishingDetection" checked>
+              <span>Enable real-time phishing detection</span>
+            </div>
+            
+            <label for="lockCredentialsOnPhishing">Lock Credentials</label>
+            <div class="checkbox-group">
+              <input type="checkbox" id="lockCredentialsOnPhishing" checked>
+              <span>Disable input fields on detected phishing pages</span>
+            </div>
+            
+            <label for="preventPhishingSubmission">Block Submissions</label>
+            <div class="checkbox-group">
+              <input type="checkbox" id="preventPhishingSubmission" checked>
+              <span>Prevent form submission on phishing pages</span>
+            </div>
+            
+            <label for="showValidPageBadge">Valid Page Badge</label>
+            <div class="checkbox-group">
+              <input type="checkbox" id="showValidPageBadge" checked>
+              <span>Show validation badge on legitimate Microsoft pages</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary" id="saveBtn">Save Settings</button>
+          <button type="button" class="btn btn-secondary" id="resetBtn">Reset to Defaults</button>
+          <button type="button" class="btn btn-secondary" id="exportBtn">Export Data</button>
+        </div>
+      </form>
+      
+      <div id="message" style="display: none;"></div>
+    </div>
+  </div>
+
+  <script>
+    (async function() {
+      const form = document.getElementById("optionsForm");
+      const message = document.getElementById("message");
+      const managedNotice = document.getElementById("managedNotice");
+      
+      const settingIds = [
+        "BrandingName", "BrandingImage", "ValidPageBadgeImage", "CIPPReportingServer",
+        "AlertWhenLogon", "ExtraWhitelist", "StrictResourceAudit", "RequireMicrosoftAction",
+        "enablePhishingDetection", "lockCredentialsOnPhishing", "preventPhishingSubmission", 
+        "showValidPageBadge"
+      ];
+
+      async function loadSettings() {
+        try {
+          const [local, managed] = await Promise.all([
+            chrome.storage.sync.get(null),
+            chrome.storage.managed.get(null).catch(() => ({}))
+          ]);
+          
+          // Show managed notice if any managed settings exist
+          if (Object.keys(managed).length > 0) {
+            managedNotice.style.display = "block";
+          }
+          
+          // Load values with managed override
+          const settings = Object.assign({}, local, managed);
+          
+          document.getElementById("BrandingName").value = settings.BrandingName || "";
+          document.getElementById("BrandingImage").value = settings.BrandingImage || "";
+          document.getElementById("ValidPageBadgeImage").value = settings.ValidPageBadgeImage || "";
+          document.getElementById("CIPPReportingServer").value = settings.CIPPReportingServer || "";
+          
+          document.getElementById("AlertWhenLogon").checked = settings.AlertWhenLogon !== false;
+          document.getElementById("StrictResourceAudit").checked = settings.StrictResourceAudit !== false;
+          document.getElementById("RequireMicrosoftAction").checked = settings.RequireMicrosoftAction !== false;
+          document.getElementById("enablePhishingDetection").checked = settings.enablePhishingDetection !== false;
+          document.getElementById("lockCredentialsOnPhishing").checked = settings.lockCredentialsOnPhishing !== false;
+          document.getElementById("preventPhishingSubmission").checked = settings.preventPhishingSubmission !== false;
+          document.getElementById("showValidPageBadge").checked = settings.showValidPageBadge !== false;
+          
+          document.getElementById("ExtraWhitelist").value = (settings.ExtraWhitelist || []).join("\\n");
+          
+          // Disable managed fields
+          for (const id of settingIds) {
+            if (managed.hasOwnProperty(id)) {
+              const element = document.getElementById(id);
+              if (element) {
+                element.disabled = true;
+                element.title = "This setting is managed by your organization";
+              }
+            }
+          }
+        } catch (error) {
+          showMessage("Error loading settings: " + error.message, "error");
+        }
+      }
+
+      function showMessage(text, type = "success") {
+        message.textContent = text;
+        message.className = `message ${type}`;
+        message.style.display = "block";
+        setTimeout(() => {
+          message.style.display = "none";
+        }, 3000);
+      }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        try {
+          const payload = {
+            BrandingName: document.getElementById("BrandingName").value.trim(),
+            BrandingImage: document.getElementById("BrandingImage").value.trim(),
+            ValidPageBadgeImage: document.getElementById("ValidPageBadgeImage").value.trim(),
+            CIPPReportingServer: document.getElementById("CIPPReportingServer").value.trim(),
+            AlertWhenLogon: document.getElementById("AlertWhenLogon").checked,
+            StrictResourceAudit: document.getElementById("StrictResourceAudit").checked,
+            RequireMicrosoftAction: document.getElementById("RequireMicrosoftAction").checked,
+            enablePhishingDetection: document.getElementById("enablePhishingDetection").checked,
+            lockCredentialsOnPhishing: document.getElementById("lockCredentialsOnPhishing").checked,
+            preventPhishingSubmission: document.getElementById("preventPhishingSubmission").checked,
+            showValidPageBadge: document.getElementById("showValidPageBadge").checked,
+            ExtraWhitelist: document.getElementById("ExtraWhitelist").value
+              .split(/\\r?\\n/)
+              .map(s => s.trim())
+              .filter(Boolean)
+          };
+          
+          await chrome.storage.sync.set(payload);
+          
+          // Notify background script to reload policy
+          chrome.runtime.sendMessage({type: "UPDATE_CONFIG", config: payload});
+          
+          showMessage("Settings saved successfully!", "success");
+        } catch (error) {
+          showMessage("Error saving settings: " + error.message, "error");
+        }
+      });
+
+      document.getElementById("resetBtn").addEventListener("click", async () => {
+        if (confirm("Reset all settings to defaults? This cannot be undone.")) {
+          try {
+            await chrome.storage.sync.clear();
+            chrome.runtime.sendMessage({type: "UPDATE_CONFIG", config: {}});
+            await loadSettings();
+            showMessage("Settings reset to defaults", "success");
+          } catch (error) {
+            showMessage("Error resetting settings: " + error.message, "error");
+          }
+        }
+      });
+
+      document.getElementById("exportBtn").addEventListener("click", async () => {
+        try {
+          const result = await new Promise(resolve => {
+            chrome.runtime.sendMessage({type: "EXPORT_DATA"}, resolve);
+          });
+          
+          if (result.success) {
+            const blob = new Blob([JSON.stringify(result.data, null, 2)], {
+              type: "application/json"
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `phishing-protection-export-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showMessage("Data exported successfully", "success");
+          } else {
+            showMessage("Error exporting data", "error");
+          }
+        } catch (error) {
+          showMessage("Error exporting data: " + error.message, "error");
+        }
+      });
+
+      // Load settings on page load
+      loadSettings();
+    })();
+  </script>
+</body>
+</html>

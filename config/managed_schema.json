@@ -7,9 +7,82 @@
       "type": "boolean",
       "default": true
     },
+    "BrandingName": {
+      "title": "Extension Display Name",
+      "description": "Name displayed in the extension popup and notifications",
+      "type": "string",
+      "default": "Microsoft 365 Phishing Protection"
+    },
+    "BrandingImage": {
+      "title": "Branding Logo URL",
+      "description": "URL or data: URI of a square logo for branding",
+      "type": "string"
+    },
+    "ValidPageBadgeImage": {
+      "title": "Valid Page Badge Image",
+      "description": "URL or data: URI for badge shown on legitimate Microsoft login pages",
+      "type": "string"
+    },
+    "ExtraWhitelist": {
+      "title": "Extra Trusted Domains",
+      "description": "Additional domains to treat as trusted for login purposes",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "Origin like https://idp.contoso.com"
+      },
+      "default": []
+    },
+    "CIPPReportingServer": {
+      "title": "CIPP Reporting Server",
+      "description": "Base URL to POST JSON events for CyberDrain CIPP integration",
+      "type": "string"
+    },
+    "AlertWhenLogon": {
+      "title": "Alert on Successful Login",
+      "description": "Send notifications when users successfully log into Microsoft 365",
+      "type": "boolean",
+      "default": true
+    },
+    "StrictResourceAudit": {
+      "title": "Strict Resource Audit",
+      "description": "Flag pages with non-Microsoft subresources as suspicious",
+      "type": "boolean",
+      "default": true
+    },
+    "RequireMicrosoftAction": {
+      "title": "Require Microsoft Form Action",
+      "description": "Block login forms that don't submit to Microsoft domains",
+      "type": "boolean",
+      "default": true
+    },
+    "enablePhishingDetection": {
+      "title": "Phishing Detection Enabled",
+      "description": "Enable real-time Microsoft 365 phishing detection",
+      "type": "boolean",
+      "default": true
+    },
+    "lockCredentialsOnPhishing": {
+      "title": "Lock Credentials on Phishing",
+      "description": "Disable input fields when phishing is detected",
+      "type": "boolean",
+      "default": true
+    },
+    "preventPhishingSubmission": {
+      "title": "Prevent Phishing Form Submission",
+      "description": "Block form submissions on detected phishing pages",
+      "type": "boolean",
+      "default": true
+    },
+    "showValidPageBadge": {
+      "title": "Show Valid Page Badge",
+      "description": "Display validation badge on legitimate Microsoft login pages",
+      "type": "boolean",
+      "default": true
+    },
     "enableContentManipulation": {
       "title": "Content Manipulation Enabled",
-      "description": "Allow the extension to manipulate page content",
+      "description": "Allow the extension to manipulate page content for security",
       "type": "boolean",
       "default": true
     },
@@ -32,8 +105,8 @@
       "default": true
     },
     "whitelistedDomains": {
-      "title": "Whitelisted Domains",
-      "description": "List of domains that are always allowed",
+      "title": "Additional Whitelisted Domains",
+      "description": "Legacy setting - use ExtraWhitelist instead",
       "type": "array",
       "items": {
         "type": "string"
