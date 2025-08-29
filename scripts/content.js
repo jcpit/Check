@@ -135,7 +135,8 @@ class CheckContent {
     // 1) Real Microsoft login → show valid badge (if enabled)
     if (isTrustedOrigin(origin)) {
       // Check if valid page badge is enabled in settings
-      const badgeEnabled = this.policy?.EnableValidPageBadge ||
+      const badgeEnabled = this.config?.enableValidPageBadge ||
+                          this.policy?.EnableValidPageBadge ||
                           this.detectionRules?.detection_settings?.enable_verification_badge ||
                           false;
       
