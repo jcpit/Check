@@ -1,6 +1,7 @@
 /**
  * Detection Engine for Check
  * Handles threat detection, URL analysis, and content scanning
+ * Enhanced with CyberDrain Microsoft 365 phishing detection logic
  */
 
 export class DetectionEngine {
@@ -12,18 +13,89 @@ export class DetectionEngine {
     this.whitelistedDomains = new Set();
     this.blacklistedDomains = new Set();
     this.isInitialized = false;
+    
+    // CyberDrain integration - Will be loaded from rules
+    this.TRUSTED_ORIGINS = new Set();
+    this.aadDetectionElements = [];
+    this.requiredElements = [];
+    this.detectionLogic = null;
+    
+    // Policy and configuration
+    this.policy = null;
+    this.extraWhitelist = new Set();
   }
 
   async initialize() {
     try {
       await this.loadDetectionRules();
       await this.loadDomainLists();
+      await this.loadPolicy();
       this.isInitialized = true;
       console.log("Check: Detection engine initialized successfully");
     } catch (error) {
       console.error("Check: Failed to initialize detection engine:", error);
       throw error;
     }
+  }
+
+  // CyberDrain integration - Policy management
+  async loadPolicy() {
+    try {
+      const managed = await chrome.storage.managed.get(null).catch(() => ({}));
+      const local = await chrome.storage.sync.get(null).catch(() => ({}));
+      
+      this.policy = Object.assign({}, this.getDefaultPolicy(), managed, local);
+      this.extraWhitelist = new Set((this.policy.ExtraWhitelist || []).map(s => this.urlOrigin(s)).filter(Boolean));
+      
+      console.log("Check: Policy loaded successfully");
+    } catch (error) {
+      console.error("Check: Failed to load policy:", error);
+      this.policy = this.getDefaultPolicy();
+    }
+  }
+
+  getDefaultPolicy() {
+    return {
+      BrandingName: "Microsoft 365 Phishing Protection",
+      BrandingImage: "",
+      ExtraWhitelist: [],
+      CIPPReportingServer: "",
+      AlertWhenLogon: true,
+      ValidPageBadgeImage: "",
+      StrictResourceAudit: true,
+      RequireMicrosoftAction: true,
+      EnableValidPageBadge: false
+    };
+  }
+
+  // CyberDrain integration - URL origin helper
+  urlOrigin(url) {
+    try {
+      return new URL(url).origin.toLowerCase();
+    } catch {
+      return "";
+    }
+  }
+
+  // CyberDrain integration - Check if origin is trusted
+  isTrustedOrigin(url) {
+    const origin = this.urlOrigin(url);
+    return this.TRUSTED_ORIGINS.has(origin);
+  }
+
+  // CyberDrain integration - Check if referrer is trusted
+  isTrustedReferrer(referrer) {
+    if (!referrer) return false;
+    const origin = this.urlOrigin(referrer);
+    return this.TRUSTED_ORIGINS.has(origin);
+  }
+
+  // CyberDrain integration - Verdict determination for URL
+  verdictForUrl(url) {
+    const origin = this.urlOrigin(url);
+    if (this.TRUSTED_ORIGINS.has(origin)) return "trusted";
+    if (this.extraWhitelist.has(origin)) return "trusted-extra";
+    return "unknown";
   }
 
   async loadDetectionRules() {
@@ -33,6 +105,16 @@ export class DetectionEngine {
         chrome.runtime.getURL("rules/detection-rules.json")
       );
       this.detectionRules = await response.json();
+
+      // CyberDrain integration - Load trusted origins from rules
+      if (this.detectionRules.trusted_origins) {
+        this.TRUSTED_ORIGINS = new Set(this.detectionRules.trusted_origins);
+      }
+
+      // Load AAD detection elements from rules
+      this.aadDetectionElements = this.detectionRules.aad_detection_elements || [];
+      this.requiredElements = this.detectionRules.required_elements || [];
+      this.detectionLogic = this.detectionRules.detection_logic || {};
 
       // Parse patterns for faster matching
       this.maliciousPatterns = this.compilePatterns(
@@ -45,7 +127,7 @@ export class DetectionEngine {
         this.detectionRules.suspicious || []
       );
 
-      console.log("Check: Detection rules loaded");
+      console.log("Check: Detection rules loaded with CyberDrain integration");
     } catch (error) {
       console.warn("Check: Failed to load detection rules, using defaults");
       this.loadDefaultRules();
@@ -157,11 +239,30 @@ export class DetectionEngine {
       reason: "",
       severity: "none",
       timestamp: new Date().toISOString(),
+      verdict: "unknown",
+      isLegitimate: false,
+      threat_level: "none"
     };
 
     try {
       const urlObj = new URL(url);
       const domain = urlObj.hostname.toLowerCase();
+
+      // CyberDrain integration - Check verdict first
+      analysis.verdict = this.verdictForUrl(url);
+      
+      if (analysis.verdict === "trusted") {
+        analysis.isLegitimate = true;
+        analysis.reason = "Trusted Microsoft domain";
+        analysis.requiresContentScript = true; // Still inject for badge display
+        return analysis;
+      }
+      
+      if (analysis.verdict === "trusted-extra") {
+        analysis.isLegitimate = true;
+        analysis.reason = "Extra whitelisted domain";
+        return analysis;
+      }
 
       // Check whitelist first
       if (this.isWhitelisted(domain)) {
@@ -173,6 +274,7 @@ export class DetectionEngine {
       if (this.isBlacklisted(domain)) {
         analysis.isBlocked = true;
         analysis.severity = "high";
+        analysis.threat_level = "high";
         analysis.reason = "Blacklisted domain";
         analysis.threats.push({
           type: "blacklisted_domain",
@@ -182,30 +284,37 @@ export class DetectionEngine {
         return analysis;
       }
 
-      // Run pattern matching
-      const threats = this.detectThreats(url);
-      analysis.threats = threats;
+      // CyberDrain integration - Enhanced Microsoft phishing detection
+      const microsoftThreats = this.detectMicrosoftPhishing(url);
+      analysis.threats.push(...microsoftThreats);
 
-      if (threats.length > 0) {
-        const highSeverityThreats = threats.filter(
-          (t) => t.severity === "high"
+      // Run original pattern matching
+      const threats = this.detectThreats(url);
+      analysis.threats.push(...threats);
+
+      if (analysis.threats.length > 0) {
+        const highSeverityThreats = analysis.threats.filter(
+          (t) => t.severity === "high" || t.severity === "critical"
         );
-        const mediumSeverityThreats = threats.filter(
+        const mediumSeverityThreats = analysis.threats.filter(
           (t) => t.severity === "medium"
         );
 
         if (highSeverityThreats.length > 0) {
           analysis.isBlocked = true;
           analysis.severity = "high";
+          analysis.threat_level = "high";
           analysis.reason = highSeverityThreats[0].description;
         } else if (mediumSeverityThreats.length > 0) {
           analysis.isSuspicious = true;
           analysis.severity = "medium";
+          analysis.threat_level = "medium";
           analysis.reason = mediumSeverityThreats[0].description;
         } else {
           analysis.isSuspicious = true;
           analysis.severity = "low";
-          analysis.reason = threats[0].description;
+          analysis.threat_level = "low";
+          analysis.reason = analysis.threats[0].description;
         }
       }
 
@@ -220,6 +329,37 @@ export class DetectionEngine {
     }
 
     return analysis;
+  }
+
+  // CyberDrain integration - Microsoft-specific phishing detection
+  detectMicrosoftPhishing(url) {
+    const threats = [];
+    
+    if (!this.detectionRules?.phishing_indicators) {
+      return threats;
+    }
+
+    // Check against CyberDrain phishing indicators
+    for (const indicator of this.detectionRules.phishing_indicators) {
+      try {
+        const regex = new RegExp(indicator.pattern, indicator.flags || "i");
+        if (regex.test(url)) {
+          threats.push({
+            type: "microsoft_phishing",
+            severity: indicator.severity,
+            description: indicator.description,
+            action: indicator.action,
+            category: indicator.category,
+            confidence: indicator.confidence,
+            indicator_id: indicator.id
+          });
+        }
+      } catch (error) {
+        console.warn("Check: Invalid phishing indicator pattern:", indicator.id);
+      }
+    }
+
+    return threats;
   }
 
   detectThreats(url) {
@@ -459,9 +599,25 @@ export class DetectionEngine {
       legitimacy_score: 0,
       threat_level: "none",
       hasRequiredElements: false,
+      // CyberDrain integration
+      aadLike: false,
+      hasLoginFmt: false,
+      hasNextBtn: false,
+      hasPw: false,
+      brandingHit: false
     };
 
     try {
+      // CyberDrain integration - Core AAD fingerprint detection
+      analysis.hasLoginFmt = /input\[name=['"]loginfmt['"]|#i0116/.test(content);
+      analysis.hasNextBtn = /#idSIButton9/.test(content);
+      analysis.hasPw = /input\[type=['"]password['"]/.test(content);
+      analysis.brandingHit = /\b(Microsoft\s*365|Office\s*365|Entra\s*ID|Azure\s*AD|Microsoft)\b/i.test(content.slice(0, 25000));
+      
+      // CyberDrain AAD-like detection logic
+      analysis.aadLike = (analysis.hasLoginFmt && analysis.hasNextBtn) ||
+                        (analysis.brandingHit && (analysis.hasLoginFmt || analysis.hasPw));
+
       // Check for required Microsoft authentication elements
       const requiredElements = [
         { name: "loginfmt", pattern: /name=['"]loginfmt['"]|id=['"]i0116['"]/ },
@@ -520,8 +676,8 @@ export class DetectionEngine {
         }
       }
 
-      // Determine overall legitimacy
-      if (analysis.legitimacy_score >= 80 && analysis.threat_level === "none") {
+      // CyberDrain integration - Enhanced legitimacy scoring
+      if (analysis.aadLike && analysis.hasRequiredElements && analysis.threat_level === "none") {
         analysis.legitimacyScore = "high";
       } else if (analysis.legitimacy_score >= 60) {
         analysis.legitimacyScore = "medium";
@@ -533,6 +689,109 @@ export class DetectionEngine {
     }
 
     return analysis;
+  }
+
+  // CyberDrain integration - Form action validation
+  async analyzeFormActions(content, currentOrigin) {
+    const analysis = {
+      timestamp: new Date().toISOString(),
+      forms: [],
+      offenders: [],
+      fail: false,
+      reason: ""
+    };
+
+    try {
+      // Extract form actions from content
+      const formRegex = /<form[^>]*action=['"]([^'"]*)['"]/gi;
+      let match;
+      
+      while ((match = formRegex.exec(content)) !== null) {
+        const action = match[1];
+        const resolvedAction = this.resolveAction(action, currentOrigin);
+        const actionOrigin = this.urlOrigin(resolvedAction);
+        
+        analysis.forms.push({
+          action: resolvedAction,
+          actionOrigin: actionOrigin
+        });
+        
+        // Check if form posts to non-Microsoft domain
+        if (!this.isTrustedOrigin(actionOrigin)) {
+          analysis.offenders.push({
+            action: resolvedAction,
+            actionOrigin: actionOrigin
+          });
+        }
+      }
+      
+      if (analysis.offenders.length > 0) {
+        analysis.fail = true;
+        analysis.reason = "non-microsoft-form-action";
+      }
+      
+    } catch (error) {
+      analysis.error = error.message;
+    }
+
+    return analysis;
+  }
+
+  // CyberDrain integration - Subresource origin audit
+  async auditSubresourceOrigins(content, currentOrigin) {
+    const analysis = {
+      timestamp: new Date().toISOString(),
+      origins: [],
+      nonMicrosoft: [],
+      nonMicrosoftCount: 0
+    };
+
+    try {
+      const resourceRegex = /(?:src|href)=['"]([^'"]*)['"]/gi;
+      const origins = new Set();
+      const nonMs = new Set();
+      let match;
+      
+      while ((match = resourceRegex.exec(content)) !== null) {
+        const url = match[1];
+        if (!url || url.startsWith('#') || url.startsWith('data:')) continue;
+        
+        try {
+          const fullUrl = new URL(url, currentOrigin);
+          const origin = fullUrl.origin.toLowerCase();
+          
+          if (!origin) continue;
+          origins.add(origin);
+          
+          // If all assets are on the same fake origin, this may yield 0 — that's fine.
+          if (!this.isTrustedOrigin(origin) && origin !== currentOrigin.toLowerCase()) {
+            nonMs.add(origin);
+          }
+        } catch (e) {
+          // Invalid URL, skip
+        }
+      }
+      
+      analysis.origins = Array.from(origins);
+      analysis.nonMicrosoft = Array.from(nonMs);
+      analysis.nonMicrosoftCount = nonMs.size;
+      
+    } catch (error) {
+      analysis.error = error.message;
+    }
+
+    return analysis;
+  }
+
+  // CyberDrain integration - Action URL resolver
+  resolveAction(action, baseUrl) {
+    let act = (action || baseUrl).trim();
+    try {
+      act = new URL(act, baseUrl).href;
+    } catch {
+      act = baseUrl;
+    }
+    return act;
   }
 
   async analyzeForm(formData) {
@@ -791,5 +1050,142 @@ export class DetectionEngine {
       default:
         return false;
     }
+  }
+
+  // Rule-driven element detection
+  detectElementsFromRules(content) {
+    const detected = {};
+    
+    // Check AAD detection elements from rules
+    for (const element of this.aadDetectionElements) {
+      detected[element.id] = false;
+      
+      if (element.selectors) {
+        // For DOM-based detection (when we have access to DOM)
+        if (typeof document !== 'undefined') {
+          for (const selector of element.selectors) {
+            if (document.querySelector(selector)) {
+              detected[element.id] = true;
+              break;
+            }
+          }
+        }
+      }
+      
+      if (element.text_patterns) {
+        // For content-based detection
+        for (const pattern of element.text_patterns) {
+          const regex = new RegExp(pattern, 'i');
+          if (regex.test(content)) {
+            detected[element.id] = true;
+            break;
+          }
+        }
+      }
+    }
+    
+    return detected;
+  }
+
+  // Rule-driven AAD-like evaluation
+  evaluateAADLikeFromRules(detectedElements) {
+    if (!this.detectionLogic?.aad_fingerprint_rules) {
+      return false;
+    }
+    
+    for (const rule of this.detectionLogic.aad_fingerprint_rules) {
+      if (this.evaluateCondition(rule.condition, detectedElements)) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
+  // Simple condition evaluator for rules
+  evaluateCondition(condition, context) {
+    // Simple condition evaluation - can be enhanced with a proper parser
+    const conditions = condition.split(' AND ');
+    
+    for (const cond of conditions) {
+      const trimmed = cond.trim();
+      
+      if (trimmed.startsWith('NOT ')) {
+        const element = trimmed.substring(4);
+        if (context[element]) return false;
+      } else {
+        if (!context[trimmed]) return false;
+      }
+    }
+    
+    return true;
+  }
+
+  // CyberDrain integration - Rule-driven content analysis
+  async analyzeContentWithRules(content, context = {}) {
+    const analysis = {
+      timestamp: new Date().toISOString(),
+      content_length: content.length,
+      context,
+      findings: [],
+      legitimacy_score: 0,
+      threat_level: "none",
+      hasRequiredElements: false,
+      // CyberDrain integration
+      aadLike: false,
+      detectedElements: {},
+      ruleBasedAnalysis: true
+    };
+
+    try {
+      // Use rule-driven element detection
+      analysis.detectedElements = this.detectElementsFromRules(content);
+      
+      // Use rule-driven AAD-like evaluation
+      analysis.aadLike = this.evaluateAADLikeFromRules(analysis.detectedElements);
+      
+      // Check for required elements based on rules
+      const requiredCount = Object.values(analysis.detectedElements).filter(Boolean).length;
+      analysis.hasRequiredElements = requiredCount >= (this.detectionLogic?.minimum_required_elements || 3);
+      
+      // Calculate legitimacy score
+      const totalElements = Object.keys(analysis.detectedElements).length;
+      analysis.legitimacy_score = totalElements > 0 ? (requiredCount / totalElements) * 100 : 0;
+      
+      // Check for phishing indicators using rules
+      if (this.detectionRules?.phishing_indicators) {
+        for (const indicator of this.detectionRules.phishing_indicators) {
+          const regex = new RegExp(indicator.pattern, indicator.flags || "i");
+          if (regex.test(content)) {
+            analysis.findings.push({
+              type: "phishing_indicator",
+              indicator: indicator.id,
+              description: indicator.description,
+              severity: indicator.severity,
+            });
+
+            if (indicator.severity === "high" || indicator.severity === "critical") {
+              analysis.threat_level = "high";
+            } else if (analysis.threat_level === "none") {
+              analysis.threat_level = "medium";
+            }
+          }
+        }
+      }
+      
+      // Enhanced legitimacy scoring
+      if (analysis.aadLike && analysis.hasRequiredElements && analysis.threat_level === "none") {
+        analysis.legitimacyScore = "high";
+      } else if (analysis.legitimacy_score >= 60) {
+        analysis.legitimacyScore = "medium";
+      } else {
+        analysis.legitimacyScore = "low";
+      }
+      
+    } catch (error) {
+      analysis.error = error.message;
+    }
+
+    return analysis;
   }
 }

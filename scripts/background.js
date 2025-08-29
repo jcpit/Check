@@ -1,6 +1,7 @@
 /**
  * Check - Background Service Worker
  * Handles core extension functionality, policy enforcement, and threat detection
+ * Enhanced with CyberDrain Microsoft 365 phishing detection
  */
 
 import { ConfigManager } from "./modules/config-manager.js";
@@ -13,6 +14,10 @@ class CheckBackground {
     this.detectionEngine = new DetectionEngine();
     this.policyManager = new PolicyManager();
     this.isInitialized = false;
+
+    // CyberDrain integration
+    this.policy = null;
+    this.extraWhitelist = new Set();
 
     // Set up message handlers immediately to handle early connections
     this.setupMessageHandlers();
@@ -34,6 +39,9 @@ class CheckBackground {
       await this.configManager.loadConfig();
       await this.policyManager.loadPolicies();
       await this.detectionEngine.initialize();
+      
+      // CyberDrain integration - Load policy
+      await this.refreshPolicy();
 
       this.setupEventListeners();
       this.isInitialized = true;
@@ -45,6 +53,100 @@ class CheckBackground {
         error
       );
     }
+  }
+
+  // CyberDrain integration - Policy management
+  async refreshPolicy() {
+    this.policy = await this.detectionEngine.policy || this.getDefaultPolicy();
+    this.extraWhitelist = new Set((this.policy.ExtraWhitelist || []).map(s => this.urlOrigin(s)).filter(Boolean));
+    await this.applyBrandingToAction();
+  }
+
+  getDefaultPolicy() {
+    return {
+      BrandingName: "Microsoft 365 Phishing Protection",
+      BrandingImage: "",
+      ExtraWhitelist: [],
+      CIPPReportingServer: "",
+      AlertWhenLogon: true,
+      ValidPageBadgeImage: "",
+      StrictResourceAudit: true,
+      RequireMicrosoftAction: true,
+      EnableValidPageBadge: false
+    };
+  }
+
+  urlOrigin(u) {
+    try {
+      return new URL(u).origin.toLowerCase();
+    } catch {
+      return "";
+    }
+  }
+
+  // CyberDrain integration - Verdict determination
+  verdictForUrl(raw) {
+    const origin = this.urlOrigin(raw);
+    if (this.detectionEngine.TRUSTED_ORIGINS.has(origin)) return "trusted";
+    if (this.extraWhitelist.has(origin)) return "trusted-extra";
+    return "unknown";
+  }
+
+  // CyberDrain integration - Badge management
+  async setBadge(tabId, verdict) {
+    const map = {
+      "trusted":       { text: "MS", color: "#0a5" },
+      "trusted-extra": { text: "OK", color: "#0a5" },
+      "phishy":        { text: "!",  color: "#d33" },
+      "unknown":       { text: "?",  color: "#777" }
+    };
+    const cfg = map[verdict] || map.unknown;
+    try {
+      await chrome.action.setBadgeText({ tabId, text: cfg.text });
+      await chrome.action.setBadgeBackgroundColor({ tabId, color: cfg.color });
+    } catch {}
+  }
+
+  // CyberDrain integration - Apply branding to extension action
+  async applyBrandingToAction() {
+    // Title
+    await chrome.action.setTitle({ title: this.policy.BrandingName || this.getDefaultPolicy().BrandingName });
+    
+    // Icon (optional)
+    if (this.policy.BrandingImage) {
+      try {
+        const img = await fetch(this.policy.BrandingImage);
+        const blob = await img.blob();
+        const bmp = await createImageBitmap(blob);
+        const sizes = [16, 32, 48, 128];
+        const images = {};
+        for (const s of sizes) {
+          const canvas = new OffscreenCanvas(s, s);
+          const ctx = canvas.getContext("2d");
+          ctx.clearRect(0,0,s,s);
+          ctx.drawImage(bmp, 0, 0, s, s);
+          images[String(s)] = ctx.getImageData(0, 0, s, s);
+        }
+        await chrome.action.setIcon({ imageData: images });
+      } catch (e) {
+        // ignore icon errors
+      }
+    }
+  }
+
+  // CyberDrain integration - Send event to reporting server
+  async sendEvent(evt) {
+    if (!this.policy.CIPPReportingServer) return;
+    try {
+      await fetch(this.policy.CIPPReportingServer.replace(/\/+$/,"") + "/events/cyberdrain-phish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Object.assign({
+          ts: new Date().toISOString(),
+          ua: navigator.userAgent
+        }, evt))
+      });
+    } catch {/* best-effort */}
   }
 
   setupEventListeners() {
@@ -60,6 +162,12 @@ class CheckBackground {
     // Handle tab updates for URL monitoring
     chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
       this.handleTabUpdate(tabId, changeInfo, tab);
+    });
+
+    // CyberDrain integration - Handle tab activation for badge updates
+    chrome.tabs.onActivated.addListener(async ({ tabId }) => {
+      const data = (await chrome.storage.session.get("verdict:" + tabId))["verdict:" + tabId];
+      this.setBadge(tabId, data?.verdict || "unknown");
     });
 
     // Note: Message handler is set up in constructor for immediate availability
@@ -98,9 +206,23 @@ class CheckBackground {
   }
 
   async handleTabUpdate(tabId, changeInfo, tab) {
-    if (!this.isInitialized || !changeInfo.url) return;
+    if (!this.isInitialized) return;
 
     try {
+      // CyberDrain integration - Handle URL changes and set badges
+      if (changeInfo.status === "complete" && tab?.url) {
+        const verdict = this.verdictForUrl(tab.url);
+        await chrome.storage.session.set({ ["verdict:" + tabId]: { verdict, url: tab.url } });
+        this.setBadge(tabId, verdict);
+
+        if (verdict === "trusted") {
+          // "Valid page" sighting
+          await this.sendEvent({ type: "trusted-login-page", url: tab.url });
+        }
+      }
+
+      if (!changeInfo.url) return;
+
       // Analyze URL for threats
       const urlAnalysis = await this.detectionEngine.analyzeUrl(changeInfo.url);
 
@@ -140,6 +262,54 @@ class CheckBackground {
             timestamp: new Date().toISOString(),
             initialized: this.isInitialized,
           });
+          break;
+
+        // CyberDrain integration - Handle phishing detection
+        case "FLAG_PHISHY":
+          if (sender.tab?.id) {
+            const tabId = sender.tab.id;
+            chrome.storage.session.set({ ["verdict:" + tabId]: { verdict: "phishy", url: sender.tab.url } });
+            this.setBadge(tabId, "phishy");
+            sendResponse({ ok: true });
+            this.sendEvent({ type: "phishy-detected", url: sender.tab.url, reason: message.reason || "heuristic" });
+          }
+          break;
+
+        case "FLAG_TRUSTED_BY_REFERRER":
+          if (sender.tab?.id) {
+            const tabId = sender.tab.id;
+            chrome.storage.session.set({ ["verdict:" + tabId]: { verdict: "trusted", url: sender.tab.url, by: "referrer" } });
+            this.setBadge(tabId, "trusted");
+            sendResponse({ ok: true });
+            if (this.policy.AlertWhenLogon) {
+              this.sendEvent({ type: "user-logged-on", url: sender.tab.url, by: "referrer" });
+            }
+          }
+          break;
+
+        case "REQUEST_POLICY":
+          sendResponse({ policy: this.policy });
+          break;
+
+        case "ANALYZE_CONTENT_WITH_RULES":
+          try {
+            const analysis = await this.detectionEngine.analyzeContentWithRules(
+              message.content,
+              { origin: message.origin }
+            );
+            sendResponse({ success: true, analysis });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
+        case "GET_DETECTION_RULES":
+          try {
+            const rules = this.detectionEngine.detectionRules;
+            sendResponse({ success: true, rules });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message });
+          }
           break;
 
         case "testDetectionEngine":
@@ -240,6 +410,16 @@ class CheckBackground {
           }
           break;
 
+        case "UPDATE_CONFIG":
+          try {
+            await this.configManager.updateConfig(message.config);
+            sendResponse({ success: true });
+          } catch (error) {
+            console.error("Check: Failed to update config:", error);
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
         case "TEST_DETECTION_RULES":
           const testResults = await this.testDetectionRules(message.testData);
           sendResponse({ success: true, results: testResults });
@@ -270,6 +450,8 @@ class CheckBackground {
       console.log("Check: Enterprise policy updated");
       await this.policyManager.loadPolicies();
       await this.configManager.refreshConfig();
+      // CyberDrain integration - Refresh policy
+      await this.refreshPolicy();
     }
   }
 

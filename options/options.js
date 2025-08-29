@@ -45,6 +45,9 @@ class CheckOptions {
     this.elements.notificationDurationValue = document.getElementById(
       "notificationDurationValue"
     );
+    this.elements.enableValidPageBadge = document.getElementById(
+      "enableValidPageBadge"
+    );
 
     // Security settings
     this.elements.blockMaliciousUrls =
@@ -294,6 +297,7 @@ class CheckOptions {
       enableUrlMonitoring: true,
       showNotifications: true,
       notificationDuration: 5000,
+      enableValidPageBadge: false,
       blockMaliciousUrls: true,
       blockPhishingAttempts: true,
       whitelistedDomains: [],
@@ -361,6 +365,7 @@ class CheckOptions {
     this.elements.notificationDuration.value = this.config.notificationDuration;
     this.elements.notificationDurationValue.textContent =
       this.config.notificationDuration / 1000 + "s";
+    this.elements.enableValidPageBadge.checked = this.config.enableValidPageBadge || false;
 
     // Security settings
     this.elements.blockMaliciousUrls.checked = this.config.blockMaliciousUrls;
@@ -491,6 +496,7 @@ class CheckOptions {
       enableUrlMonitoring: this.elements.enableUrlMonitoring.checked,
       showNotifications: this.elements.showNotifications.checked,
       notificationDuration: parseInt(this.elements.notificationDuration.value),
+      enableValidPageBadge: this.elements.enableValidPageBadge.checked,
 
       // Security settings
       blockMaliciousUrls: this.elements.blockMaliciousUrls.checked,

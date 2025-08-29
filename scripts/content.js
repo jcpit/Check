@@ -1,7 +1,34 @@
 /**
  * Check - Content Script
  * Handles page manipulation, monitoring, and security enforcement
+ * Enhanced with CyberDrain Microsoft 365 phishing detection
  */
+
+// CyberDrain integration - Trusted origins
+const TRUSTED_ORIGINS = new Set([
+  "https://login.microsoftonline.com",
+  "https://login.microsoft.com",
+  "https://login.windows.net",
+  "https://login.microsoftonline.us",
+  "https://login.partner.microsoftonline.cn",
+  "https://login.live.com"
+]);
+
+function urlOrigin(u) {
+  try {
+    return new URL(u).origin.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+function isTrustedOrigin(u) {
+  return TRUSTED_ORIGINS.has(urlOrigin(u));
+}
+
+function isTrustedReferrer(ref) {
+  return ref && TRUSTED_ORIGINS.has(urlOrigin(ref));
+}
 
 class CheckContent {
   constructor() {
@@ -11,6 +38,11 @@ class CheckContent {
     this.securityMonitor = null;
     this.pageAnalyzer = null;
     this.uiManager = null;
+    
+    // CyberDrain integration
+    this.policy = null;
+    this.flagged = false;
+    this.stopAt = Date.now() + 20000; // watch up to 20s
   }
 
   async initialize() {
@@ -19,11 +51,20 @@ class CheckContent {
 
       // Load configuration from background
       this.config = await this.getConfigFromBackground();
+      
+      // CyberDrain integration - Request policy from background
+      this.policy = await this.getPolicyFromBackground();
+      
+      // Load detection rules for settings
+      this.detectionRules = await this.getDetectionRulesFromBackground();
 
       // Initialize components
       this.securityMonitor = new SecurityMonitor(this.config);
       this.pageAnalyzer = new PageAnalyzer(this.config);
       this.uiManager = new UIManager(this.config);
+
+      // CyberDrain integration - Initialize detection logic
+      await this.initializeCyberDrainDetection();
 
       // Set up page monitoring
       this.setupPageMonitoring();
@@ -39,6 +80,257 @@ class CheckContent {
     } catch (error) {
       console.error("Check: Failed to initialize content script:", error);
     }
+  }
+
+  // CyberDrain integration - Get policy from background
+  async getPolicyFromBackground() {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        { type: "REQUEST_POLICY" },
+        (response) => {
+          if (response && response.policy) {
+            resolve(response.policy);
+          } else {
+            resolve(this.getDefaultPolicy());
+          }
+        }
+      );
+    });
+  }
+
+  // Get detection rules from background
+  async getDetectionRulesFromBackground() {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        { type: "GET_DETECTION_RULES" },
+        (response) => {
+          if (response && response.success) {
+            resolve(response.rules);
+          } else {
+            resolve(null);
+          }
+        }
+      );
+    });
+  }
+
+  getDefaultPolicy() {
+    return {
+      BrandingName: "Microsoft 365 Phishing Protection",
+      BrandingImage: "",
+      ExtraWhitelist: [],
+      CIPPReportingServer: "",
+      AlertWhenLogon: true,
+      ValidPageBadgeImage: "",
+      StrictResourceAudit: true,
+      RequireMicrosoftAction: true,
+      EnableValidPageBadge: false
+    };
+  }
+
+  // CyberDrain integration - Initialize detection logic
+  async initializeCyberDrainDetection() {
+    const origin = location.origin.toLowerCase();
+
+    // 1) Real Microsoft login → show valid badge (if enabled)
+    if (isTrustedOrigin(origin)) {
+      // Check if valid page badge is enabled in settings
+      const badgeEnabled = this.policy?.EnableValidPageBadge ||
+                          this.detectionRules?.detection_settings?.enable_verification_badge ||
+                          false;
+      
+      if (badgeEnabled) {
+        this.injectValidBadge(this.policy?.ValidPageBadgeImage, this.policy?.BrandingName);
+      }
+      this.enforceMicrosoftActionIfConfigured();
+      return;
+    }
+
+    // 2) Post-login redirect from real login (no password field) → trusted-by-referrer
+    if (isTrustedReferrer(document.referrer) && !this.hasPassword()) {
+      chrome.runtime.sendMessage({ type: "FLAG_TRUSTED_BY_REFERRER" });
+      return;
+    }
+
+    // 3) Live monitor for SPA/dynamic injection (AAD loads content after doc_end)
+    this.setupLiveMonitoring();
+  }
+
+  // CyberDrain integration - Live monitoring for dynamic content
+  setupLiveMonitoring() {
+    const observer = new MutationObserver(() => this.evaluateAADFingerprint());
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    this.observers.push(observer);
+    
+    this.evaluateAADFingerprint(); // initial evaluation
+
+    // Stop observing after timeout to reduce overhead
+    setTimeout(() => {
+      observer.disconnect();
+      const index = this.observers.indexOf(observer);
+      if (index > -1) this.observers.splice(index, 1);
+    }, 20000);
+  }
+
+  // CyberDrain integration - Rule-driven AAD fingerprint evaluation
+  async evaluateAADFingerprint() {
+    if (this.flagged) return;
+    
+    const origin = location.origin.toLowerCase();
+    
+    // Request rule-driven analysis from background
+    try {
+      const response = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({
+          type: "ANALYZE_CONTENT_WITH_RULES",
+          content: document.documentElement.outerHTML,
+          origin: origin
+        }, resolve);
+      });
+      
+      if (response && response.success) {
+        const analysis = response.analysis;
+        
+        // Use rule-driven detection results
+        if (analysis.aadLike && !isTrustedOrigin(origin)) {
+          // Check additional rule-based conditions
+          const actionCheck = this.checkFormActions(analysis.detectedElements.password_field);
+          const resourceAudit = this.auditSubresourceOrigins();
+          
+          const requireAction = this.policy?.RequireMicrosoftAction !== false;
+          const strictAudit = this.policy?.StrictResourceAudit !== false;
+          
+          // Apply rule-based trigger logic
+          if (this.shouldTriggerFromRules(analysis, actionCheck, resourceAudit, requireAction, strictAudit)) {
+            this.flagged = true;
+            this.injectRedBanner(this.policy?.BrandingName, actionCheck, resourceAudit);
+            this.lockCredentialInputs();
+            this.preventSubmission();
+            chrome.runtime.sendMessage({
+              type: "FLAG_PHISHY",
+              reason: `rule-based-aad-like:${actionCheck.fail?'bad-action':''}:${resourceAudit.nonMicrosoftCount?'bad-assets':''}`
+            });
+            return;
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Check: Rule-driven analysis failed, falling back to basic detection:", error);
+      // Fallback to basic detection if rule-driven analysis fails
+      this.evaluateAADFingerprintBasic();
+    }
+  }
+
+  // Rule-based trigger evaluation
+  shouldTriggerFromRules(analysis, actionCheck, resourceAudit, requireAction, strictAudit) {
+    // Basic AAD-like detection
+    if (analysis.aadLike) return true;
+    
+    // Form action validation
+    if (requireAction && actionCheck.fail) return true;
+    
+    // Resource audit validation
+    if (strictAudit && resourceAudit.nonMicrosoftCount > 0) return true;
+    
+    return false;
+  }
+
+  // Fallback basic detection method
+  evaluateAADFingerprintBasic() {
+    const origin = location.origin.toLowerCase();
+    
+    // Basic AAD fingerprint
+    const hasLoginFmt = !!document.querySelector('input[name="loginfmt"], #i0116');
+    const hasNextBtn = !!document.querySelector('#idSIButton9');
+    const hasPw = this.hasPassword();
+    const text = (document.body?.innerText || "").slice(0, 25000);
+    const brandingHit = /\b(Microsoft\s*365|Office\s*365|Entra\s*ID|Azure\s*AD|Microsoft)\b/i.test(text);
+    const aadLike = (hasLoginFmt && hasNextBtn) || (brandingHit && (hasLoginFmt || hasPw));
+
+    if (aadLike && !isTrustedOrigin(origin)) {
+      const actionCheck = this.checkFormActions(hasPw);
+      const resourceAudit = this.auditSubresourceOrigins();
+      
+      this.flagged = true;
+      this.injectRedBanner(this.policy?.BrandingName, actionCheck, resourceAudit);
+      this.lockCredentialInputs();
+      this.preventSubmission();
+      chrome.runtime.sendMessage({
+        type: "FLAG_PHISHY",
+        reason: `basic-aad-like:${actionCheck.fail?'bad-action':''}:${resourceAudit.nonMicrosoftCount?'bad-assets':''}`
+      });
+    }
+  }
+
+  // CyberDrain integration - Helper methods
+  hasPassword() {
+    return !!document.querySelector('input[type="password"]');
+  }
+
+  enforceMicrosoftActionIfConfigured() {
+    const requireAction = this.policy?.RequireMicrosoftAction !== false;
+    if (!requireAction) return;
+    
+    const forms = Array.from(document.querySelectorAll("form"));
+    const bad = [];
+    
+    for (const f of forms) {
+      const hasPw = !!f.querySelector('input[type="password"]');
+      if (!hasPw) continue;
+      const act = this.resolveAction(f.getAttribute("action"));
+      const actOrigin = urlOrigin(act);
+      if (!isTrustedOrigin(actOrigin)) bad.push({action: actOrigin});
+    }
+    
+    if (bad.length) this.showToast("Unusual: password form posts outside Microsoft login.");
+  }
+
+  resolveAction(a) {
+    let act = (a || location.href).trim();
+    try { act = new URL(act, location.href).href; } catch { act = location.href; }
+    return act;
+  }
+
+  checkFormActions(requirePw) {
+    const forms = Array.from(document.querySelectorAll("form"));
+    const offenders = [];
+    
+    for (const f of forms) {
+      if (requirePw && !f.querySelector('input[type="password"]')) continue;
+      const act = this.resolveAction(f.getAttribute("action"));
+      const actOrigin = urlOrigin(act);
+      if (!isTrustedOrigin(actOrigin)) offenders.push({ action: act, actionOrigin: actOrigin });
+    }
+    
+    return offenders.length ? { fail: true, reason: "non-microsoft-form-action", offenders } : { fail: false };
+  }
+
+  auditSubresourceOrigins() {
+    const nodes = [
+      ...document.querySelectorAll('script[src]'),
+      ...document.querySelectorAll('link[rel="stylesheet"][href]'),
+      ...document.querySelectorAll('img[src]')
+    ];
+    
+    const origins = new Set();
+    const nonMs = new Set();
+    const origin = location.origin.toLowerCase();
+    
+    for (const el of nodes) {
+      const url = el.src || el.href;
+      if (!url) continue;
+      const o = urlOrigin(new URL(url, location.href).href);
+      if (!o) continue;
+      origins.add(o);
+      // If all assets are on the same fake origin, this may yield 0 — that's fine.
+      if (!isTrustedOrigin(o) && o !== origin) nonMs.add(o);
+    }
+    
+    return {
+      origins: Array.from(origins),
+      nonMicrosoft: Array.from(nonMs),
+      nonMicrosoftCount: nonMs.size
+    };
   }
 
   async getConfigFromBackground() {
@@ -980,6 +1272,104 @@ class UIManager {
     }
   }
 }
+
+// CyberDrain integration - UI methods for badges and warnings
+CheckContent.prototype.injectValidBadge = function(customImg, branding) {
+  const id = "__cd_valid_login_badge";
+  if (document.getElementById(id)) return;
+  
+  const wrap = document.createElement("div");
+  wrap.id = id;
+  wrap.style.cssText = "position:fixed;right:8px;top:8px;z-index:2147483647;pointer-events:none";
+  
+  if (customImg) {
+    const img = document.createElement("img");
+    img.src = customImg;
+    img.alt = "Valid Microsoft login";
+    img.style.cssText = "height:40px;width:40px;object-fit:contain;opacity:.9";
+    wrap.appendChild(img);
+  } else {
+    wrap.innerHTML = '<svg viewBox="0 0 24 24" width="40" height="40"><circle cx="12" cy="12" r="11" fill="#0a5"/><path d="M6 12l4 4 8-8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+  
+  const label = document.createElement("div");
+  label.textContent = (branding || "Microsoft 365 Phishing Protection") + " • Valid M365 Login";
+  label.style.cssText = "margin-top:4px;background:rgba(0,0,0,.7);color:#fff;padding:4px 6px;border-radius:6px;font:12px system-ui;display:inline-block";
+  wrap.appendChild(label);
+  document.documentElement.appendChild(wrap);
+};
+
+CheckContent.prototype.injectRedBanner = function(branding, actionCheck, resourceAudit) {
+  if (document.getElementById("__cd_banner")) return;
+  
+  const el = document.createElement("div");
+  el.id = "__cd_banner";
+  el.style.cssText = "position:fixed;z-index:2147483647;left:0;right:0;top:0;padding:10px 16px;background:#d33;color:#fff;font:14px/1.4 system-ui,Segoe UI,Arial;border-bottom:2px solid #a00;box-shadow:0 2px 6px rgba(0,0,0,.2)";
+  
+  let msg = (branding || "Microsoft 365 Phishing Protection") + ": Phishing suspected – Microsoft 365 login UI on an untrusted domain.";
+  if (actionCheck?.fail) msg += " (Form action not to Microsoft)";
+  if (resourceAudit?.nonMicrosoftCount) msg += " (Non-Microsoft subresources present)";
+  
+  el.textContent = msg;
+  document.documentElement.appendChild(el);
+  
+  if (document.body) document.body.style.paddingTop = (parseInt(getComputedStyle(el).height,10) + 8) + "px";
+};
+
+CheckContent.prototype.lockCredentialInputs = function() {
+  const suspects = [
+    'input[type="password"]','input[name="passwd"]','input[name="Password"]','input[name="password"]',
+    'input[name="loginfmt"]', '#i0116' // lock username too
+  ];
+  
+  const fields = Array.from(document.querySelectorAll(suspects.join(",")));
+  for (const el of fields) {
+    try {
+      el.setAttribute("aria-disabled", "true");
+      el.setAttribute("autocomplete", "off");
+      el.setAttribute("readonly", "true");
+      el.disabled = true;
+      el.style.filter = "grayscale(1)";
+      el.style.opacity = "0.6";
+      el.style.pointerEvents = "none";
+    } catch {}
+  }
+  
+  const msg = document.createElement("div");
+  msg.textContent = "⚠️ Disabled by Microsoft 365 Phishing Protection";
+  msg.style.cssText = "font:13px/1.4 system-ui;color:#a00;margin-top:6px;";
+  
+  const pw = document.querySelector('input[type="password"]');
+  if (pw) pw.insertAdjacentElement("afterend", msg);
+  else if (document.body) document.body.appendChild(msg);
+};
+
+CheckContent.prototype.preventSubmission = function() {
+  document.addEventListener("submit", (e) => {
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    this.showToast("Blocked form submission: not the official Microsoft login domain.");
+  }, true);
+  
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const t = e.target;
+      if (t && t.tagName === "INPUT") {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        this.showToast("Blocked: not the official Microsoft login domain.");
+      }
+    }
+  }, true);
+};
+
+CheckContent.prototype.showToast = function(msg) {
+  const t = document.createElement("div");
+  t.textContent = msg;
+  t.style.cssText = "position:fixed;right:12px;bottom:12px;background:#222;color:#fff;padding:10px 12px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.3);font:13px system-ui;z-index:2147483647";
+  if (document.body) document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+};
 
 // Initialize content script (prevent multiple initializations)
 if (!window.checkContentInitialized) {

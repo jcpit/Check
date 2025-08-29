@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberDrain Integration Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .fake-login-form {
+            background: white;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .fake-login-form input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .microsoft-branding {
+            color: #0078d4;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔒 CyberDrain Integration Test Page</h1>
+    <p>This page tests the enhanced Microsoft 365 phishing detection capabilities integrated from CyberDrain.</p>
+
+    <div class="test-section">
+        <h2>🧪 Extension Detection Tests</h2>
+        <button onclick="testExtensionPresence()">Test Extension Presence</button>
+        <button onclick="testDetectionEngine()">Test Detection Engine</button>
+        <button onclick="testPolicyRetrieval()">Test Policy Retrieval</button>
+        <div id="extension-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 Phishing Detection Simulation</h2>
+        <p>This section simulates a fake Microsoft login to test detection capabilities:</p>
+        
+        <div class="fake-login-form">
+            <h3 class="microsoft-branding">Microsoft 365</h3>
+            <p>Sign in to your account</p>
+            
+            <!-- CyberDrain detection elements -->
+            <input type="email" name="loginfmt" id="i0116" placeholder="Email, phone, or Skype" />
+            <input type="password" name="passwd" placeholder="Password" />
+            <input type="hidden" name="idPartnerPL" value="test" />
+            
+            <form action="https://fake-microsoft-login.com/auth" method="POST">
+                <button type="submit" id="idSIButton9">Sign in</button>
+            </form>
+        </div>
+        
+        <button onclick="triggerDetectionTest()">Trigger Detection Test</button>
+        <div id="detection-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Real-time Monitoring Test</h2>
+        <button onclick="addSuspiciousElements()">Add Suspicious Elements</button>
+        <button onclick="testFormSubmission()">Test Form Submission Blocking</button>
+        <div id="monitoring-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🛡️ Badge and UI Tests</h2>
+        <button onclick="testValidBadge()">Test Valid Badge Display</button>
+        <button onclick="testPhishingBanner()">Test Phishing Banner</button>
+        <button onclick="testCredentialBlocking()">Test Credential Blocking</button>
+        <div id="ui-results"></div>
+    </div>
+
+    <script>
+        // Test extension presence and functionality
+        async function testExtensionPresence() {
+            const results = document.getElementById('extension-results');
+            results.innerHTML = '<div class="test-result">Testing extension presence...</div>';
+            
+            try {
+                if (typeof CheckTesting !== 'undefined') {
+                    const response = await CheckTesting.sendMessage({ type: 'ping' });
+                    if (response.success) {
+                        results.innerHTML += '<div class="test-result success">✅ Extension is active and responding</div>';
+                        results.innerHTML += `<div class="test-result">Initialized: ${response.initialized}</div>`;
+                        results.innerHTML += `<div class="test-result">Timestamp: ${response.timestamp}</div>`;
+                    } else {
+                        results.innerHTML += '<div class="test-result error">❌ Extension ping failed</div>';
+                    }
+                } else {
+                    results.innerHTML += '<div class="test-result warning">⚠️ CheckTesting interface not available</div>';
+                }
+            } catch (error) {
+                results.innerHTML += `<div class="test-result error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testDetectionEngine() {
+            const results = document.getElementById('extension-results');
+            
+            try {
+                if (typeof CheckTesting !== 'undefined') {
+                    const response = await CheckTesting.sendMessage({ 
+                        type: 'testDetectionEngine',
+                        testData: { url: window.location.href }
+                    });
+                    
+                    if (response.success) {
+                        results.innerHTML += '<div class="test-result success">✅ Detection engine is working</div>';
+                        results.innerHTML += `<div class="test-result">Rules loaded: ${response.rulesLoaded}</div>`;
+                        results.innerHTML += `<div class="test-result">Engine initialized: ${response.engineInitialized}</div>`;
+                    } else {
+                        results.innerHTML += `<div class="test-result error">❌ Detection engine test failed: ${response.error}</div>`;
+                    }
+                } else {
+                    results.innerHTML += '<div class="test-result warning">⚠️ Cannot test detection engine - interface not available</div>';
+                }
+            } catch (error) {
+                results.innerHTML += `<div class="test-result error">❌ Detection engine test error: ${error.message}</div>`;
+            }
+        }
+
+        async function testPolicyRetrieval() {
+            const results = document.getElementById('extension-results');
+            
+            try {
+                if (typeof CheckTesting !== 'undefined') {
+                    const response = await CheckTesting.sendMessage({ type: 'GET_CONFIG' });
+                    
+                    if (response.success) {
+                        results.innerHTML += '<div class="test-result success">✅ Policy retrieval successful</div>';
+                        results.innerHTML += `<div class="test-result">Config loaded: ${JSON.stringify(response.config, null, 2)}</div>`;
+                    } else {
+                        results.innerHTML += `<div class="test-result error">❌ Policy retrieval failed: ${response.error}</div>`;
+                    }
+                } else {
+                    results.innerHTML += '<div class="test-result warning">⚠️ Cannot test policy - interface not available</div>';
+                }
+            } catch (error) {
+                results.innerHTML += `<div class="test-result error">❌ Policy test error: ${error.message}</div>`;
+            }
+        }
+
+        function triggerDetectionTest() {
+            const results = document.getElementById('detection-results');
+            results.innerHTML = '<div class="test-result">Triggering CyberDrain detection logic...</div>';
+            
+            // Simulate AAD-like elements being detected
+            const hasLoginFmt = !!document.querySelector('input[name="loginfmt"], #i0116');
+            const hasNextBtn = !!document.querySelector('#idSIButton9');
+            const hasPw = !!document.querySelector('input[type="password"]');
+            const brandingHit = /Microsoft\s*365|Office\s*365|Microsoft/i.test(document.body.innerText);
+            
+            results.innerHTML += `<div class="test-result">Login format field detected: ${hasLoginFmt ? '✅' : '❌'}</div>`;
+            results.innerHTML += `<div class="test-result">Next button detected: ${hasNextBtn ? '✅' : '❌'}</div>`;
+            results.innerHTML += `<div class="test-result">Password field detected: ${hasPw ? '✅' : '❌'}</div>`;
+            results.innerHTML += `<div class="test-result">Microsoft branding detected: ${brandingHit ? '✅' : '❌'}</div>`;
+            
+            const aadLike = (hasLoginFmt && hasNextBtn) || (brandingHit && (hasLoginFmt || hasPw));
+            results.innerHTML += `<div class="test-result ${aadLike ? 'warning' : 'success'}">AAD-like interface: ${aadLike ? '⚠️ DETECTED' : '✅ Not detected'}</div>`;
+            
+            if (aadLike) {
+                results.innerHTML += '<div class="test-result warning">🚨 This page would trigger CyberDrain phishing detection!</div>';
+            }
+        }
+
+        function addSuspiciousElements() {
+            const results = document.getElementById('monitoring-results');
+            results.innerHTML = '<div class="test-result">Adding suspicious elements for monitoring test...</div>';
+            
+            // Add a suspicious script
+            const script = document.createElement('script');
+            script.innerHTML = 'console.log("eval test"); document.write("test");';
+            document.head.appendChild(script);
+            
+            // Add external resource
+            const img = document.createElement('img');
+            img.src = 'https://evil-site.com/logo.png';
+            img.style.display = 'none';
+            document.body.appendChild(img);
+            
+            results.innerHTML += '<div class="test-result warning">⚠️ Added suspicious script and external resource</div>';
+            results.innerHTML += '<div class="test-result">Check console for detection events</div>';
+        }
+
+        function testFormSubmission() {
+            const results = document.getElementById('monitoring-results');
+            results.innerHTML += '<div class="test-result">Testing form submission blocking...</div>';
+            
+            // Try to submit the form
+            const form = document.querySelector('form');
+            if (form) {
+                try {
+                    form.submit();
+                    results.innerHTML += '<div class="test-result error">❌ Form submission was not blocked</div>';
+                } catch (error) {
+                    results.innerHTML += '<div class="test-result success">✅ Form submission was blocked</div>';
+                }
+            }
+        }
+
+        function testValidBadge() {
+            const results = document.getElementById('ui-results');
+            results.innerHTML = '<div class="test-result">Testing valid badge display...</div>';
+            
+            // Check if valid badge exists
+            const badge = document.getElementById('__cd_valid_login_badge');
+            if (badge) {
+                results.innerHTML += '<div class="test-result success">✅ Valid login badge is displayed</div>';
+            } else {
+                results.innerHTML += '<div class="test-result warning">⚠️ Valid login badge not found (expected on non-Microsoft domains)</div>';
+            }
+        }
+
+        function testPhishingBanner() {
+            const results = document.getElementById('ui-results');
+            results.innerHTML += '<div class="test-result">Testing phishing banner display...</div>';
+            
+            // Check if phishing banner exists
+            const banner = document.getElementById('__cd_banner');
+            if (banner) {
+                results.innerHTML += '<div class="test-result warning">⚠️ Phishing banner is displayed</div>';
+            } else {
+                results.innerHTML += '<div class="test-result success">✅ No phishing banner (good for test page)</div>';
+            }
+        }
+
+        function testCredentialBlocking() {
+            const results = document.getElementById('ui-results');
+            results.innerHTML += '<div class="test-result">Testing credential input blocking...</div>';
+            
+            // Check if inputs are disabled
+            const passwordField = document.querySelector('input[type="password"]');
+            const loginField = document.querySelector('input[name="loginfmt"]');
+            
+            if (passwordField && passwordField.disabled) {
+                results.innerHTML += '<div class="test-result warning">⚠️ Password field is blocked</div>';
+            } else {
+                results.innerHTML += '<div class="test-result success">✅ Password field is not blocked</div>';
+            }
+            
+            if (loginField && loginField.disabled) {
+                results.innerHTML += '<div class="test-result warning">⚠️ Login field is blocked</div>';
+            } else {
+                results.innerHTML += '<div class="test-result success">✅ Login field is not blocked</div>';
+            }
+        }
+
+        // Auto-run basic tests when page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testExtensionPresence();
+                triggerDetectionTest();
+            }, 1000);
+        });
+
+        // Add some Microsoft-related content for detection
+        document.body.innerHTML += `
+            <div style="display: none;">
+                urlMsaSignUp flowToken https://aadcdn.msauth.net/
+            </div>
+        `;
+    </script>
+</body>
+</html>
