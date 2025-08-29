@@ -1,16 +1,16 @@
-# CyberShield Drain
+# Microsoft 365 Phishing Protection
 
-**Enterprise-grade Chromium browser extension for web security and content manipulation**
+**Enterprise-grade Chromium browser extension for Microsoft 365 phishing detection and prevention**
 
-CyberShield Drain is a powerful, Manifest V3 compatible browser extension designed for enterprise deployment with advanced threat detection, content manipulation capabilities, and comprehensive policy management.
+Microsoft 365 Phishing Protection is a powerful, Manifest V3 compatible browser extension designed for enterprise deployment to detect and prevent phishing attacks targeting Microsoft 365 login pages. The extension provides real-time protection that cannot be bypassed by adversary-in-the-middle attacks, operating at the browser level.
 
 ## 🚀 Features
 
-### Core Security Features
-- **Real-time Threat Detection**: Advanced pattern matching for malicious content, phishing attempts, and suspicious behavior
-- **URL Monitoring & Blocking**: Automatic blocking of known malicious and phishing websites
-- **Content Manipulation**: Safe injection and modification of web page content
-- **Script Injection Protection**: Detection and prevention of malicious script injection attempts
+### Core Phishing Protection Features
+- **Real-time Microsoft 365 Phishing Detection**: Advanced pattern matching specifically for Microsoft 365 login page impersonation
+- **Login Page Verification**: Automatic verification of legitimate Microsoft 365 domains and page elements
+- **Credential Harvesting Prevention**: Detection and blocking of fake login forms attempting to steal credentials
+- **Cryptographic Verification**: Optional verification badges for legitimate Microsoft login pages
 
 ### Enterprise Features
 - **Group Policy (GPO) Support**: Deploy and manage settings via Windows Group Policy
@@ -26,10 +26,10 @@ CyberShield Drain is a powerful, Manifest V3 compatible browser extension design
 - **Brand Protection**: Remove or replace CyberShield branding entirely
 
 ### Advanced Features
-- **Custom Detection Rules**: Define and deploy custom threat detection patterns
-- **Real-time Scanning**: Continuous monitoring of web content and behavior
-- **Performance Optimization**: Minimal impact on browsing performance
-- **Privacy Controls**: Comprehensive privacy settings and data protection
+- **Custom Phishing Detection Rules**: Define and deploy custom Microsoft 365 phishing detection patterns
+- **Behavioral Analysis**: Monitor form submission patterns and suspicious page modifications
+- **Performance Optimization**: Lightweight detection with minimal impact on browsing performance
+- **Privacy Controls**: No collection of actual credentials, only security metadata
 
 ## 📋 Requirements
 
@@ -91,12 +91,13 @@ The extension supports comprehensive policy configuration through the managed sc
 ```json
 {
   "extensionEnabled": true,
-  "blockMaliciousUrls": true,
   "blockPhishingAttempts": true,
-  "enableContentManipulation": true,
+  "enableRealTimeScanning": true,
+  "enableVerificationBadge": true,
   "enableLogging": true,
-  "whitelistedDomains": ["example.com", "trusted-site.org"],
-  "blacklistedDomains": ["malicious-site.com"],
+  "trustedDomains": ["login.microsoftonline.com", "portal.office.com"],
+  "blockedPhishingDomains": ["fake-microsoft-login.com"],
+  "detectionLevel": "balanced",
   "enterpriseMode": true,
   "organizationName": "Your Organization",
   "complianceMode": true
@@ -120,18 +121,26 @@ White-label the extension by modifying `config/branding.json`:
 
 ### Detection Rules
 
-Customize threat detection by modifying `rules/detection-rules.json`:
+Customize Microsoft 365 phishing detection by modifying `rules/detection-rules.json`:
 
 ```json
 {
-  "malicious": [
+  "rules": [
     {
-      "pattern": "your-custom-pattern",
-      "severity": "high",
-      "action": "block",
-      "description": "Custom malicious pattern"
+      "id": "check_legitimate_domain",
+      "type": "url",
+      "weight": 30,
+      "condition": {
+        "domains": ["login.microsoftonline.com", "portal.office.com"]
+      },
+      "description": "Verify legitimate Microsoft domain"
     }
-  ]
+  ],
+  "thresholds": {
+    "legitimate": 90,
+    "suspicious": 60,
+    "phishing": 30
+  }
 }
 ```
 

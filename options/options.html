@@ -12,10 +12,10 @@
         <nav class="sidebar">
             <div class="sidebar-header">
                 <img src="../images/icon48.png" alt="CyberShield Logo" class="sidebar-logo" id="sidebarLogo">
-                <div class="sidebar-title">
-                    <h2 id="sidebarTitle">CyberShield Drain</h2>
-                    <span class="sidebar-version" id="sidebarVersion">v1.0.0</span>
-                </div>
+                            <div class="sidebar-title">
+                <h2 id="sidebarTitle">Microsoft 365 Phishing Protection</h2>
+                <span class="sidebar-version" id="sidebarVersion">v1.0.0</span>
+            </div>
             </div>
             
             <ul class="sidebar-menu">
@@ -70,7 +70,7 @@
             <section id="general-section" class="settings-section active">
                 <div class="section-header">
                     <h2>General Settings</h2>
-                    <p>Configure basic extension behavior and features</p>
+                    <p>Configure basic phishing protection behavior and detection features</p>
                 </div>
 
                 <div class="settings-grid">
@@ -80,27 +80,27 @@
                             <label class="setting-label">
                                 <input type="checkbox" id="extensionEnabled" class="setting-checkbox">
                                 <span class="checkbox-custom"></span>
-                                Enable Extension
+                                Enable Phishing Protection
                             </label>
-                            <p class="setting-description">Turn the extension on or off globally</p>
+                            <p class="setting-description">Turn Microsoft 365 phishing protection on or off globally</p>
                         </div>
                         
                         <div class="setting-item">
                             <label class="setting-label">
                                 <input type="checkbox" id="enableContentManipulation" class="setting-checkbox">
                                 <span class="checkbox-custom"></span>
-                                Enable Content Manipulation
+                                Enable Page Blocking
                             </label>
-                            <p class="setting-description">Allow the extension to modify page content</p>
+                            <p class="setting-description">Allow the extension to block phishing pages and disable forms</p>
                         </div>
                         
                         <div class="setting-item">
                             <label class="setting-label">
                                 <input type="checkbox" id="enableUrlMonitoring" class="setting-checkbox">
                                 <span class="checkbox-custom"></span>
-                                Enable URL Monitoring
+                                Enable Real-time Scanning
                             </label>
-                            <p class="setting-description">Monitor and analyze visited URLs for threats</p>
+                            <p class="setting-description">Monitor and analyze Microsoft 365 login pages in real-time</p>
                         </div>
                     </div>
 
@@ -130,44 +130,44 @@
             <!-- Security Section -->
             <section id="security-section" class="settings-section">
                 <div class="section-header">
-                    <h2>Security Settings</h2>
-                    <p>Configure threat detection and blocking behavior</p>
+                    <h2>Phishing Detection Settings</h2>
+                    <p>Configure Microsoft 365 phishing detection and blocking behavior</p>
                 </div>
 
                 <div class="settings-grid">
                     <div class="setting-group">
-                        <h3>URL Protection</h3>
+                        <h3>Microsoft 365 Protection</h3>
                         <div class="setting-item">
                             <label class="setting-label">
                                 <input type="checkbox" id="blockMaliciousUrls" class="setting-checkbox">
                                 <span class="checkbox-custom"></span>
-                                Block Malicious URLs
+                                Block Fake Microsoft 365 Sites
                             </label>
-                            <p class="setting-description">Automatically block known malicious websites</p>
+                            <p class="setting-description">Automatically block fake Microsoft 365 login pages</p>
                         </div>
                         
                         <div class="setting-item">
                             <label class="setting-label">
                                 <input type="checkbox" id="blockPhishingAttempts" class="setting-checkbox">
                                 <span class="checkbox-custom"></span>
-                                Block Phishing Attempts
+                                Block Credential Harvesting
                             </label>
-                            <p class="setting-description">Block suspected phishing websites</p>
+                            <p class="setting-description">Block websites attempting to steal Microsoft 365 credentials</p>
                         </div>
                     </div>
 
                     <div class="setting-group">
                         <h3>Domain Lists</h3>
                         <div class="setting-item">
-                            <label class="setting-label">Whitelisted Domains</label>
-                            <textarea id="whitelistedDomains" class="setting-textarea" placeholder="example.com&#10;trusted-site.org&#10;*.safe-domain.net"></textarea>
-                            <p class="setting-description">Domains that are always allowed (one per line)</p>
+                            <label class="setting-label">Trusted Domains</label>
+                            <textarea id="whitelistedDomains" class="setting-textarea" placeholder="login.microsoftonline.com&#10;portal.office.com&#10;*.microsoft.com"></textarea>
+                            <p class="setting-description">Additional trusted Microsoft domains (one per line)</p>
                         </div>
                         
                         <div class="setting-item">
-                            <label class="setting-label">Blacklisted Domains</label>
-                            <textarea id="blacklistedDomains" class="setting-textarea" placeholder="malicious-site.com&#10;phishing-site.org&#10;*.bad-domain.net"></textarea>
-                            <p class="setting-description">Domains that are always blocked (one per line)</p>
+                            <label class="setting-label">Blocked Phishing Domains</label>
+                            <textarea id="blacklistedDomains" class="setting-textarea" placeholder="fake-microsoft-login.com&#10;secure-office365.net&#10;microsoft-verification.org"></textarea>
+                            <p class="setting-description">Known phishing domains to always block (one per line)</p>
                         </div>
                     </div>
                 </div>
@@ -176,8 +176,8 @@
             <!-- Detection Section -->
             <section id="detection-section" class="settings-section">
                 <div class="section-header">
-                    <h2>Detection Rules</h2>
-                    <p>Manage threat detection patterns and custom rules</p>
+                    <h2>Phishing Detection Rules</h2>
+                    <p>Manage Microsoft 365 phishing detection patterns and custom rules</p>
                 </div>
 
                 <div class="settings-grid">

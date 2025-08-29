@@ -264,14 +264,14 @@ class CyberShieldOptions {
 
   getDefaultBrandingConfig() {
     return {
-      companyName: 'CyberShield',
-      productName: 'CyberShield Drain',
-      supportEmail: 'support@cybershield.com',
-      primaryColor: '#2563eb',
+      companyName: 'CyberDrain',
+      productName: 'Microsoft 365 Phishing Protection',
+      supportEmail: 'support@cyberdrain.com',
+      primaryColor: '#F77F00',
       logoUrl: 'images/icon48.png',
-      supportUrl: 'https://support.cybershield.com',
-      privacyPolicyUrl: 'https://cybershield.com/privacy',
-      termsOfServiceUrl: 'https://cybershield.com/terms'
+      supportUrl: 'https://support.cyberdrain.com',
+      privacyPolicyUrl: 'https://cyberdrain.com/privacy',
+      termsOfServiceUrl: 'https://cyberdrain.com/terms'
     };
   }
 

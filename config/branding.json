@@ -1,19 +1,22 @@
 {
-  "companyName": "CyberShield",
-  "productName": "CyberShield Drain",
+  "companyName": "CyberDrain",
+  "productName": "Microsoft 365 Phishing Protection",
   "version": "1.0.0",
-  "description": "Enterprise-grade web security and content manipulation extension",
+  "description": "Protect against phishing attacks targeting Microsoft 365 login pages with enterprise-grade detection",
   
   "branding": {
-    "primaryColor": "#2563eb",
-    "secondaryColor": "#64748b",
-    "accentColor": "#059669",
-    "warningColor": "#d97706",
-    "errorColor": "#dc2626",
-    "backgroundColor": "#f8fafc",
-    "surfaceColor": "#ffffff",
-    "textPrimary": "#1f2937",
-    "textSecondary": "#6b7280"
+    "primaryColor": "#F77F00",
+    "primaryDark": "#003049",
+    "primaryWhite": "#FFFFFF",
+    "secondaryTealDark": "#005C63",
+    "secondaryTealMedium": "#3E5C66", 
+    "secondaryLightGreen": "#EBF0DF",
+    "warningColor": "#F77F00",
+    "errorColor": "#003049",
+    "backgroundColor": "#FFFFFF",
+    "surfaceColor": "#FFFFFF",
+    "textPrimary": "#003049",
+    "textSecondary": "#3E5C66"
   },
   
   "assets": {
@@ -29,19 +32,19 @@
   },
   
   "contact": {
-    "supportEmail": "support@cybershield.com",
-    "supportUrl": "https://support.cybershield.com",
-    "salesEmail": "sales@cybershield.com",
-    "salesUrl": "https://cybershield.com/contact",
-    "websiteUrl": "https://cybershield.com",
-    "documentationUrl": "https://docs.cybershield.com"
+    "supportEmail": "support@cyberdrain.com",
+    "supportUrl": "https://support.cyberdrain.com",
+    "salesEmail": "info@cyberdrain.com",
+    "salesUrl": "https://cyberdrain.com/contact",
+    "websiteUrl": "https://cyberdrain.com",
+    "documentationUrl": "https://docs.cyberdrain.com"
   },
   
   "legal": {
-    "privacyPolicyUrl": "https://cybershield.com/privacy",
-    "termsOfServiceUrl": "https://cybershield.com/terms",
-    "licenseUrl": "https://cybershield.com/license",
-    "copyrightNotice": "© 2024 CyberShield Technologies. All rights reserved."
+    "privacyPolicyUrl": "https://cyberdrain.com/privacy",
+    "termsOfServiceUrl": "https://cyberdrain.com/terms",
+    "licenseUrl": "https://cyberdrain.com/license",
+    "copyrightNotice": "© 2024 CyberDrain. All rights reserved."
   },
   
   "customization": {
@@ -53,38 +56,38 @@
   },
   
   "features": {
-    "welcomeMessage": "Welcome to CyberShield Drain - Your Enterprise Web Security Solution",
-    "tagline": "Advanced threat protection for the modern web",
-    "securityBadgeText": "Protected by CyberShield",
-    "blockedPageTitle": "Access Blocked by CyberShield",
-    "blockedPageMessage": "This page has been blocked by your organization's security policy for your protection."
+    "welcomeMessage": "Welcome to CyberDrain's Microsoft 365 Phishing Protection - Safeguard Your Organization",
+    "tagline": "Advanced phishing detection for Microsoft 365 login pages by CyberDrain",
+    "securityBadgeText": "Protected by CyberDrain",
+    "blockedPageTitle": "Phishing Attempt Blocked by CyberDrain",
+    "blockedPageMessage": "This page appears to be a phishing attempt targeting Microsoft 365 credentials. CyberDrain has blocked access to protect your organization."
   },
   
   "customText": {
-    "extensionDescription": "CyberShield Drain provides enterprise-grade web security with advanced threat detection, content manipulation capabilities, and comprehensive policy management.",
+    "extensionDescription": "Microsoft 365 Phishing Protection provides enterprise-grade detection and blocking of phishing attempts targeting Microsoft 365 login pages, with comprehensive policy management and audit capabilities.",
     "securityFeatures": [
-      "Real-time threat detection and blocking",
-      "Advanced phishing protection",
-      "Content manipulation and injection",
+      "Real-time Microsoft 365 phishing detection",
+      "Advanced login page verification", 
+      "Cryptographic verification badges",
       "Enterprise policy enforcement",
-      "Comprehensive audit logging",
-      "White-label customization"
+      "Comprehensive security audit logging",
+      "Custom detection rules engine"
     ],
     "enterpriseFeatures": [
       "Group Policy (GPO) support",
       "Microsoft Intune integration",
       "Centralized management console",
-      "Compliance reporting",
-      "Custom detection rules",
-      "24/7 enterprise support"
+      "Security compliance reporting",
+      "Custom phishing detection rules",
+      "24/7 enterprise security support"
     ]
   },
   
   "socialMedia": {
-    "twitter": "https://twitter.com/cybershield",
-    "linkedin": "https://linkedin.com/company/cybershield",
-    "youtube": "https://youtube.com/c/cybershield",
-    "github": "https://github.com/cybershield"
+    "twitter": "https://twitter.com/cyberdrain",
+    "linkedin": "https://linkedin.com/company/cyberdrain",
+    "youtube": "https://youtube.com/c/cyberdrain",
+    "github": "https://github.com/cyberdrain"
   },
   
   "whiteLabel": {

@@ -1,13 +1,16 @@
 {
   "manifest_version": 3,
-  "name": "CyberShield Drain",
+  "name": "Microsoft 365 Phishing Protection",
   "version": "1.0.0",
-  "description": "Enterprise-grade web security and content manipulation extension",
+  "description": "Protect against phishing attacks targeting Microsoft 365 login pages with enterprise-grade detection",
   "permissions": [
     "storage",
     "activeTab",
     "tabs",
-    "scripting"
+    "scripting",
+    "webRequest",
+    "declarativeNetRequest",
+    "alarms"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -27,7 +30,7 @@
   ],
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "CyberShield Drain",
+    "default_title": "Microsoft 365 Phishing Protection",
     "default_icon": {
       "16": "images/icon16.png",
       "32": "images/icon32.png",

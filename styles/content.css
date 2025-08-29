@@ -15,30 +15,30 @@
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
   padding: 16px 20px !important;
   max-width: 380px !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
   font-size: 14px !important;
   line-height: 1.5 !important;
   animation: cybershield-slide-in 0.3s ease-out !important;
 }
 
 .cybershield-notification.error {
-  border-left: 4px solid #dc2626 !important;
-  background: #fef2f2 !important;
+  border-left: 4px solid #003049 !important;
+  background: #EBF0DF !important;
 }
 
 .cybershield-notification.warning {
-  border-left: 4px solid #d97706 !important;
+  border-left: 4px solid #F77F00 !important;
   background: #fffbeb !important;
 }
 
 .cybershield-notification.info {
-  border-left: 4px solid #2563eb !important;
-  background: #eff6ff !important;
+  border-left: 4px solid #005C63 !important;
+  background: #EBF0DF !important;
 }
 
 .cybershield-notification.success {
-  border-left: 4px solid #059669 !important;
-  background: #ecfdf5 !important;
+  border-left: 4px solid #005C63 !important;
+  background: #EBF0DF !important;
 }
 
 .cybershield-notification .title {
@@ -81,7 +81,7 @@
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
 }
 
 .cybershield-block-content {
@@ -109,7 +109,7 @@
 }
 
 .cybershield-block-content button {
-  background: #2563eb !important;
+  background: #F77F00 !important;
   color: white !important;
   border: none !important;
   padding: 12px 24px !important;
@@ -121,7 +121,7 @@
 }
 
 .cybershield-block-content button:hover {
-  background: #1d4ed8 !important;
+  background: #E56F00 !important;
 }
 
 .cybershield-block-content .secondary-btn {
@@ -155,9 +155,9 @@
 
 /* Suspicious element highlighting */
 .cybershield-suspicious {
-  outline: 2px dashed #dc2626 !important;
+  outline: 2px dashed #F77F00 !important;
   outline-offset: 2px !important;
-  background-color: rgba(220, 38, 38, 0.1) !important;
+  background-color: rgba(247, 127, 0, 0.1) !important;
 }
 
 .cybershield-hidden {
