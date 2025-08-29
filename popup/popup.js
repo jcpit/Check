@@ -331,7 +331,7 @@ class CyberShieldPopup {
     item.className = 'activity-item';
     
     const icon = document.createElement('div');
-    icon.className = `activity-icon ${this.getActivityIconType(event.event.type)}`;
+    icon.className = `activity-icon material-icons ${this.getActivityIconType(event.event.type)}`;
     icon.textContent = this.getActivityIcon(event.event.type);
     
     const text = document.createElement('span');
@@ -356,10 +356,10 @@ class CyberShieldPopup {
   }
 
   getActivityIcon(eventType) {
-    if (eventType.includes('block')) return '🛡️';
-    if (eventType.includes('warning')) return '⚠️';
-    if (eventType.includes('scan')) return '🔍';
-    return '📋';
+    if (eventType.includes('block')) return 'security';
+    if (eventType.includes('warning')) return 'warning';
+    if (eventType.includes('scan')) return 'search';
+    return 'description';
   }
 
   getActivityText(event) {
