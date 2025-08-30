@@ -505,7 +505,8 @@ export class DetectionEngine {
       // Only attempt base64 decode if script is not too large and looks suspicious
       const dynamicPattern =
         /eval\s*\(|document\.write\s*\(|setTimeout\s*\(|setInterval\s*\(/i;
-      const looksLikeBase64 = /^[A-Za-z0-9+/=]+$/.test(b64) && b64.length % 4 === 0;
+      // Relaxed base64 detection: allow unpadded and non-multiple-of-4 lengths
+      const looksLikeBase64 = /^[A-Za-z0-9+/]+={0,2}$/.test(b64);
       const shouldAttemptDecode =
         (dynamicPattern.test(code) || looksLikeBase64) && b64.length < 2000;
       if (shouldAttemptDecode && looksLikeBase64) {
