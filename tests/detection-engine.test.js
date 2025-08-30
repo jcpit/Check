@@ -41,9 +41,7 @@ test('setTimeout navigation with password field triggers alert', async () => {
   assert.equal(threats[0].severity, 'low');
 });
 
-test('base64 encoded dynamic script triggers alert', async () => {
-  const payload = Buffer.from("setTimeout(()=>{document.cookie='a=1'},0)").toString('base64');
-  setupDom(`<script>${payload}</script>`);
+  setupDom(`<script src="data:text/javascript;base64,${payload}"></script>`);
   const engine = new DetectionEngine();
   engine.analyzeUrl = async () => ({ isSuspicious: false, threats: [] });
   const analysis = engine.contentAnalysisFunction();
