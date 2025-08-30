@@ -18,6 +18,15 @@ function shouldLog(level) {
 
 function sendToBackground(level, args) {
   try {
+    if (!globalThis.chrome?.runtime?.id) {
+      if (typeof config.output[level] === "function") {
+        config.output[level](...args);
+      } else {
+        config.output.log(...args);
+      }
+      return;
+    }
+
     const message = args
       .map((arg) => {
         if (arg instanceof Error) {
@@ -34,11 +43,19 @@ function sendToBackground(level, args) {
       })
       .join(" ");
 
-    chrome.runtime.sendMessage({ type: "log", level, message }, (response) => {
-      if (chrome.runtime.lastError) {
-        console.error("Failed to send log to background:", chrome.runtime.lastError.message);
-      }
-    });
+    chrome.runtime
+      .sendMessage({ type: "log", level, message })
+      .catch((error) => {
+        if (error.message.includes("Receiving end does not exist")) {
+          if (typeof config.output[level] === "function") {
+            config.output[level](...args);
+          } else {
+            config.output.log(...args);
+          }
+        } else {
+          console.error("Failed to send log to background:", error.message);
+        }
+      });
   } catch (e) {
     console.error("Failed to send log:", e);
   }
