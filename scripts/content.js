@@ -41,8 +41,7 @@ async function ensureRulesLoaded() {
       })
       .catch((err) => {
         logger.error("Failed to load detection rules:", err);
-        // Optionally, fallback to default trusted origins
-        trustedOrigins = new Set(DEFAULT_TRUSTED_ORIGINS);
+        trustedOrigins = new Set(DEFAULT_TRUSTED_ORIGINS.map(urlOrigin).filter(origin => origin !== null));
         // Return a safe fallback value
         return { rules: [], thresholds: {} };
       });
