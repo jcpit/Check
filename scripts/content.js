@@ -35,9 +35,11 @@ async function ensureRulesLoaded() {
   if (!rulesLoaded) await rulesPromise;
 }
 
-async function isTrustedOrigin(origin) {
+async function isTrustedOrigin(originOrUrl) {
   await ensureRulesLoaded();
-  return trustedOrigins.has((origin || "").toLowerCase());
+  // Accepts either a full URL or an origin string
+  const origin = urlOrigin(originOrUrl || "");
+  return trustedOrigins.has(origin);
 }
 
 async function isTrustedReferrer(origin) {
