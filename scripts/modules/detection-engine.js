@@ -460,14 +460,22 @@ export class DetectionEngine {
 
   // Function to be executed in the content context
   contentAnalysisFunction() {
+    const inputs = document.querySelectorAll("input");
+    const forms = document.querySelectorAll("form");
+    const scripts = document.querySelectorAll("script");
+    const metas = document.querySelectorAll("meta");
+
     const analysis = {
-      hasPasswordFields:
-        document.querySelectorAll('input[type="password"]').length > 0,
-      hasLoginFields:
-        document.querySelectorAll(
-          'input[type="password"], input[name*="user"], input[name*="login"], input[type="email"]'
-        ).length > 0,
-      hasFormSubmissions: document.querySelectorAll("form").length > 0,
+      hasPasswordFields: Array.from(inputs).some(
+        (el) => el.type === "password"
+      ),
+      hasLoginFields: Array.from(inputs).some(
+        (el) =>
+          el.type === "password" ||
+          /user|login/i.test(el.name || "") ||
+          el.type === "email"
+      ),
+      hasFormSubmissions: forms.length > 0,
       hasSuspiciousScripts: false,
       hasExternalResources: false,
       documentTitle: document.title,
@@ -476,18 +484,35 @@ export class DetectionEngine {
     };
 
     // Check for suspicious scripts
-    const scripts = document.querySelectorAll("script");
     for (const script of scripts) {
       if (script.src && !script.src.startsWith(window.location.origin)) {
         analysis.hasExternalResources = true;
       }
 
-      const code = script.innerHTML;
-      const usesDynamicExecution = /eval\s*\(|document\.write\s*\(|setTimeout\s*\(|setInterval\s*\(/i.test(
-        code
-      );
-      const referencesLocation = /location/i.test(code);
-      const referencesCookie = /document\.cookie/i.test(code);
+      let code = script.innerHTML || "";
+      if (
+        !code &&
+        script.src &&
+        script.src.startsWith("data:text/javascript;base64,")
+      ) {
+        try {
+          code = window.atob(script.src.split(",")[1]);
+        } catch {}
+      }
+
+      let decoded = "";
+      const b64 = code.replace(/\s+/g, "");
+      if (/^[A-Za-z0-9+/=]+$/.test(b64) && b64.length % 4 === 0) {
+        try {
+          decoded = window.atob(b64);
+        } catch {}
+      }
+      const combined = code + decoded;
+      const dynamicPattern =
+        /eval\s*\(|document\.write\s*\(|setTimeout\s*\(|setInterval\s*\(/i;
+      const usesDynamicExecution = dynamicPattern.test(combined);
+      const referencesLocation = /location/i.test(combined);
+      const referencesCookie = /document\.cookie/i.test(combined);
 
       if (
         usesDynamicExecution &&
@@ -498,8 +523,7 @@ export class DetectionEngine {
     }
 
     // Collect meta tags
-    const metaTags = document.querySelectorAll("meta");
-    for (const meta of metaTags) {
+    for (const meta of metas) {
       analysis.metaTags.push({
         name: meta.getAttribute("name"),
         content: meta.getAttribute("content"),

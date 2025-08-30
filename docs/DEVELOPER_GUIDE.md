@@ -43,6 +43,9 @@ properties. Usage of `eval`, `setTimeout`, or `setInterval` is evaluated for ref
 fields are present, modifications to `location`. Legitimate timers used for navigation or interface updates are ignored, and
 any resulting alerts are reported with **low** severity.
 
+During content analysis, DOM queries are cached per run to avoid redundant lookups, and inline script blocks are decoded from
+base64 when possible so that obfuscated dynamic execution is still detected.
+
 ## Detection Thresholds
 
 Thresholds have been relaxed to reduce false positives while maintaining protection:
