@@ -7,7 +7,7 @@
 import { ConfigManager } from "./modules/config-manager.js";
 import { DetectionEngine } from "./modules/detection-engine.js";
 import { PolicyManager } from "./modules/policy-manager.js";
-import logger from "./utils/logger.js";
+import { logger } from "./utils/logger.js";
 
 class CheckBackground {
   constructor() {
