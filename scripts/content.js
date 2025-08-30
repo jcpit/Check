@@ -8,8 +8,9 @@
  * suspicious pages, then the full engine performs deeper analysis.
  */
 
+let logger = console;
+
 (async () => {
-  let logger = console;
   try {
     const mod = await import(chrome.runtime.getURL("scripts/utils/logger.js"));
     logger = mod.default;
