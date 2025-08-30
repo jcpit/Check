@@ -502,14 +502,18 @@ export class DetectionEngine {
 
       let decoded = "";
       const b64 = code.replace(/\s+/g, "");
-      if (/^[A-Za-z0-9+/=]+$/.test(b64) && b64.length % 4 === 0) {
+      // Only attempt base64 decode if script is not too large and looks suspicious
+      const dynamicPattern =
+        /eval\s*\(|document\.write\s*\(|setTimeout\s*\(|setInterval\s*\(/i;
+      const looksLikeBase64 = /^[A-Za-z0-9+/=]+$/.test(b64) && b64.length % 4 === 0;
+      const shouldAttemptDecode =
+        (dynamicPattern.test(code) || looksLikeBase64) && b64.length < 2000;
+      if (shouldAttemptDecode && looksLikeBase64) {
         try {
           decoded = window.atob(b64);
         } catch {}
       }
       const combined = code + decoded;
-      const dynamicPattern =
-        /eval\s*\(|document\.write\s*\(|setTimeout\s*\(|setInterval\s*\(/i;
       const usesDynamicExecution = dynamicPattern.test(combined);
       const referencesLocation = /location/i.test(combined);
       const referencesCookie = /document\.cookie/i.test(combined);
