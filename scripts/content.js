@@ -580,15 +580,15 @@ class CheckContent {
   }
 
   setupMessageHandling() {
-    chrome.runtime.onMessage.addListener((message) => {
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.type === "SHOW_VALID_BADGE") {
         this.injectValidBadge(message.image, message.branding);
+        // If no response is needed, return; otherwise, sendResponse if required
+        return;
       }
-    });
-
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      // Delegate all other messages to handleMessage
       this.handleMessage(message, sender, sendResponse);
-      return true; // Keep message channel open
+      return true; // Keep message channel open for async responses
     });
 
     // Expose testing interface to page
