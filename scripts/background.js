@@ -8,6 +8,7 @@ import { ConfigManager } from "./modules/config-manager.js";
 import { DetectionEngine } from "./modules/detection-engine.js";
 import { PolicyManager } from "./modules/policy-manager.js";
 import logger from "./utils/logger.js";
+import { store as storeLog } from "./utils/background-logger.js";
 
 // Initialize logger with default settings before any components use it
 logger.init({ level: "info", enabled: true });
@@ -347,6 +348,12 @@ class CheckBackground {
             sendResponse({ success: true, analysis });
           } catch (error) {
             sendResponse({ success: false, error: error.message });
+          }
+          break;
+
+        case "log":
+          if (message.level && message.message) {
+            await storeLog(message.level, message.message);
           }
           break;
 
