@@ -550,6 +550,35 @@ class CheckBackground {
 
   async injectContentScript(tabId) {
     try {
+      const tab = await chrome.tabs.get(tabId);
+      const url = tab?.url;
+      if (!url) {
+        logger.warn("Check: No URL for tab", tabId);
+        return;
+      }
+
+      let protocol;
+      try {
+        protocol = new URL(url).protocol;
+      } catch {
+        logger.warn("Check: Invalid URL, skipping content script:", url);
+        return;
+      }
+
+      const disallowed = [
+        "chrome:",
+        "edge:",
+        "about:",
+        "chrome-extension:",
+        "moz-extension:",
+        "devtools:",
+      ];
+
+      if (disallowed.includes(protocol)) {
+        logger.warn("Check: Skipping content script injection for disallowed URL:", url);
+        return;
+      }
+
       await chrome.scripting.executeScript({
         target: { tabId },
         files: ["scripts/content.js"],
