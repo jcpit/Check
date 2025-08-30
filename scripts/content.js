@@ -580,6 +580,12 @@ class CheckContent {
   }
 
   setupMessageHandling() {
+    chrome.runtime.onMessage.addListener((message) => {
+      if (message.type === "SHOW_VALID_BADGE") {
+        this.injectValidBadge(message.image, message.branding);
+      }
+    });
+
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       this.handleMessage(message, sender, sendResponse);
       return true; // Keep message channel open

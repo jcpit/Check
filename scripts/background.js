@@ -121,6 +121,24 @@ class CheckBackground {
     } catch {}
   }
 
+  // CyberDrain integration - Notify tab to show valid badge
+  async showValidBadge(tabId) {
+    try {
+      const config = await this.configManager.getConfig();
+      const enabled =
+        this.policy?.EnableValidPageBadge ||
+        config?.showValidPageBadge ||
+        config?.enableValidPageBadge;
+      if (enabled) {
+        await chrome.tabs.sendMessage(tabId, {
+          type: "SHOW_VALID_BADGE",
+          image: this.policy?.ValidPageBadgeImage,
+          branding: this.policy?.BrandingName,
+        });
+      }
+    } catch {}
+  }
+
   // CyberDrain integration - Apply branding to extension action
   async applyBrandingToAction() {
     // Title
@@ -266,6 +284,7 @@ class CheckBackground {
         if (verdict === "trusted") {
           // "Valid page" sighting
           await this.sendEvent({ type: "trusted-login-page", url: tab.url });
+          this.showValidBadge(tabId);
         }
       }
 
@@ -323,17 +342,18 @@ class CheckBackground {
           }
           break;
 
-        case "FLAG_TRUSTED_BY_REFERRER":
-          if (sender.tab?.id) {
-            const tabId = sender.tab.id;
-            chrome.storage.session.set({ ["verdict:" + tabId]: { verdict: "trusted", url: sender.tab.url, by: "referrer" } });
-            this.setBadge(tabId, "trusted");
-            sendResponse({ ok: true });
-            if (this.policy.AlertWhenLogon) {
-              this.sendEvent({ type: "user-logged-on", url: sender.tab.url, by: "referrer" });
+          case "FLAG_TRUSTED_BY_REFERRER":
+            if (sender.tab?.id) {
+              const tabId = sender.tab.id;
+              chrome.storage.session.set({ ["verdict:" + tabId]: { verdict: "trusted", url: sender.tab.url, by: "referrer" } });
+              this.setBadge(tabId, "trusted");
+              this.showValidBadge(tabId);
+              sendResponse({ ok: true });
+              if (this.policy.AlertWhenLogon) {
+                this.sendEvent({ type: "user-logged-on", url: sender.tab.url, by: "referrer" });
+              }
             }
-          }
-          break;
+            break;
 
         case "REQUEST_POLICY":
           sendResponse({ policy: this.policy });
