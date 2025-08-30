@@ -42,9 +42,6 @@ async function ensureRulesLoaded() {
         trustedOrigins = new Set(origins);
         return rules;
       })
-      .catch((err) => {
-        logger.error("Failed to load detection rules", err);
-        rulesPromise = null;
         throw err;
       });
   }
