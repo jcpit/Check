@@ -37,8 +37,8 @@ async function ensureRulesLoaded() {
       .then((rules) => {
         const origins = rules.trusted_origins
           ? rules.trusted_origins
-              .filter(Boolean)
-          : DEFAULT_TRUSTED_ORIGINS;
+              .map(urlOrigin).filter(Boolean)
+          : DEFAULT_TRUSTED_ORIGINS.map(urlOrigin).filter(Boolean);
         trustedOrigins = new Set(origins);
         return rules;
       })
