@@ -38,14 +38,14 @@ async function ensureRulesLoaded() {
         const origins = rules.trusted_origins
           ? rules.trusted_origins
               .map(urlOrigin).filter(Boolean)
-          : DEFAULT_TRUSTED_ORIGINS.map(urlOrigin).filter(Boolean);
+          : DEFAULT_TRUSTED_ORIGINS;
         trustedOrigins = new Set(origins);
         return rules;
       })
       .catch((err) => {
         logger.error("Failed to load detection rules:", err);
         // Optionally, fallback to default trusted origins
-        trustedOrigins = new Set(DEFAULT_TRUSTED_ORIGINS.map(urlOrigin).filter(Boolean));
+        trustedOrigins = new Set(DEFAULT_TRUSTED_ORIGINS);
         // Return a safe fallback value
         return { rules: [], thresholds: {} };
       });
