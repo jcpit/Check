@@ -11,22 +11,20 @@
 let logger = console;
 
 (async () => {
-  async function loadLogger() {
-    try {
-      const mod = await import(chrome.runtime.getURL("scripts/utils/logger.js"));
-      logger = mod.default;
-    } catch (err) {
-      console.error("Failed to load logger:", err);
-    }
+  try {
+    const mod = await import(
+      chrome.runtime.getURL("scripts/utils/logger.js")
+    );
+    logger = mod.default;
+  } catch (err) {
+    logger.error("Failed to load logger:", err);
   }
-
-  await loadLogger();
 
   chrome.runtime.sendMessage({ type: "ping" }, (response) => {
     if (chrome.runtime.lastError) {
-      console.error("Ping error:", chrome.runtime.lastError.message);
+      logger.error("Ping error:", chrome.runtime.lastError.message);
     } else {
-      console.log("Ping response:", response);
+      logger.log("Ping response:", response);
     }
   });
 
