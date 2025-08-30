@@ -16,10 +16,8 @@ function shouldLog(level) {
   return config.enabled && levels[level] <= levels[config.level];
 }
 
-async function store(level, args) {
+function sendToBackground(level, args) {
   try {
-    const result = await chrome.storage.local.get(["debugLogs"]);
-    const logs = result.debugLogs || [];
     const message = args
       .map((arg) => {
         if (arg instanceof Error) {
@@ -36,35 +34,34 @@ async function store(level, args) {
       })
       .join(" ");
 
-    logs.push({ level, message, timestamp: new Date().toISOString() });
-    if (logs.length > 1000) {
-      logs.splice(0, logs.length - 1000);
-    }
-
-    await chrome.storage.local.set({ debugLogs: logs });
+    chrome.runtime.sendMessage({ type: "log", level, message }, (response) => {
+      if (chrome.runtime.lastError) {
+        console.error("Failed to send log to background:", chrome.runtime.lastError.message);
+      }
+    });
   } catch (e) {
-    console.error("Failed to store log:", e);
+    console.error("Failed to send log:", e);
   }
 }
 
 export function error(...args) {
   if (shouldLog("error")) {
     config.output.error(...args);
-    store("error", args);
+    sendToBackground("error", args);
   }
 }
 
 export function warn(...args) {
   if (shouldLog("warn")) {
     config.output.warn(...args);
-    store("warn", args);
+    sendToBackground("warn", args);
   }
 }
 
 export function log(...args) {
   if (shouldLog("info")) {
     config.output.log(...args);
-    store("info", args);
+    sendToBackground("info", args);
   }
 }
 
@@ -75,7 +72,7 @@ export function debug(...args) {
     } else {
       config.output.log(...args);
     }
-    store("debug", args);
+    sendToBackground("debug", args);
   }
 }
 
