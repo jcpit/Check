@@ -9,6 +9,9 @@ import { DetectionEngine } from "./modules/detection-engine.js";
 import { PolicyManager } from "./modules/policy-manager.js";
 import logger from "./utils/logger.js";
 
+// Initialize logger with default settings before any components use it
+logger.init({ level: "info", enabled: true });
+
 class CheckBackground {
   constructor() {
     this.configManager = new ConfigManager();
@@ -39,8 +42,14 @@ class CheckBackground {
     try {
       logger.log("Check: Initializing background service worker...");
 
-      // Load configuration and policies
-      await this.configManager.loadConfig();
+      // Load configuration and initialize logger based on settings
+      const config = await this.configManager.loadConfig();
+      logger.init({
+        level: config?.logLevel || "info",
+        enabled: config?.enableLogging ?? true,
+      });
+
+      // Load policies and initialize detection engine
       await this.policyManager.loadPolicies();
       await this.detectionEngine.initialize();
       
@@ -219,7 +228,11 @@ class CheckBackground {
 
   async handleStartup() {
     logger.log("Check: Extension startup detected");
-    await this.configManager.refreshConfig();
+    const config = await this.configManager.refreshConfig();
+    logger.init({
+      level: config?.logLevel || "info",
+      enabled: config?.enableLogging ?? true,
+    });
   }
 
   async handleInstalled(details) {
@@ -491,7 +504,11 @@ class CheckBackground {
       // Enterprise policy changes
       logger.log("Check: Enterprise policy updated");
       await this.policyManager.loadPolicies();
-      await this.configManager.refreshConfig();
+      const config = await this.configManager.refreshConfig();
+      logger.init({
+        level: config?.logLevel || "info",
+        enabled: config?.enableLogging ?? true,
+      });
       // CyberDrain integration - Refresh policy
       await this.refreshPolicy();
     }
