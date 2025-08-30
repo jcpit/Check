@@ -12,6 +12,3 @@ export async function store(level, message) {
   }
 }
 
-export default {
-  store,
-};
