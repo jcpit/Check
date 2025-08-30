@@ -10,15 +10,18 @@
 
 import logger from "./utils/logger.js";
 
-// CyberDrain integration - Trusted origins
-const TRUSTED_ORIGINS = new Set([
+// CyberDrain integration - Precomputed Microsoft login origins
+const DEFAULT_TRUSTED_ORIGINS = [
   "https://login.microsoftonline.com",
   "https://login.microsoft.com",
   "https://login.windows.net",
   "https://login.microsoftonline.us",
   "https://login.partner.microsoftonline.cn",
-  "https://login.live.com"
-]);
+  "https://login.live.com",
+];
+
+let trustedOrigins = new Set(DEFAULT_TRUSTED_ORIGINS);
+let rulesLoaded = false;
 
 function urlOrigin(u) {
   try {
@@ -28,12 +31,21 @@ function urlOrigin(u) {
   }
 }
 
-function isTrustedOrigin(u) {
-  return TRUSTED_ORIGINS.has(urlOrigin(u));
+async function ensureRulesLoaded() {
+  if (!rulesLoaded) await rulesPromise;
 }
 
-function isTrustedReferrer(ref) {
-  return ref && TRUSTED_ORIGINS.has(urlOrigin(ref));
+async function isTrustedOrigin(originOrUrl) {
+  await ensureRulesLoaded();
+  // Accepts either a full URL or an origin string
+  const origin = urlOrigin(originOrUrl || "");
+  return trustedOrigins.has(origin);
+}
+
+async function isTrustedReferrer(origin) {
+  if (!origin) return false;
+  await ensureRulesLoaded();
+  return trustedOrigins.has(origin.toLowerCase());
 }
 
 // Load detection rules: prefer cached rules, fall back to bundled JSON
@@ -57,12 +69,19 @@ async function loadRulesFast() {
 }
 
 // Shared promise for detection rules so early scan and main script use same data
-const rulesPromise = loadRulesFast();
+const rulesPromise = loadRulesFast().then((rules) => {
+  const origins = rules.trusted_origins
+    ? rules.trusted_origins.map((u) => urlOrigin(u))
+    : DEFAULT_TRUSTED_ORIGINS;
+  trustedOrigins = new Set(origins);
+  rulesLoaded = true;
+  return rules;
+});
 
 // Basic rule scoring and block action.
 // This is a lightweight early pass; the full DetectionEngine runs later.
 async function startDetection(rules) {
-  if (isTrustedOrigin(location.origin)) return;
+  if (await isTrustedOrigin(location.origin)) return;
   if (!rules) return;
   try {
     const html = document.documentElement.outerHTML;
@@ -255,10 +274,10 @@ class CheckContent {
 
   // CyberDrain integration - Initialize detection logic
   async initializeCyberDrainDetection() {
-    const origin = location.origin.toLowerCase();
+    const origin = location.origin;
 
     // 1) Real Microsoft login → show valid badge (if enabled)
-    if (isTrustedOrigin(origin)) {
+    if (await isTrustedOrigin(origin)) {
       // Check if valid page badge is enabled in settings
       const badgeEnabled = this.config?.enableValidPageBadge ||
                           this.policy?.EnableValidPageBadge ||
@@ -268,12 +287,13 @@ class CheckContent {
       if (badgeEnabled) {
         this.injectValidBadge(this.policy?.ValidPageBadgeImage, this.policy?.BrandingName);
       }
-      this.enforceMicrosoftActionIfConfigured();
+      await this.enforceMicrosoftActionIfConfigured();
       return;
     }
 
     // 2) Post-login redirect from real login (no password field) → trusted-by-referrer
-    if (isTrustedReferrer(document.referrer) && !this.hasPassword()) {
+    const refOrigin = urlOrigin(document.referrer);
+    if (await isTrustedReferrer(refOrigin) && !this.hasPassword()) {
       chrome.runtime.sendMessage({ type: "FLAG_TRUSTED_BY_REFERRER" });
       return;
     }
@@ -302,7 +322,7 @@ class CheckContent {
   async evaluateAADFingerprint() {
     if (this.flagged) return;
     
-    const origin = location.origin.toLowerCase();
+    const origin = location.origin;
     
     // Request rule-driven analysis from background
     try {
@@ -318,10 +338,10 @@ class CheckContent {
         const analysis = response.analysis;
         
         // Use rule-driven detection results
-        if (analysis.aadLike && !isTrustedOrigin(origin)) {
+        if (analysis.aadLike && !(await isTrustedOrigin(origin))) {
           // Check additional rule-based conditions
-          const actionCheck = this.checkFormActions(analysis.detectedElements.password_field);
-          const resourceAudit = this.auditSubresourceOrigins();
+          const actionCheck = await this.checkFormActions(analysis.detectedElements.password_field);
+          const resourceAudit = await this.auditSubresourceOrigins();
           
           const requireAction = this.policy?.RequireMicrosoftAction !== false;
           const strictAudit = this.policy?.StrictResourceAudit !== false;
@@ -343,7 +363,7 @@ class CheckContent {
     } catch (error) {
       logger.error("Check: Rule-driven analysis failed, falling back to basic detection:", error);
       // Fallback to basic detection if rule-driven analysis fails
-      this.evaluateAADFingerprintBasic();
+      await this.evaluateAADFingerprintBasic();
     }
   }
 
@@ -362,8 +382,8 @@ class CheckContent {
   }
 
   // Fallback basic detection method
-  evaluateAADFingerprintBasic() {
-    const origin = location.origin.toLowerCase();
+  async evaluateAADFingerprintBasic() {
+    const origin = location.origin;
     
     // Basic AAD fingerprint
     const hasLoginFmt = !!document.querySelector('input[name="loginfmt"], #i0116');
@@ -373,9 +393,9 @@ class CheckContent {
     const brandingHit = /\b(Microsoft\s*365|Office\s*365|Entra\s*ID|Azure\s*AD|Microsoft)\b/i.test(text);
     const aadLike = (hasLoginFmt && hasNextBtn) || (brandingHit && (hasLoginFmt || hasPw));
 
-    if (aadLike && !isTrustedOrigin(origin)) {
-      const actionCheck = this.checkFormActions(hasPw);
-      const resourceAudit = this.auditSubresourceOrigins();
+    if (aadLike && !(await isTrustedOrigin(origin))) {
+      const actionCheck = await this.checkFormActions(hasPw);
+      const resourceAudit = await this.auditSubresourceOrigins();
       
       this.flagged = true;
       this.injectRedBanner(this.policy?.BrandingName, actionCheck, resourceAudit);
@@ -393,22 +413,22 @@ class CheckContent {
     return !!document.querySelector('input[type="password"]');
   }
 
-  enforceMicrosoftActionIfConfigured() {
+  async enforceMicrosoftActionIfConfigured() {
     const requireAction = this.policy?.RequireMicrosoftAction !== false;
     if (!requireAction) return;
-    
     const forms = Array.from(document.querySelectorAll("form"));
     const bad = [];
-    
+
     for (const f of forms) {
       const hasPw = !!f.querySelector('input[type="password"]');
       if (!hasPw) continue;
       const act = this.resolveAction(f.getAttribute("action"));
       const actOrigin = urlOrigin(act);
-      if (!isTrustedOrigin(actOrigin)) bad.push({action: actOrigin});
+      if (!(await isTrustedOrigin(actOrigin))) bad.push({ action: actOrigin });
     }
-    
-    if (bad.length) this.showToast("Unusual: password form posts outside Microsoft login.");
+
+    if (bad.length)
+      this.showToast("Unusual: password form posts outside Microsoft login.");
   }
 
   resolveAction(a) {
@@ -417,31 +437,34 @@ class CheckContent {
     return act;
   }
 
-  checkFormActions(requirePw) {
+  async checkFormActions(requirePw) {
     const forms = Array.from(document.querySelectorAll("form"));
     const offenders = [];
-    
+
     for (const f of forms) {
       if (requirePw && !f.querySelector('input[type="password"]')) continue;
       const act = this.resolveAction(f.getAttribute("action"));
       const actOrigin = urlOrigin(act);
-      if (!isTrustedOrigin(actOrigin)) offenders.push({ action: act, actionOrigin: actOrigin });
+      if (!(await isTrustedOrigin(actOrigin)))
+        offenders.push({ action: act, actionOrigin: actOrigin });
     }
-    
-    return offenders.length ? { fail: true, reason: "non-microsoft-form-action", offenders } : { fail: false };
+
+    return offenders.length
+      ? { fail: true, reason: "non-microsoft-form-action", offenders }
+      : { fail: false };
   }
 
-  auditSubresourceOrigins() {
+  async auditSubresourceOrigins() {
     const nodes = [
       ...document.querySelectorAll('script[src]'),
       ...document.querySelectorAll('link[rel="stylesheet"][href]'),
       ...document.querySelectorAll('img[src]')
     ];
-    
+
     const origins = new Set();
     const nonMs = new Set();
-    const origin = location.origin.toLowerCase();
-    
+    const origin = location.origin;
+
     for (const el of nodes) {
       const url = el.src || el.href;
       if (!url) continue;
@@ -449,9 +472,9 @@ class CheckContent {
       if (!o) continue;
       origins.add(o);
       // If all assets are on the same fake origin, this may yield 0 — that's fine.
-      if (!isTrustedOrigin(o) && o !== origin) nonMs.add(o);
+      if (!(await isTrustedOrigin(o)) && o !== origin) nonMs.add(o);
     }
-    
+
     return {
       origins: Array.from(origins),
       nonMicrosoft: Array.from(nonMs),
