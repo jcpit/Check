@@ -34,7 +34,11 @@ function sendToBackground(level, args) {
       })
       .join(" ");
 
-    chrome.runtime.sendMessage({ type: "log", level, message });
+    chrome.runtime.sendMessage({ type: "log", level, message }, (response) => {
+      if (chrome.runtime.lastError) {
+        console.error("Failed to send log to background:", chrome.runtime.lastError.message);
+      }
+    });
   } catch (e) {
     console.error("Failed to send log:", e);
   }
