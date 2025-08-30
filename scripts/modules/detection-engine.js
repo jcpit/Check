@@ -186,9 +186,9 @@ export class DetectionEngine {
           pattern:
             "(?:eval\\s*\\(|setTimeout\\s*\\(|setInterval\\s*\\().*(?:location|document\\.cookie)",
           flags: "i",
-          severity: "high",
+          severity: "medium",
           description: "Suspicious JavaScript execution",
-          action: "block",
+          action: "warn",
         },
       ],
       phishing: [
@@ -463,6 +463,10 @@ export class DetectionEngine {
     const analysis = {
       hasPasswordFields:
         document.querySelectorAll('input[type="password"]').length > 0,
+      hasLoginFields:
+        document.querySelectorAll(
+          'input[type="password"], input[name*="user"], input[name*="login"], input[type="email"]'
+        ).length > 0,
       hasFormSubmissions: document.querySelectorAll("form").length > 0,
       hasSuspiciousScripts: false,
       hasExternalResources: false,
@@ -478,10 +482,16 @@ export class DetectionEngine {
         analysis.hasExternalResources = true;
       }
 
+      const code = script.innerHTML;
+      const usesDynamicExecution = /eval\s*\(|document\.write\s*\(|setTimeout\s*\(|setInterval\s*\(/i.test(
+        code
+      );
+      const referencesLocation = /location/i.test(code);
+      const referencesCookie = /document\.cookie/i.test(code);
+
       if (
-        script.innerHTML.includes("eval(") ||
-        script.innerHTML.includes("document.write(") ||
-        script.innerHTML.includes("setTimeout(")
+        usesDynamicExecution &&
+        (referencesCookie || (analysis.hasLoginFields && referencesLocation))
       ) {
         analysis.hasSuspiciousScripts = true;
       }
@@ -522,7 +532,7 @@ export class DetectionEngine {
     if (contentAnalysis.hasSuspiciousScripts) {
       threats.push({
         type: "malicious_script",
-        severity: "medium",
+        severity: "low",
         description: "Potentially malicious JavaScript detected",
       });
     }
