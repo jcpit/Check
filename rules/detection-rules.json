@@ -193,9 +193,9 @@
     }
   ],
   "thresholds": {
-    "legitimate": 90,
-    "suspicious": 60,
-    "phishing": 30
+    "legitimate": 85,
+    "suspicious": 55,
+    "phishing": 25
   },
   "phishing_indicators": [
     {
@@ -530,9 +530,9 @@
       "login.microsoftonline.com",
       "portal.office.com"
     ],
-    "block_threshold": 0.7,
-    "warn_threshold": 0.5,
-    "monitor_threshold": 0.3,
+    "block_threshold": 0.8,
+    "warn_threshold": 0.6,
+    "monitor_threshold": 0.4,
     "aad_detection_threshold": 2,
     "required_elements_threshold": 3,
     "monitoring_timeout": 20000

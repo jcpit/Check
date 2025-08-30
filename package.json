@@ -1,0 +1,19 @@
+{
+  "name": "projectx",
+  "version": "1.0.0",
+  "description": "An open-source, Manifest V3 browser extension for detecting phishing attacks that impersonate Microsoft 365 sign-in pages.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "jsdom": "^26.1.0"
+  }
+}

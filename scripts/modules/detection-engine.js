@@ -186,9 +186,9 @@ export class DetectionEngine {
           pattern:
             "(?:eval\\s*\\(|setTimeout\\s*\\(|setInterval\\s*\\().*(?:location|document\\.cookie)",
           flags: "i",
-          severity: "high",
+          severity: "medium",
           description: "Suspicious JavaScript execution",
-          action: "block",
+          action: "warn",
         },
       ],
       phishing: [
@@ -460,10 +460,22 @@ export class DetectionEngine {
 
   // Function to be executed in the content context
   contentAnalysisFunction() {
+    const inputs = document.querySelectorAll("input");
+    const forms = document.querySelectorAll("form");
+    const scripts = document.querySelectorAll("script");
+    const metas = document.querySelectorAll("meta");
+
     const analysis = {
-      hasPasswordFields:
-        document.querySelectorAll('input[type="password"]').length > 0,
-      hasFormSubmissions: document.querySelectorAll("form").length > 0,
+      hasPasswordFields: Array.from(inputs).some(
+        (el) => el.type === "password"
+      ),
+      hasLoginFields: Array.from(inputs).some(
+        (el) =>
+          el.type === "password" ||
+          /user|login/i.test(el.name || "") ||
+          el.type === "email"
+      ),
+      hasFormSubmissions: forms.length > 0,
       hasSuspiciousScripts: false,
       hasExternalResources: false,
       documentTitle: document.title,
@@ -472,24 +484,51 @@ export class DetectionEngine {
     };
 
     // Check for suspicious scripts
-    const scripts = document.querySelectorAll("script");
     for (const script of scripts) {
       if (script.src && !script.src.startsWith(window.location.origin)) {
         analysis.hasExternalResources = true;
       }
 
+      let code = script.innerHTML || "";
       if (
-        script.innerHTML.includes("eval(") ||
-        script.innerHTML.includes("document.write(") ||
-        script.innerHTML.includes("setTimeout(")
+        !code &&
+        script.src &&
+        script.src.startsWith("data:text/javascript;base64,")
+      ) {
+        try {
+          code = window.atob(script.src.split(",")[1]);
+        } catch {}
+      }
+
+      let decoded = "";
+      const b64 = code.replace(/\s+/g, "");
+      // Only attempt base64 decode if script is not too large and looks suspicious
+      const dynamicPattern =
+        /eval\s*\(|document\.write\s*\(|setTimeout\s*\(|setInterval\s*\(/i;
+      // Relaxed base64 detection: allow unpadded and non-multiple-of-4 lengths
+      const looksLikeBase64 = /^[A-Za-z0-9+/]+={0,2}$/.test(b64);
+      const shouldAttemptDecode =
+        (dynamicPattern.test(code) || looksLikeBase64) && b64.length < 2000;
+      if (shouldAttemptDecode && looksLikeBase64) {
+        try {
+          decoded = window.atob(b64);
+        } catch {}
+      }
+      const combined = code + decoded;
+      const usesDynamicExecution = dynamicPattern.test(combined);
+      const referencesLocation = /location/i.test(combined);
+      const referencesCookie = /document\.cookie/i.test(combined);
+
+      if (
+        usesDynamicExecution &&
+        (referencesCookie || (analysis.hasLoginFields && referencesLocation))
       ) {
         analysis.hasSuspiciousScripts = true;
       }
     }
 
     // Collect meta tags
-    const metaTags = document.querySelectorAll("meta");
-    for (const meta of metaTags) {
+    for (const meta of metas) {
       analysis.metaTags.push({
         name: meta.getAttribute("name"),
         content: meta.getAttribute("content"),
@@ -522,7 +561,7 @@ export class DetectionEngine {
     if (contentAnalysis.hasSuspiciousScripts) {
       threats.push({
         type: "malicious_script",
-        severity: "medium",
+        severity: "low",
         description: "Potentially malicious JavaScript detected",
       });
     }
