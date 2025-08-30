@@ -21,25 +21,42 @@ const DEFAULT_TRUSTED_ORIGINS = [
 ];
 
 let trustedOrigins = new Set(DEFAULT_TRUSTED_ORIGINS);
-let rulesLoaded = false;
+let rulesPromise = null;
 
 function urlOrigin(u) {
   try {
     return new URL(u).origin.toLowerCase();
   } catch {
-    return "";
+    return null;
   }
 }
 
 async function ensureRulesLoaded() {
-  if (!rulesLoaded) await rulesPromise;
+  if (!rulesPromise) {
+    rulesPromise = loadRulesFast()
+      .then((rules) => {
+        const origins = rules.trusted_origins
+          ? rules.trusted_origins
+              .map((u) => urlOrigin(u))
+              .filter(Boolean)
+          : DEFAULT_TRUSTED_ORIGINS;
+        trustedOrigins = new Set(origins);
+        return rules;
+      })
+      .catch((err) => {
+        logger.error("Failed to load detection rules", err);
+        rulesPromise = null;
+        throw err;
+      });
+  }
+  return rulesPromise;
 }
 
 async function isTrustedOrigin(originOrUrl) {
   await ensureRulesLoaded();
   // Accepts either a full URL or an origin string
   const origin = urlOrigin(originOrUrl || "");
-  return trustedOrigins.has(origin);
+  return origin ? trustedOrigins.has(origin) : false;
 }
 
 async function isTrustedReferrer(origin) {
@@ -67,16 +84,6 @@ async function loadRulesFast() {
     return { rules: [], thresholds: {} };
   }
 }
-
-// Shared promise for detection rules so early scan and main script use same data
-const rulesPromise = loadRulesFast().then((rules) => {
-  const origins = rules.trusted_origins
-    ? rules.trusted_origins.map((u) => urlOrigin(u))
-    : DEFAULT_TRUSTED_ORIGINS;
-  trustedOrigins = new Set(origins);
-  rulesLoaded = true;
-  return rules;
-});
 
 // Basic rule scoring and block action.
 // This is a lightweight early pass; the full DetectionEngine runs later.
@@ -216,7 +223,7 @@ class CheckContent {
       this.policy = await this.getPolicyFromBackground();
       
       // Load detection rules for settings
-      this.detectionRules = await rulesPromise;
+      this.detectionRules = await ensureRulesLoaded();
 
       // Initialize components
       this.securityMonitor = new SecurityMonitor(this.config);
@@ -1532,7 +1539,7 @@ CheckContent.prototype.showToast = function(msg) {
 
 // Start detection early using locally loaded rules
 (async () => {
-  const rules = await rulesPromise;
+  const rules = await ensureRulesLoaded();
   const run = () => startDetection(rules);
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", run, { once: true });
