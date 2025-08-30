@@ -10,6 +10,7 @@ import { PolicyManager } from "./modules/policy-manager.js";
 import logger from "./utils/logger.js";
 import { store as storeLog } from "./utils/background-logger.js";
 
+console.log("Check: Background service worker loaded");
 // Initialize logger with default settings before any components use it
 logger.init({ level: "info", enabled: true });
 
@@ -28,7 +29,9 @@ class CheckBackground {
     this.MAX_HEADER_CACHE_ENTRIES = 100;
 
     // Set up message handlers immediately to handle early connections
+    logger.log("CheckBackground.constructor: registering message handlers");
     this.setupMessageHandlers();
+    logger.log("CheckBackground.constructor: message handlers registered");
   }
 
   setupMessageHandlers() {
@@ -40,9 +43,8 @@ class CheckBackground {
   }
 
   async initialize() {
+    logger.log("CheckBackground.initialize: start");
     try {
-      logger.log("Check: Initializing background service worker...");
-
       // Load configuration and initialize logger based on settings
       const config = await this.configManager.loadConfig();
       logger.init({
@@ -53,19 +55,16 @@ class CheckBackground {
       // Load policies and initialize detection engine
       await this.policyManager.loadPolicies();
       await this.detectionEngine.initialize();
-      
+
       // CyberDrain integration - Load policy
       await this.refreshPolicy();
 
       this.setupEventListeners();
       this.isInitialized = true;
 
-      logger.log("Check: Background service worker initialized successfully");
+      logger.log("CheckBackground.initialize: complete");
     } catch (error) {
-      logger.error(
-        "Check: Failed to initialize background service worker:",
-        error
-      );
+      logger.error("CheckBackground.initialize: error", error);
     }
   }
 
