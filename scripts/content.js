@@ -10,6 +10,14 @@
 
 import logger from "./utils/logger.js";
 
+chrome.runtime.sendMessage({ type: "ping" }, (response) => {
+  if (chrome.runtime.lastError) {
+    console.error("Ping error:", chrome.runtime.lastError.message);
+  } else {
+    console.log("Ping response:", response);
+  }
+});
+
 // CyberDrain integration - Precomputed Microsoft login origins
 const DEFAULT_TRUSTED_ORIGINS = [
   "https://login.microsoftonline.com",
