@@ -661,11 +661,24 @@ class CheckBackground {
   }
 
   async logUrlAccess(url, tabId) {
+    const config = await this.configManager.getConfig();
+    
+    // Only log if debug logging is enabled or if this is a significant event
+    if (!config.enableDebugLogging) {
+      // Skip logging routine page scans to avoid log bloat
+      return;
+    }
+
     const logEntry = {
       timestamp: new Date().toISOString(),
       url,
       tabId,
       type: "url_access",
+      event: {
+        type: "page_scanned",
+        url: url,
+        threatDetected: false
+      }
     };
 
     // Store in local storage for audit
@@ -684,7 +697,7 @@ class CheckBackground {
   async logEvent(event, tabId) {
     const logEntry = {
       timestamp: new Date().toISOString(),
-      event,
+      event: this.enhanceEventForLogging(event),
       tabId,
       type: "security_event",
     };
@@ -702,6 +715,45 @@ class CheckBackground {
     }
 
     await chrome.storage.local.set({ securityEvents: logs });
+  }
+
+  enhanceEventForLogging(event) {
+    const enhancedEvent = { ...event };
+    
+    // Defang URLs in threat-related events
+    if (event.url && (event.type === "content_threat_detected" || event.type === "threat_detected")) {
+      enhancedEvent.url = this.defangUrl(event.url);
+      enhancedEvent.threatDetected = true;
+      enhancedEvent.action = "blocked";
+      enhancedEvent.threatLevel = event.threatLevel || "high";
+    }
+    
+    // Add more context for different event types
+    switch (event.type) {
+      case "url_access":
+        enhancedEvent.action = "allowed";
+        enhancedEvent.threatLevel = "none";
+        break;
+      case "form_submission":
+        enhancedEvent.action = "blocked";
+        enhancedEvent.threatLevel = "medium";
+        break;
+      case "script_injection":
+        enhancedEvent.action = "injected";
+        enhancedEvent.threatLevel = "info";
+        break;
+    }
+    
+    return enhancedEvent;
+  }
+
+  defangUrl(url) {
+    try {
+      // Defang URLs by replacing dots and other characters to make them non-clickable
+      return url.replace(/\./g, "[.]").replace(/:/g, "[:]").replace(/\//g, "[/]");
+    } catch (e) {
+      return url; // Return original if defanging fails
+    }
   }
 
   // Detection Rules Testing Methods

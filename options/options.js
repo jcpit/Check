@@ -22,6 +22,7 @@ class CheckOptions {
     this.elements.menuItems = document.querySelectorAll(".menu-item");
     this.elements.sections = document.querySelectorAll(".settings-section");
     this.elements.pageTitle = document.getElementById("pageTitle");
+    this.elements.policyBadge = document.getElementById("policyBadge");
 
     // Header actions
     this.elements.saveSettings = document.getElementById("saveSettings");
@@ -49,17 +50,6 @@ class CheckOptions {
       "enableValidPageBadge"
     );
 
-    // Security settings
-    this.elements.blockMaliciousUrls =
-      document.getElementById("blockMaliciousUrls");
-    this.elements.blockPhishingAttempts = document.getElementById(
-      "blockPhishingAttempts"
-    );
-    this.elements.whitelistedDomains =
-      document.getElementById("whitelistedDomains");
-    this.elements.blacklistedDomains =
-      document.getElementById("blacklistedDomains");
-
     // Detection settings
     this.elements.enableCustomRules =
       document.getElementById("enableCustomRules");
@@ -71,27 +61,11 @@ class CheckOptions {
     this.elements.loadDefaultRules =
       document.getElementById("loadDefaultRules");
 
-    // Privacy settings
+    // Logging settings (moved from privacy section)
     this.elements.enableLogging = document.getElementById("enableLogging");
+    this.elements.enableDebugLogging = document.getElementById("enableDebugLogging");
     this.elements.logLevel = document.getElementById("logLevel");
     this.elements.maxLogEntries = document.getElementById("maxLogEntries");
-    this.elements.respectDoNotTrack =
-      document.getElementById("respectDoNotTrack");
-    this.elements.enableIncognitoMode = document.getElementById(
-      "enableIncognitoMode"
-    );
-
-    // Enterprise settings
-    this.elements.enterpriseStatus =
-      document.getElementById("enterpriseStatus");
-    this.elements.managementStatus =
-      document.getElementById("managementStatus");
-    this.elements.policyList = document.getElementById("policyList");
-    this.elements.enableComplianceMode = document.getElementById(
-      "enableComplianceMode"
-    );
-    this.elements.reportingEndpoint =
-      document.getElementById("reportingEndpoint");
 
     // Logs
     this.elements.logFilter = document.getElementById("logFilter");
@@ -244,7 +218,7 @@ class CheckOptions {
       this.populateFormFields();
 
       // Load dynamic content
-      await this.loadEnterpriseInfo();
+      await this.loadPolicyInfo();
       await this.loadLogs();
       await this.loadSystemInfo();
 
@@ -429,20 +403,13 @@ class CheckOptions {
       showNotifications: true,
       notificationDuration: 5000,
       enableValidPageBadge: false,
-      blockMaliciousUrls: true,
-      blockPhishingAttempts: true,
-      whitelistedDomains: [],
-      blacklistedDomains: [],
       enableCustomRules: false,
       customRulesUrl: "",
       updateInterval: 24,
       enableLogging: true,
+      enableDebugLogging: false,
       logLevel: "info",
       maxLogEntries: 1000,
-      respectDoNotTrack: true,
-      enableIncognitoMode: true,
-      enableComplianceMode: false,
-      reportingEndpoint: "",
     };
   }
 
@@ -499,36 +466,19 @@ class CheckOptions {
     this.elements.enableValidPageBadge.checked =
       this.config.enableValidPageBadge || false;
 
-    // Security settings
-    this.elements.blockMaliciousUrls.checked = this.config.blockMaliciousUrls;
-    this.elements.blockPhishingAttempts.checked =
-      this.config.blockPhishingAttempts;
-    this.elements.whitelistedDomains.value = (
-      this.config.whitelistedDomains || []
-    ).join("\n");
-    this.elements.blacklistedDomains.value = (
-      this.config.blacklistedDomains || []
-    ).join("\n");
-
     // Detection settings
     this.elements.enableCustomRules.checked =
-      this.config.detectionRules?.enableCustomRules || false;
+      this.config.detectionRules?.enableCustomRules || this.config.enableCustomRules || false;
     this.elements.customRulesUrl.value =
-      this.config.detectionRules?.customRulesUrl || "";
+      this.config.detectionRules?.customRulesUrl || this.config.customRulesUrl || "";
     this.elements.updateInterval.value =
-      (this.config.detectionRules?.updateInterval || 86400000) / 3600000;
+      (this.config.detectionRules?.updateInterval || this.config.updateInterval * 3600000 || 86400000) / 3600000;
 
-    // Privacy settings
+    // Logging settings
     this.elements.enableLogging.checked = this.config.enableLogging;
+    this.elements.enableDebugLogging.checked = this.config.enableDebugLogging || false;
     this.elements.logLevel.value = this.config.logLevel;
     this.elements.maxLogEntries.value = this.config.maxLogEntries;
-    this.elements.respectDoNotTrack.checked = this.config.respectDoNotTrack;
-    this.elements.enableIncognitoMode.checked = this.config.enableIncognitoMode;
-
-    // Enterprise settings
-    this.elements.enableComplianceMode.checked =
-      this.config.enableComplianceMode || false;
-    this.elements.reportingEndpoint.value = this.config.reportingEndpoint || "";
 
     // Branding settings
     this.elements.companyName.value = this.brandingConfig.companyName;
@@ -556,10 +506,7 @@ class CheckOptions {
     // Update page title
     const sectionTitles = {
       general: "General Settings",
-      security: "Security Settings",
       detection: "Detection Rules",
-      privacy: "Privacy Settings",
-      enterprise: "Enterprise Settings",
       logs: "Activity Logs",
       branding: "Branding & White Labeling",
       about: "About",
@@ -575,8 +522,6 @@ class CheckOptions {
     // Load section-specific data
     if (sectionName === "logs") {
       this.loadLogs();
-    } else if (sectionName === "enterprise") {
-      this.loadEnterpriseInfo();
     }
   }
 
@@ -630,33 +575,16 @@ class CheckOptions {
       notificationDuration: parseInt(this.elements.notificationDuration.value),
       enableValidPageBadge: this.elements.enableValidPageBadge.checked,
 
-      // Security settings
-      blockMaliciousUrls: this.elements.blockMaliciousUrls.checked,
-      blockPhishingAttempts: this.elements.blockPhishingAttempts.checked,
-      whitelistedDomains: this.elements.whitelistedDomains.value
-        .split("\n")
-        .filter((d) => d.trim()),
-      blacklistedDomains: this.elements.blacklistedDomains.value
-        .split("\n")
-        .filter((d) => d.trim()),
-
       // Detection settings
-      detectionRules: {
-        enableCustomRules: this.elements.enableCustomRules.checked,
-        customRulesUrl: this.elements.customRulesUrl.value,
-        updateInterval: parseInt(this.elements.updateInterval.value) * 3600000,
-      },
+      enableCustomRules: this.elements.enableCustomRules.checked,
+      customRulesUrl: this.elements.customRulesUrl.value,
+      updateInterval: parseInt(this.elements.updateInterval.value),
 
-      // Privacy settings
+      // Logging settings
       enableLogging: this.elements.enableLogging.checked,
+      enableDebugLogging: this.elements.enableDebugLogging.checked,
       logLevel: this.elements.logLevel.value,
       maxLogEntries: parseInt(this.elements.maxLogEntries.value),
-      respectDoNotTrack: this.elements.respectDoNotTrack.checked,
-      enableIncognitoMode: this.elements.enableIncognitoMode.checked,
-
-      // Enterprise settings
-      enableComplianceMode: this.elements.enableComplianceMode.checked,
-      reportingEndpoint: this.elements.reportingEndpoint.value,
     };
   }
 
@@ -680,8 +608,8 @@ class CheckOptions {
     }
 
     if (
-      config.detectionRules.updateInterval < 3600000 ||
-      config.detectionRules.updateInterval > 604800000
+      config.updateInterval < 1 ||
+      config.updateInterval > 168
     ) {
       return {
         valid: false,
@@ -691,17 +619,10 @@ class CheckOptions {
 
     // URL validation
     if (
-      config.detectionRules.customRulesUrl &&
-      !this.isValidUrl(config.detectionRules.customRulesUrl)
+      config.customRulesUrl &&
+      !this.isValidUrl(config.customRulesUrl)
     ) {
       return { valid: false, message: "Custom rules URL is not valid" };
-    }
-
-    if (
-      config.reportingEndpoint &&
-      !this.isValidUrl(config.reportingEndpoint)
-    ) {
-      return { valid: false, message: "Reporting endpoint URL is not valid" };
     }
 
     return { valid: true };

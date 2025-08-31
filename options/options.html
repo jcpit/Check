@@ -24,21 +24,9 @@
                     <span class="menu-icon material-icons">settings</span>
                     <span class="menu-text">General</span>
                 </a></li>
-                <li><a href="#security" class="menu-item" data-section="security">
-                    <span class="menu-icon material-icons">security</span>
-                    <span class="menu-text">Security</span>
-                </a></li>
                 <li><a href="#detection" class="menu-item" data-section="detection">
                     <span class="menu-icon material-icons">search</span>
                     <span class="menu-text">Detection Rules</span>
-                </a></li>
-                <li><a href="#privacy" class="menu-item" data-section="privacy">
-                    <span class="menu-icon material-icons">lock</span>
-                    <span class="menu-text">Privacy</span>
-                </a></li>
-                <li><a href="#enterprise" class="menu-item" data-section="enterprise">
-                    <span class="menu-icon material-icons">business</span>
-                    <span class="menu-text">Enterprise</span>
                 </a></li>
                 <li><a href="#logs" class="menu-item" data-section="logs">
                     <span class="menu-icon material-icons">assignment</span>
@@ -59,7 +47,13 @@
         <main class="main-content">
             <!-- Header -->
             <header class="content-header">
-                <h1 id="pageTitle">General Settings</h1>
+                <div class="header-title-section">
+                    <h1 id="pageTitle">General Settings</h1>
+                    <div class="policy-badge" id="policyBadge" style="display: none;">
+                        <span class="material-icons">business</span>
+                        <span class="badge-text">Managed by Policy</span>
+                    </div>
+                </div>
                 <div class="header-actions">
                     <button class="btn btn-secondary" id="exportConfig">Export Config</button>
                     <button class="btn btn-secondary" id="importConfig">Import Config</button>
@@ -137,51 +131,6 @@
                 </div>
             </section>
 
-            <!-- Security Section -->
-            <section id="security-section" class="settings-section">
-                <div class="section-header">
-                    <h2>Phishing Detection Settings</h2>
-                    <p>Configure Microsoft 365 phishing detection and blocking behavior</p>
-                </div>
-
-                <div class="settings-grid">
-                    <div class="setting-group">
-                        <h3>Microsoft 365 Protection</h3>
-                        <div class="setting-item">
-                            <label class="setting-label">
-                                <input type="checkbox" id="blockMaliciousUrls" class="setting-checkbox">
-                                <span class="checkbox-custom"></span>
-                                Block Fake Microsoft 365 Sites
-                            </label>
-                            <p class="setting-description">Automatically block fake Microsoft 365 login pages</p>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label class="setting-label">
-                                <input type="checkbox" id="blockPhishingAttempts" class="setting-checkbox">
-                                <span class="checkbox-custom"></span>
-                                Block Credential Harvesting
-                            </label>
-                            <p class="setting-description">Block websites attempting to steal Microsoft 365 credentials</p>
-                        </div>
-                    </div>
-
-                    <div class="setting-group">
-                        <h3>Domain Lists</h3>
-                        <div class="setting-item">
-                            <label class="setting-label">Trusted Domains</label>
-                            <textarea id="whitelistedDomains" class="setting-textarea" placeholder="login.microsoftonline.com&#10;portal.office.com&#10;*.microsoft.com"></textarea>
-                            <p class="setting-description">Additional trusted Microsoft domains (one per line)</p>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label class="setting-label">Blocked Phishing Domains</label>
-                            <textarea id="blacklistedDomains" class="setting-textarea" placeholder="fake-microsoft-login.com&#10;secure-office365.net&#10;microsoft-verification.org"></textarea>
-                            <p class="setting-description">Known phishing domains to always block (one per line)</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
 
             <!-- Detection Section -->
             <section id="detection-section" class="settings-section">
@@ -234,16 +183,18 @@
                 </div>
             </section>
 
-            <!-- Privacy Section -->
-            <section id="privacy-section" class="settings-section">
+
+
+            <!-- Logs Section -->
+            <section id="logs-section" class="settings-section">
                 <div class="section-header">
-                    <h2>Privacy Settings</h2>
-                    <p>Control data collection and privacy features</p>
+                    <h2>Activity Logs</h2>
+                    <p>View security events and extension activity</p>
                 </div>
 
                 <div class="settings-grid">
                     <div class="setting-group">
-                        <h3>Data Collection</h3>
+                        <h3>Logging Configuration</h3>
                         <div class="setting-item">
                             <label class="setting-label">
                                 <input type="checkbox" id="enableLogging" class="setting-checkbox">
@@ -251,6 +202,15 @@
                                 Enable Activity Logging
                             </label>
                             <p class="setting-description">Log security events and activities</p>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <input type="checkbox" id="enableDebugLogging" class="setting-checkbox">
+                                <span class="checkbox-custom"></span>
+                                Enable Debug Logging
+                            </label>
+                            <p class="setting-description">Log detailed information about URLs, checks, and scanning activities (may create large logs)</p>
                         </div>
                         
                         <div class="setting-item">
@@ -274,82 +234,6 @@
                             <p class="setting-description">Maximum number of log entries to keep</p>
                         </div>
                     </div>
-
-                    <div class="setting-group">
-                        <h3>Privacy Options</h3>
-                        <div class="setting-item">
-                            <label class="setting-label">
-                                <input type="checkbox" id="respectDoNotTrack" class="setting-checkbox">
-                                <span class="checkbox-custom"></span>
-                                Respect Do Not Track
-                            </label>
-                            <p class="setting-description">Honor browser's Do Not Track setting</p>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label class="setting-label">
-                                <input type="checkbox" id="enableIncognitoMode" class="setting-checkbox">
-                                <span class="checkbox-custom"></span>
-                                Work in Incognito Mode
-                            </label>
-                            <p class="setting-description">Allow extension to run in private browsing</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Enterprise Section -->
-            <section id="enterprise-section" class="settings-section">
-                <div class="section-header">
-                    <h2>Enterprise Settings</h2>
-                    <p>Enterprise deployment and management options</p>
-                </div>
-
-                <div class="enterprise-status" id="enterpriseStatus">
-                    <div class="status-indicator">
-                        <span class="status-badge" id="managementStatus">Not Managed</span>
-                    </div>
-                    <p class="status-description">This extension is not currently managed by enterprise policies</p>
-                </div>
-
-                <div class="settings-grid">
-                    <div class="setting-group">
-                        <h3>Policy Information</h3>
-                        <div class="policy-list" id="policyList">
-                            <div class="policy-item">
-                                <span class="policy-name">Content Manipulation</span>
-                                <span class="policy-status user-configurable">User Configurable</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="setting-group">
-                        <h3>Compliance</h3>
-                        <div class="setting-item">
-                            <label class="setting-label">
-                                <input type="checkbox" id="enableComplianceMode" class="setting-checkbox">
-                                <span class="checkbox-custom"></span>
-                                Enable Compliance Mode
-                            </label>
-                            <p class="setting-description">Enable additional compliance features and reporting</p>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label class="setting-label">
-                                Reporting Endpoint
-                                <input type="url" id="reportingEndpoint" class="setting-input" placeholder="https://compliance.example.com/api/reports">
-                            </label>
-                            <p class="setting-description">URL to send compliance reports to</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Logs Section -->
-            <section id="logs-section" class="settings-section">
-                <div class="section-header">
-                    <h2>Activity Logs</h2>
-                    <p>View security events and extension activity</p>
                 </div>
 
                 <div class="logs-controls">
@@ -358,7 +242,9 @@
                             <option value="all">All Events</option>
                             <option value="security">Security Events</option>
                             <option value="url_access">URL Access</option>
-                            <option value="content_manipulation">Content Changes</option>
+                            <option value="threat_detected">Threats Detected</option>
+                            <option value="page_scanned">Page Scans</option>
+                            <option value="debug">Debug Events</option>
                         </select>
                         <button class="btn btn-secondary" id="clearLogs">Clear Logs</button>
                         <button class="btn btn-secondary" id="exportLogs">Export Logs</button>
@@ -366,11 +252,22 @@
                 </div>
 
                 <div class="logs-container">
+                    <div class="logs-header">
+                        <div class="log-column-header timestamp">Timestamp</div>
+                        <div class="log-column-header event-type">Event Type</div>
+                        <div class="log-column-header url">URL/Domain</div>
+                        <div class="log-column-header threat-level">Threat Level</div>
+                        <div class="log-column-header action">Action Taken</div>
+                        <div class="log-column-header details">Details</div>
+                    </div>
                     <div class="logs-list" id="logsList">
                         <div class="log-entry">
-                            <span class="log-time">Loading...</span>
-                            <span class="log-type">system</span>
-                            <span class="log-message">Loading activity logs...</span>
+                            <div class="log-column timestamp">Loading...</div>
+                            <div class="log-column event-type">system</div>
+                            <div class="log-column url">-</div>
+                            <div class="log-column threat-level">-</div>
+                            <div class="log-column action">-</div>
+                            <div class="log-column details">Loading activity logs...</div>
                         </div>
                     </div>
                 </div>
