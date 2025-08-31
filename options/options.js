@@ -545,11 +545,8 @@ class CheckOptions {
       customRulesUrl: this.elements.customRulesUrl.value,
       updateInterval: parseInt(this.elements.updateInterval.value),
 
-      // Logging settings
-      enableLogging: this.elements.enableLogging.checked,
+      // Debug logging setting
       enableDebugLogging: this.elements.enableDebugLogging.checked,
-      logLevel: this.elements.logLevel.value,
-      maxLogEntries: parseInt(this.elements.maxLogEntries.value),
     };
   }
 
@@ -565,12 +562,6 @@ class CheckOptions {
       };
     }
 
-    if (config.maxLogEntries < 100 || config.maxLogEntries > 10000) {
-      return {
-        valid: false,
-        message: "Max log entries must be between 100-10000",
-      };
-    }
 
     if (
       config.updateInterval < 1 ||
@@ -824,36 +815,182 @@ class CheckOptions {
       const item = document.createElement("div");
       item.className = "log-entry";
       item.innerHTML =
-        '<span class="log-message" style="grid-column: 1 / -1; text-align: center; color: #9ca3af;">No logs available</span>';
+        '<div class="log-column" style="grid-column: 1 / -1; text-align: center; color: #9ca3af;">No logs available</div>';
       this.elements.logsList.appendChild(item);
       return;
     }
 
-    logs.slice(0, 100).forEach((log) => {
+    // Filter logs based on debug logging setting
+    const filteredLogs = this.filterLogsForDisplay(logs);
+
+    filteredLogs.slice(0, 100).forEach((log) => {
       const item = document.createElement("div");
       item.className = "log-entry";
 
-      const time = document.createElement("span");
-      time.className = "log-time";
-      time.textContent = new Date(log.timestamp).toLocaleString();
+      // Timestamp column
+      const timestamp = document.createElement("div");
+      timestamp.className = "log-column timestamp";
+      timestamp.textContent = new Date(log.timestamp).toLocaleString();
 
-      const type = document.createElement("span");
-      type.className = `log-type ${log.category}`;
-      type.textContent =
-        log.category === "debug"
-          ? log.level
-          : log.event?.type || log.type || "unknown";
+      // Event type column
+      const eventType = document.createElement("div");
+      eventType.className = `log-column event-type ${log.category}`;
+      eventType.textContent = this.getEventTypeDisplay(log);
 
-      const message = document.createElement("span");
-      message.className = "log-message";
-      message.textContent = this.formatLogMessage(log);
+      // URL/Domain column
+      const url = document.createElement("div");
+      url.className = "log-column url";
+      url.textContent = this.getUrlDisplay(log);
 
-      item.appendChild(time);
-      item.appendChild(type);
-      item.appendChild(message);
+      // Threat level column
+      const threatLevel = document.createElement("div");
+      threatLevel.className = "log-column threat-level";
+      threatLevel.textContent = this.getThreatLevelDisplay(log);
+
+      // Action taken column
+      const action = document.createElement("div");
+      action.className = "log-column action";
+      action.textContent = this.getActionDisplay(log);
+
+      // Details column
+      const details = document.createElement("div");
+      details.className = "log-column details";
+      details.textContent = this.formatLogMessage(log);
+
+      item.appendChild(timestamp);
+      item.appendChild(eventType);
+      item.appendChild(url);
+      item.appendChild(threatLevel);
+      item.appendChild(action);
+      item.appendChild(details);
 
       this.elements.logsList.appendChild(item);
     });
+  }
+
+  filterLogsForDisplay(logs) {
+    const debugLoggingEnabled = this.config?.enableDebugLogging || false;
+    
+    if (debugLoggingEnabled) {
+      return logs; // Show all logs including debug
+    } else {
+      // Filter out page scan events and debug logs unless they're important
+      return logs.filter(log => {
+        if (log.category === "debug" && log.level === "debug") {
+          return false; // Hide debug logs
+        }
+        if (log.event?.type === "page_scanned" && !log.event?.threatDetected) {
+          return false; // Hide routine page scans
+        }
+        return true;
+      });
+    }
+  }
+
+  async loadPolicyInfo() {
+    try {
+      // Check if extension is managed
+      const policies = await chrome.storage.managed.get(null);
+      const isManaged = Object.keys(policies).length > 0;
+
+      if (isManaged) {
+        // Show policy badge
+        this.elements.policyBadge.style.display = "flex";
+        
+        // Disable policy-managed fields
+        this.disablePolicyManagedFields(policies);
+      } else {
+        // Hide policy badge
+        this.elements.policyBadge.style.display = "none";
+      }
+    } catch (error) {
+      console.error("Failed to load policy info:", error);
+    }
+  }
+
+  disablePolicyManagedFields(policies) {
+    const policyFieldMap = {
+      extensionEnabled: this.elements.extensionEnabled,
+      enableContentManipulation: this.elements.enableContentManipulation,
+      enableUrlMonitoring: this.elements.enableUrlMonitoring,
+      enableDebugLogging: this.elements.enableDebugLogging,
+    };
+
+    Object.keys(policies).forEach((policyKey) => {
+      const element = policyFieldMap[policyKey];
+      if (element) {
+        element.disabled = true;
+        element.title = "This setting is managed by your organization's policy";
+        
+        // Add visual indicator
+        element.classList.add("policy-managed");
+        
+        // Add a small lock icon next to the field
+        const lockIcon = document.createElement("span");
+        lockIcon.className = "material-icons policy-lock";
+        lockIcon.textContent = "lock";
+        lockIcon.title = "Managed by policy";
+        
+        if (element.parentNode) {
+          element.parentNode.appendChild(lockIcon);
+        }
+      }
+    });
+  }
+
+  getEventTypeDisplay(log) {
+    if (log.category === "debug") {
+      return log.level.toUpperCase();
+    }
+    if (log.event?.type) {
+      return log.event.type.replace(/_/g, " ").toUpperCase();
+    }
+    return (log.type || "UNKNOWN").toUpperCase();
+  }
+
+  getUrlDisplay(log) {
+    try {
+      if (log.event?.url) {
+        const url = new URL(log.event.url);
+        return log.event.threatDetected ? this.defangUrl(url.hostname) : url.hostname;
+      }
+      if (log.url) {
+        const url = new URL(log.url);
+        return url.hostname;
+      }
+    } catch (e) {
+      // Invalid URL, try to defang the raw URL if it looks like a threat
+      if (log.event?.url && (log.event?.threatDetected || log.event?.threatLevel === "high")) {
+        return this.defangUrl(log.event.url);
+      }
+    }
+    return "-";
+  }
+
+  getThreatLevelDisplay(log) {
+    if (log.event?.threatLevel) {
+      return log.event.threatLevel.toUpperCase();
+    }
+    if (log.event?.type === "threat_detected" || log.event?.type === "content_threat_detected") {
+      return "HIGH";
+    }
+    if (log.category === "security") {
+      return "MEDIUM";
+    }
+    return "-";
+  }
+
+  getActionDisplay(log) {
+    if (log.event?.action) {
+      return log.event.action.replace(/_/g, " ").toUpperCase();
+    }
+    if (log.event?.type === "content_threat_detected" || log.event?.type === "threat_detected") {
+      return "BLOCKED";
+    }
+    if (log.event?.type === "url_access") {
+      return "ALLOWED";
+    }
+    return "-";
   }
 
   formatLogMessage(log) {
@@ -863,18 +1000,88 @@ class CheckOptions {
     if (log.event) {
       switch (log.event.type) {
         case "url_access":
-          return `Accessed: ${new URL(log.event.url).hostname}`;
+          try {
+            return `Accessed: ${new URL(log.event.url).hostname}`;
+          } catch {
+            return `Accessed: ${log.event.url || "unknown"}`;
+          }
         case "content_threat_detected":
-          return `Threat detected on ${new URL(log.event.url).hostname}`;
+          let details = `Malicious content detected`;
+          if (log.event.url) {
+            details += ` on ${this.defangUrl(log.event.url)}`;
+          }
+          if (log.event.reason) {
+            details += `. Reason: ${log.event.reason}`;
+          }
+          if (log.event.details) {
+            details += `. ${log.event.details}`;
+          }
+          if (log.event.analysis) {
+            const analysis = log.event.analysis;
+            const indicators = [];
+            if (analysis.aadLike) indicators.push("AAD-like elements");
+            if (analysis.formActionFail) indicators.push("Non-Microsoft form action");
+            if (analysis.nonMicrosoftResources > 0) indicators.push(`${analysis.nonMicrosoftResources} external resources`);
+            if (indicators.length > 0) {
+              details += ` [${indicators.join(", ")}]`;
+            }
+          }
+          return details;
+        case "threat_detected":
+          let threatDetails = `Security threat detected`;
+          if (log.event.url) {
+            threatDetails += ` on ${this.defangUrl(log.event.url)}`;
+          }
+          if (log.event.reason) {
+            threatDetails += `: ${log.event.reason}`;
+          }
+          if (log.event.triggeredRules && log.event.triggeredRules.length > 0) {
+            const ruleNames = log.event.triggeredRules.map(rule => rule.id || rule.type).join(", ");
+            threatDetails += ` [Triggered rules: ${ruleNames}]`;
+          } else if (log.event.ruleDetails) {
+            threatDetails += ` [${log.event.ruleDetails}]`;
+          }
+          if (log.event.score !== undefined && log.event.threshold !== undefined) {
+            threatDetails += ` [Score: ${log.event.score}/${log.event.threshold}]`;
+          }
+          if (log.event.details) {
+            threatDetails += `. ${log.event.details}`;
+          }
+          return threatDetails;
         case "form_submission":
-          return `Form submitted to ${log.event.action || "unknown"}`;
+          let formDetails = `Form submission`;
+          if (log.event.action) {
+            formDetails += ` to ${this.defangUrl(log.event.action)}`;
+          }
+          if (log.event.reason) {
+            formDetails += ` - ${log.event.reason}`;
+          }
+          return formDetails;
         case "script_injection":
-          return `Script injected on page`;
+          return `Security script injected to protect user`;
+        case "page_scanned":
+          return `Page security scan completed`;
         default:
-          return log.event.type.replace(/_/g, " ");
+          let defaultMsg = log.event.description || log.event.type.replace(/_/g, " ");
+          if (log.event.url) {
+            defaultMsg += ` on ${this.defangUrl(log.event.url)}`;
+          }
+          if (log.event.reason) {
+            defaultMsg += `: ${log.event.reason}`;
+          }
+          return defaultMsg;
       }
     }
-    return log.type || "Unknown event";
+    return log.message || log.type || "Unknown event";
+  }
+
+  defangUrl(url) {
+    try {
+      // Defang URLs by replacing dots and other characters to make them non-clickable
+      return url.replace(/\./g, "[.]").replace(/:/g, "[:]").replace(/\//g, "[/]");
+    } catch (e) {
+      return url; // Return original if defanging fails
+    }
   }
 
   filterLogs() {

@@ -724,24 +724,43 @@ class CheckBackground {
     if (event.url && (event.type === "content_threat_detected" || event.type === "threat_detected")) {
       enhancedEvent.url = this.defangUrl(event.url);
       enhancedEvent.threatDetected = true;
-      enhancedEvent.action = "blocked";
+      enhancedEvent.action = event.action || "blocked";
       enhancedEvent.threatLevel = event.threatLevel || "high";
     }
     
     // Add more context for different event types
     switch (event.type) {
       case "url_access":
-        enhancedEvent.action = "allowed";
-        enhancedEvent.threatLevel = "none";
+        enhancedEvent.action = event.action || "allowed";
+        enhancedEvent.threatLevel = event.threatLevel || "none";
+        break;
+      case "content_threat_detected":
+        enhancedEvent.action = event.action || "blocked";
+        enhancedEvent.threatLevel = event.threatLevel || "high";
+        enhancedEvent.url = this.defangUrl(event.url);
+        enhancedEvent.threatDetected = true;
+        break;
+      case "threat_detected":
+        enhancedEvent.action = event.action || "blocked";
+        enhancedEvent.threatLevel = event.threatLevel || "high";
+        enhancedEvent.url = this.defangUrl(event.url);
+        enhancedEvent.threatDetected = true;
         break;
       case "form_submission":
-        enhancedEvent.action = "blocked";
-        enhancedEvent.threatLevel = "medium";
+        enhancedEvent.action = event.action || "blocked";
+        enhancedEvent.threatLevel = event.threatLevel || "medium";
         break;
       case "script_injection":
-        enhancedEvent.action = "injected";
-        enhancedEvent.threatLevel = "info";
+        enhancedEvent.action = event.action || "injected";
+        enhancedEvent.threatLevel = event.threatLevel || "info";
         break;
+      case "page_scanned":
+        enhancedEvent.action = event.action || "scanned";
+        enhancedEvent.threatLevel = event.threatLevel || "none";
+        break;
+      default:
+        if (!enhancedEvent.action) enhancedEvent.action = "logged";
+        if (!enhancedEvent.threatLevel) enhancedEvent.threatLevel = "info";
     }
     
     return enhancedEvent;

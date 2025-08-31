@@ -25,20 +25,27 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
       if (chrome.runtime && chrome.runtime.id) {
         const testUrl = chrome.runtime.getURL("scripts/utils/logger.js");
         // Validate the URL is properly formed (not undefined or invalid)
-        if (testUrl && testUrl.startsWith("chrome-extension://") && !testUrl.includes("undefined")) {
+        if (
+          testUrl &&
+          testUrl.startsWith("chrome-extension://") &&
+          !testUrl.includes("undefined")
+        ) {
           return true;
         }
       }
     } catch (error) {
-      fallbackLogger.warn(`Runtime context validation attempt ${attempt} failed:`, error);
+      fallbackLogger.warn(
+        `Runtime context validation attempt ${attempt} failed:`,
+        error
+      );
     }
-    
+
     if (attempt < maxAttempts) {
       const delay = initialDelay * Math.pow(2, attempt - 1);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
-  
+
   return false;
 }
 
@@ -46,7 +53,7 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
   try {
     // Validate runtime context before attempting import
     const runtimeReady = await validateRuntimeContext();
-    
+
     if (runtimeReady) {
       const mod = await import(
         chrome.runtime.getURL("scripts/utils/logger.js")
@@ -96,14 +103,22 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
       rulesPromise = loadRulesFast()
         .then((rules) => {
           const origins = rules.trusted_origins
-            ? rules.trusted_origins.map(urlOrigin).filter(origin => origin !== null)
-            : DEFAULT_TRUSTED_ORIGINS.map(urlOrigin).filter(origin => origin !== null);
+            ? rules.trusted_origins
+                .map(urlOrigin)
+                .filter((origin) => origin !== null)
+            : DEFAULT_TRUSTED_ORIGINS.map(urlOrigin).filter(
+                (origin) => origin !== null
+              );
           trustedOrigins = new Set(origins);
           return rules;
         })
         .catch((err) => {
           logger.error("Failed to load detection rules:", err);
-          trustedOrigins = new Set(DEFAULT_TRUSTED_ORIGINS.map(urlOrigin).filter(origin => origin !== null));
+          trustedOrigins = new Set(
+            DEFAULT_TRUSTED_ORIGINS.map(urlOrigin).filter(
+              (origin) => origin !== null
+            )
+          );
           // Return a safe fallback value
           return { rules: [], thresholds: {} };
         });
@@ -157,9 +172,7 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
       for (const rule of rules.rules || []) {
         switch (rule.type) {
           case "url":
-            if (
-              rule.condition?.domains?.some((d) => location.hostname === d)
-            ) {
+            if (rule.condition?.domains?.some((d) => location.hostname === d)) {
               score += rule.weight || 0;
             }
             break;
@@ -243,13 +256,103 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
       }
 
       const threshold = rules.thresholds?.legitimate || 100;
-      // Scores accumulate legitimacy points; failing to meet the legitimate
-      // threshold marks the page as suspicious during this early pass.
-      if (score < threshold) {
+      // Only show warnings if this looks like a Microsoft login page but isn't legitimate
+      // Check if page has Microsoft-like elements before showing warning
+      const hasMicrosoftElements =
+        html.includes("loginfmt") ||
+        (document.querySelector('input[name="loginfmt"]') &&
+          document.querySelector('input[name="passwd"]')) ||
+        html.includes('input[name="idPartnerPL"]');
+
+      if (
+        score < threshold &&
+        hasMicrosoftElements &&
+        !(await isTrustedOrigin(location.origin))
+      ) {
+        // Find which rules were triggered
+        const triggeredRules = [];
+        for (const rule of rules.rules || []) {
+          let ruleTriggered = false;
+          switch (rule.type) {
+            case "url":
+              if (
+                rule.condition?.domains?.some((d) => location.hostname === d)
+              ) {
+                ruleTriggered = true;
+              }
+              break;
+            case "form_action":
+              const forms = document.querySelectorAll(
+                rule.condition?.form_selector || "form"
+              );
+              for (const f of forms) {
+                if ((f.action || "").includes(rule.condition?.contains || "")) {
+                  ruleTriggered = true;
+                  break;
+                }
+              }
+              break;
+            case "dom":
+              if (
+                rule.condition?.selectors?.some((s) =>
+                  document.querySelector(s)
+                )
+              ) {
+                ruleTriggered = true;
+              }
+              break;
+            case "content":
+              if (html.includes(rule.condition?.contains || "")) {
+                ruleTriggered = true;
+              }
+              break;
+          }
+          if (ruleTriggered) {
+            triggeredRules.push(rule);
+          }
+        }
+
         const banner = document.createElement("div");
         banner.className = "check-warning-overlay";
-        banner.textContent = "Suspicious page detected";
+
+        const content = document.createElement("div");
+        content.className = "check-warning-content";
+        content.textContent = "Suspicious Microsoft login page detected";
+
+        const closeBtn = document.createElement("button");
+        closeBtn.className = "check-warning-close";
+        closeBtn.innerHTML = "&times;";
+        closeBtn.onclick = () => banner.remove();
+
+        banner.appendChild(content);
+        banner.appendChild(closeBtn);
         document.documentElement.appendChild(banner);
+
+        // Log the detection event with rule information
+        chrome.runtime.sendMessage({
+          type: "LOG_EVENT",
+          event: {
+            type: "threat_detected",
+            url: location.href,
+            threatLevel: "high",
+            action: "blocked",
+            reason: "Suspicious Microsoft login page on untrusted domain",
+            score: score,
+            threshold: threshold,
+            triggeredRules: triggeredRules.map((rule) => ({
+              id: rule.id,
+              type: rule.type,
+              description: rule.description,
+              weight: rule.weight,
+            })),
+            ruleDetails:
+              triggeredRules.length > 0
+                ? `Triggered rules: ${triggeredRules
+                    .map((r) => r.id || r.type)
+                    .join(", ")}`
+                : "No specific rules triggered",
+          },
+        });
       }
     } catch (e) {
       // ignore rule errors
@@ -264,7 +367,7 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
       this.securityMonitor = null;
       this.pageAnalyzer = null;
       this.uiManager = null;
-    
+
       // CyberDrain integration
       this.policy = null;
       this.flagged = false;
@@ -277,10 +380,10 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
 
         // Load configuration from background
         this.config = await this.getConfigFromBackground();
-      
+
         // CyberDrain integration - Request policy from background
         this.policy = await this.getPolicyFromBackground();
-      
+
         // Load detection rules for settings
         this.detectionRules = await ensureRulesLoaded();
 
@@ -311,16 +414,13 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
     // CyberDrain integration - Get policy from background
     async getPolicyFromBackground() {
       return new Promise((resolve) => {
-        chrome.runtime.sendMessage(
-          { type: "REQUEST_POLICY" },
-          (response) => {
-            if (response && response.policy) {
-              resolve(response.policy);
-            } else {
-              resolve(this.getDefaultPolicy());
-            }
+        chrome.runtime.sendMessage({ type: "REQUEST_POLICY" }, (response) => {
+          if (response && response.policy) {
+            resolve(response.policy);
+          } else {
+            resolve(this.getDefaultPolicy());
           }
-        );
+        });
       });
     }
 
@@ -334,7 +434,7 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
         ValidPageBadgeImage: "",
         StrictResourceAudit: true,
         RequireMicrosoftAction: true,
-        EnableValidPageBadge: false
+        EnableValidPageBadge: false,
       };
     }
 
@@ -345,13 +445,17 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
       // 1) Real Microsoft login → show valid badge (if enabled)
       if (await isTrustedOrigin(origin)) {
         // Check if valid page badge is enabled in settings
-        const badgeEnabled = this.config?.enableValidPageBadge ||
-                            this.policy?.EnableValidPageBadge ||
-                            this.detectionRules?.detection_settings?.enable_verification_badge ||
-                            false;
-      
+        const badgeEnabled =
+          this.config?.enableValidPageBadge ||
+          this.policy?.EnableValidPageBadge ||
+          this.detectionRules?.detection_settings?.enable_verification_badge ||
+          false;
+
         if (badgeEnabled) {
-          this.injectValidBadge(this.policy?.ValidPageBadgeImage, this.policy?.BrandingName);
+          this.injectValidBadge(
+            this.policy?.ValidPageBadgeImage,
+            this.policy?.BrandingName
+          );
         }
         await this.enforceMicrosoftActionIfConfigured();
         return;
@@ -359,7 +463,7 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
 
       // 2) Post-login redirect from real login (no password field) → trusted-by-referrer
       const refOrigin = urlOrigin(document.referrer);
-      if (await isTrustedReferrer(refOrigin) && !this.hasPassword()) {
+      if ((await isTrustedReferrer(refOrigin)) && !this.hasPassword()) {
         chrome.runtime.sendMessage({ type: "FLAG_TRUSTED_BY_REFERRER" });
         return;
       }
@@ -370,10 +474,15 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
 
     // CyberDrain integration - Live monitoring for dynamic content
     setupLiveMonitoring() {
-      const observer = new MutationObserver(() => this.evaluateAADFingerprint());
-      observer.observe(document.documentElement, { childList: true, subtree: true });
+      const observer = new MutationObserver(() =>
+        this.evaluateAADFingerprint()
+      );
+      observer.observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+      });
       this.observers.push(observer);
-    
+
       this.evaluateAADFingerprint(); // initial evaluation
 
       // Stop observing after timeout to reduce overhead
@@ -387,89 +496,188 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
     // CyberDrain integration - Rule-driven AAD fingerprint evaluation
     async evaluateAADFingerprint() {
       if (this.flagged) return;
-    
+
       const origin = location.origin;
-    
+
       // Request rule-driven analysis from background
       try {
         const response = await new Promise((resolve) => {
-          chrome.runtime.sendMessage({
-            type: "ANALYZE_CONTENT_WITH_RULES",
-            content: document.documentElement.outerHTML,
-            origin: origin
-          }, resolve);
+          chrome.runtime.sendMessage(
+            {
+              type: "ANALYZE_CONTENT_WITH_RULES",
+              content: document.documentElement.outerHTML,
+              origin: origin,
+            },
+            resolve
+          );
         });
-      
+
         if (response && response.success) {
           const analysis = response.analysis;
-        
+
           // Use rule-driven detection results
           if (analysis.aadLike && !(await isTrustedOrigin(origin))) {
             // Check additional rule-based conditions
-            const actionCheck = await this.checkFormActions(analysis.detectedElements.password_field);
+            const actionCheck = await this.checkFormActions(
+              analysis.detectedElements.password_field
+            );
             const resourceAudit = await this.auditSubresourceOrigins();
-          
+
             const requireAction = this.policy?.RequireMicrosoftAction !== false;
             const strictAudit = this.policy?.StrictResourceAudit !== false;
-          
+
             // Apply rule-based trigger logic
-            if (this.shouldTriggerFromRules(analysis, actionCheck, resourceAudit, requireAction, strictAudit)) {
+            if (
+              this.shouldTriggerFromRules(
+                analysis,
+                actionCheck,
+                resourceAudit,
+                requireAction,
+                strictAudit
+              )
+            ) {
               this.flagged = true;
-              this.injectRedBanner(this.policy?.BrandingName, actionCheck, resourceAudit);
+              this.injectRedBanner(
+                this.policy?.BrandingName,
+                actionCheck,
+                resourceAudit
+              );
               this.lockCredentialInputs();
               this.preventSubmission();
+
+              // Enhanced logging for threat detection
+              const reason = `rule-based-aad-like:${
+                actionCheck.fail ? "bad-action" : ""
+              }:${resourceAudit.nonMicrosoftCount ? "bad-assets" : ""}`;
               chrome.runtime.sendMessage({
                 type: "FLAG_PHISHY",
-                reason: `rule-based-aad-like:${actionCheck.fail?'bad-action':''}:${resourceAudit.nonMicrosoftCount?'bad-assets':''}`
+                reason: reason,
+              });
+
+              // Log detailed threat detection event
+              chrome.runtime.sendMessage({
+                type: "LOG_EVENT",
+                event: {
+                  type: "content_threat_detected",
+                  url: location.href,
+                  threatLevel: "high",
+                  action: "blocked",
+                  reason: "Microsoft 365 phishing page detected",
+                  details: `AAD-like page on untrusted domain. ${
+                    actionCheck.fail
+                      ? "Form posts to non-Microsoft domain. "
+                      : ""
+                  }${
+                    resourceAudit.nonMicrosoftCount
+                      ? `${resourceAudit.nonMicrosoftCount} non-Microsoft resources detected.`
+                      : ""
+                  }`,
+                  analysis: {
+                    aadLike: analysis.aadLike,
+                    formActionFail: actionCheck.fail,
+                    nonMicrosoftResources: resourceAudit.nonMicrosoftCount,
+                    detectedElements: analysis.detectedElements,
+                  },
+                },
               });
               return;
             }
           }
         }
       } catch (error) {
-        logger.error("Check: Rule-driven analysis failed, falling back to basic detection:", error);
+        logger.error(
+          "Check: Rule-driven analysis failed, falling back to basic detection:",
+          error
+        );
         // Fallback to basic detection if rule-driven analysis fails
         await this.evaluateAADFingerprintBasic();
       }
     }
 
     // Rule-based trigger evaluation
-    shouldTriggerFromRules(analysis, actionCheck, resourceAudit, requireAction, strictAudit) {
+    shouldTriggerFromRules(
+      analysis,
+      actionCheck,
+      resourceAudit,
+      requireAction,
+      strictAudit
+    ) {
       // Basic AAD-like detection
       if (analysis.aadLike) return true;
-    
+
       // Form action validation
       if (requireAction && actionCheck.fail) return true;
-    
+
       // Resource audit validation
       if (strictAudit && resourceAudit.nonMicrosoftCount > 0) return true;
-    
+
       return false;
     }
 
     // Fallback basic detection method
     async evaluateAADFingerprintBasic() {
       const origin = location.origin;
-    
+
       // Basic AAD fingerprint
-      const hasLoginFmt = !!document.querySelector('input[name="loginfmt"], #i0116');
-      const hasNextBtn = !!document.querySelector('#idSIButton9');
+      const hasLoginFmt = !!document.querySelector(
+        'input[name="loginfmt"], #i0116'
+      );
+      const hasNextBtn = !!document.querySelector("#idSIButton9");
       const hasPw = this.hasPassword();
       const text = (document.body?.innerText || "").slice(0, 25000);
-      const brandingHit = /\b(Microsoft\s*365|Office\s*365|Entra\s*ID|Azure\s*AD|Microsoft)\b/i.test(text);
-      const aadLike = (hasLoginFmt && hasNextBtn) || (brandingHit && (hasLoginFmt || hasPw));
+      const brandingHit =
+        /\b(Microsoft\s*365|Office\s*365|Entra\s*ID|Azure\s*AD|Microsoft)\b/i.test(
+          text
+        );
+      const aadLike =
+        (hasLoginFmt && hasNextBtn) || (brandingHit && (hasLoginFmt || hasPw));
 
       if (aadLike && !(await isTrustedOrigin(origin))) {
         const actionCheck = await this.checkFormActions(hasPw);
         const resourceAudit = await this.auditSubresourceOrigins();
-      
+
         this.flagged = true;
-        this.injectRedBanner(this.policy?.BrandingName, actionCheck, resourceAudit);
+        this.injectRedBanner(
+          this.policy?.BrandingName,
+          actionCheck,
+          resourceAudit
+        );
         this.lockCredentialInputs();
         this.preventSubmission();
+
+        const reason = `basic-aad-like:${
+          actionCheck.fail ? "bad-action" : ""
+        }:${resourceAudit.nonMicrosoftCount ? "bad-assets" : ""}`;
         chrome.runtime.sendMessage({
           type: "FLAG_PHISHY",
-          reason: `basic-aad-like:${actionCheck.fail?'bad-action':''}:${resourceAudit.nonMicrosoftCount?'bad-assets':''}`
+          reason: reason,
+        });
+
+        // Log detailed threat detection event
+        chrome.runtime.sendMessage({
+          type: "LOG_EVENT",
+          event: {
+            type: "content_threat_detected",
+            url: location.href,
+            threatLevel: "high",
+            action: "blocked",
+            reason: "Microsoft 365 phishing page detected (basic detection)",
+            details: `AAD-like elements detected on untrusted domain. ${
+              actionCheck.fail ? "Form posts to non-Microsoft domain. " : ""
+            }${
+              resourceAudit.nonMicrosoftCount
+                ? `${resourceAudit.nonMicrosoftCount} non-Microsoft resources detected.`
+                : ""
+            }`,
+            analysis: {
+              hasLoginFmt: hasLoginFmt,
+              hasNextBtn: hasNextBtn,
+              hasPw: hasPw,
+              brandingHit: brandingHit,
+              formActionFail: actionCheck.fail,
+              nonMicrosoftResources: resourceAudit.nonMicrosoftCount,
+            },
+          },
         });
       }
     }
@@ -490,7 +698,8 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
         if (!hasPw) continue;
         const act = this.resolveAction(f.getAttribute("action"));
         const actOrigin = urlOrigin(act);
-        if (!(await isTrustedOrigin(actOrigin))) bad.push({ action: actOrigin });
+        if (!(await isTrustedOrigin(actOrigin)))
+          bad.push({ action: actOrigin });
       }
 
       if (bad.length)
@@ -499,7 +708,11 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
 
     resolveAction(a) {
       let act = (a || location.href).trim();
-      try { act = new URL(act, location.href).href; } catch { act = location.href; }
+      try {
+        act = new URL(act, location.href).href;
+      } catch {
+        act = location.href;
+      }
       return act;
     }
 
@@ -522,9 +735,9 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
 
     async auditSubresourceOrigins() {
       const nodes = [
-        ...document.querySelectorAll('script[src]'),
+        ...document.querySelectorAll("script[src]"),
         ...document.querySelectorAll('link[rel="stylesheet"][href]'),
-        ...document.querySelectorAll('img[src]')
+        ...document.querySelectorAll("img[src]"),
       ];
 
       const origins = new Set();
@@ -544,7 +757,7 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
       return {
         origins: Array.from(origins),
         nonMicrosoft: Array.from(nonMs),
-        nonMicrosoftCount: nonMs.size
+        nonMicrosoftCount: nonMs.size,
       };
     }
 
@@ -768,12 +981,17 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
               );
             });
 
-            if (urlAnalysis.isBlocked !== undefined || urlAnalysis.isSuspicious !== undefined) {
+            if (
+              urlAnalysis.isBlocked !== undefined ||
+              urlAnalysis.isSuspicious !== undefined
+            ) {
               if (urlAnalysis.isBlocked !== undefined) {
-                analysis.isBlocked = analysis.isBlocked || urlAnalysis.isBlocked;
+                analysis.isBlocked =
+                  analysis.isBlocked || urlAnalysis.isBlocked;
               }
               if (urlAnalysis.isSuspicious !== undefined) {
-                analysis.isSuspicious = analysis.isSuspicious || urlAnalysis.isSuspicious;
+                analysis.isSuspicious =
+                  analysis.isSuspicious || urlAnalysis.isSuspicious;
               }
             }
 
@@ -1050,7 +1268,9 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
         });
 
         if (!policyCheck.allowed) {
-          throw new Error(`Content manipulation blocked: ${policyCheck.reason}`);
+          throw new Error(
+            `Content manipulation blocked: ${policyCheck.reason}`
+          );
         }
 
         let result;
@@ -1193,7 +1413,8 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
         protocol: window.location.protocol,
         hasPasswordFields:
           document.querySelectorAll('input[type="password"]').length > 0,
-        hasFormsWithAction: document.querySelectorAll("form[action]").length > 0,
+        hasFormsWithAction:
+          document.querySelectorAll("form[action]").length > 0,
         hasExternalScripts:
           document.querySelectorAll('script[src]:not([src^="/"])').length > 0,
         hasIframes: document.querySelectorAll("iframe").length > 0,
@@ -1255,25 +1476,25 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
       // Create overlay to block page content
       const overlay = document.createElement("div");
       overlay.className = "check-block-overlay";
-    
+
       const content = document.createElement("div");
       content.className = "check-block-content";
-    
+
       const title = document.createElement("h1");
       title.textContent = "Access Blocked";
-    
+
       const message = document.createElement("p");
       message.textContent = reason;
-    
+
       const goBackBtn = document.createElement("button");
       goBackBtn.textContent = "Go Back";
       goBackBtn.onclick = () => window.history.back();
-    
+
       const continueBtn = document.createElement("button");
       continueBtn.textContent = "Continue Anyway";
       continueBtn.className = "secondary-btn";
       continueBtn.onclick = () => overlay.remove();
-    
+
       content.appendChild(title);
       content.appendChild(message);
       content.appendChild(goBackBtn);
@@ -1474,7 +1695,7 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
     createNotificationElement(notification) {
       const element = document.createElement("div");
       element.className = `check-notification ${notification.type}`;
-    
+
       // Create title and message structure
       if (notification.title) {
         const title = document.createElement("div");
@@ -1482,12 +1703,12 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
         title.textContent = notification.title;
         element.appendChild(title);
       }
-    
+
       const message = document.createElement("div");
       message.className = "message";
       message.textContent = notification.message;
       element.appendChild(message);
-    
+
       // Add close button
       const closeBtn = document.createElement("button");
       closeBtn.className = "close-btn";
@@ -1497,57 +1718,70 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
 
       return element;
     }
-
-
   }
 
   // CyberDrain integration - UI methods for badges and warnings
-  CheckContent.prototype.injectValidBadge = function(customImg, branding) {
+  CheckContent.prototype.injectValidBadge = function (customImg, branding) {
     const id = "__cd_valid_login_badge";
     if (document.getElementById(id)) return;
-  
+
     const wrap = document.createElement("div");
     wrap.id = id;
     wrap.className = "check-security-badge";
-  
+
     if (customImg) {
       const img = document.createElement("img");
       img.src = customImg;
       img.alt = "Valid Microsoft login";
       wrap.appendChild(img);
     } else {
-      wrap.innerHTML = '<svg viewBox="0 0 24 24" width="40" height="40"><circle cx="12" cy="12" r="11" fill="#0a5"/><path d="M6 12l4 4 8-8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      wrap.innerHTML =
+        '<svg viewBox="0 0 24 24" width="40" height="40"><circle cx="12" cy="12" r="11" fill="#0a5"/><path d="M6 12l4 4 8-8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     }
-  
+
     const label = document.createElement("div");
-    label.textContent = (branding || "Microsoft 365 Phishing Protection") + " • Valid M365 Login";
+    label.textContent =
+      (branding || "Microsoft 365 Phishing Protection") + " • Valid M365 Login";
     wrap.appendChild(label);
     document.documentElement.appendChild(wrap);
   };
 
-  CheckContent.prototype.injectRedBanner = function(branding, actionCheck, resourceAudit) {
+  CheckContent.prototype.injectRedBanner = function (
+    branding,
+    actionCheck,
+    resourceAudit
+  ) {
     if (document.getElementById("__cd_banner")) return;
-  
+
     const el = document.createElement("div");
     el.id = "__cd_banner";
     el.className = "check-warning-overlay";
-  
-    let msg = (branding || "Microsoft 365 Phishing Protection") + ": Phishing suspected – Microsoft 365 login UI on an untrusted domain.";
+
+    let msg =
+      (branding || "Microsoft 365 Phishing Protection") +
+      ": Phishing suspected – Microsoft 365 login UI on an untrusted domain.";
     if (actionCheck?.fail) msg += " (Form action not to Microsoft)";
-    if (resourceAudit?.nonMicrosoftCount) msg += " (Non-Microsoft subresources present)";
-  
+    if (resourceAudit?.nonMicrosoftCount)
+      msg += " (Non-Microsoft subresources present)";
+
     el.textContent = msg;
     document.documentElement.appendChild(el);
-  
-    if (document.body) document.body.style.paddingTop = (parseInt(getComputedStyle(el).height,10) + 8) + "px";
+
+    if (document.body)
+      document.body.style.paddingTop =
+        parseInt(getComputedStyle(el).height, 10) + 8 + "px";
   };
 
-  CheckContent.prototype.lockCredentialInputs = function() {
+  CheckContent.prototype.lockCredentialInputs = function () {
     const suspects = [
-      'input[type="password"]','input[name="passwd"]','input[name="Password"]','input[name="password"]',
-      'input[name="loginfmt"]', '#i0116' // lock username too
+      'input[type="password"]',
+      'input[name="passwd"]',
+      'input[name="Password"]',
+      'input[name="password"]',
+      'input[name="loginfmt"]',
+      "#i0116", // lock username too
     ];
-  
+
     const fields = Array.from(document.querySelectorAll(suspects.join(",")));
     for (const el of fields) {
       try {
@@ -1560,44 +1794,54 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
         el.style.pointerEvents = "none";
       } catch {}
     }
-  
+
     const msg = document.createElement("div");
     msg.textContent = "⚠️ Disabled by Microsoft 365 Phishing Protection";
     msg.style.cssText = "font:13px/1.4 system-ui;color:#a00;margin-top:6px;";
-  
+
     const pw = document.querySelector('input[type="password"]');
     if (pw) pw.insertAdjacentElement("afterend", msg);
     else if (document.body) document.body.appendChild(msg);
   };
 
-  CheckContent.prototype.preventSubmission = function() {
-    document.addEventListener("submit", (e) => {
-      e.stopImmediatePropagation();
-      e.preventDefault();
-      this.showToast("Blocked form submission: not the official Microsoft login domain.");
-    }, true);
-  
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        const t = e.target;
-        if (t && t.tagName === "INPUT") {
-          e.stopImmediatePropagation();
-          e.preventDefault();
-          this.showToast("Blocked: not the official Microsoft login domain.");
+  CheckContent.prototype.preventSubmission = function () {
+    document.addEventListener(
+      "submit",
+      (e) => {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        this.showToast(
+          "Blocked form submission: not the official Microsoft login domain."
+        );
+      },
+      true
+    );
+
+    document.addEventListener(
+      "keydown",
+      (e) => {
+        if (e.key === "Enter") {
+          const t = e.target;
+          if (t && t.tagName === "INPUT") {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+            this.showToast("Blocked: not the official Microsoft login domain.");
+          }
         }
-      }
-    }, true);
+      },
+      true
+    );
   };
 
-  CheckContent.prototype.showToast = function(msg) {
+  CheckContent.prototype.showToast = function (msg) {
     const t = document.createElement("div");
     t.className = "check-notification info";
-  
+
     const message = document.createElement("div");
     message.className = "message";
     message.textContent = msg;
     t.appendChild(message);
-  
+
     if (document.body) document.body.appendChild(t);
     setTimeout(() => t.remove(), 3000);
   };
@@ -1627,5 +1871,4 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
       check.initialize();
     }
   }
-
 })();
