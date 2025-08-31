@@ -230,6 +230,9 @@ class CheckOptions {
 
   async initialize() {
     try {
+      // Show initial status
+      this.showToast("Connecting to background service...", "info");
+
       // Load configurations
       await this.loadConfiguration();
       await this.loadBrandingConfiguration();
@@ -254,7 +257,10 @@ class CheckOptions {
       this.showToast("Settings loaded successfully", "success");
     } catch (error) {
       console.error("Failed to initialize options page:", error);
-      this.showToast("Failed to load settings", "error");
+      this.showToast(
+        "Failed to load some settings - using defaults where possible",
+        "warning"
+      );
     }
   }
 
@@ -1091,9 +1097,12 @@ class CheckOptions {
   }
 
   async sendMessage(message) {
-    return new Promise((resolve) => {
-      chrome.runtime.sendMessage(message, resolve);
-    });
+    try {
+      return await this.sendMessageWithRetry(message);
+    } catch (error) {
+      console.error("Failed to send message after retries:", error);
+      throw error;
+    }
   }
 
   showToast(message, type = "info") {
