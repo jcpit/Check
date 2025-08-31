@@ -26,15 +26,20 @@ export class PolicyManager {
 
   async loadPolicies() {
     try {
+      // Safe wrapper for chrome.* operations
+      const safe = async (promise) => {
+        try { return await promise; } catch(_) { return {}; }
+      };
+      
       // Load enterprise policies from managed storage
       this.enterprisePolicies = await this.loadEnterprisePolicies();
 
-      // Load local policies
-      const localPolicies = await chrome.storage.local.get(["policies"]);
+      // Load local policies with safe wrapper
+      const localPolicies = await safe(chrome.storage.local.get(["policies"]));
 
       // Merge policies with enterprise taking precedence
       this.policies = this.mergePolicies(
-        localPolicies.policies,
+        localPolicies?.policies,
         this.enterprisePolicies
       );
 
@@ -50,8 +55,13 @@ export class PolicyManager {
 
   async loadEnterprisePolicies() {
     try {
-      const managedPolicies = await chrome.storage.managed.get(["policies"]);
-      return managedPolicies.policies || {};
+      // Safe wrapper for chrome.* operations
+      const safe = async (promise) => {
+        try { return await promise; } catch(_) { return {}; }
+      };
+      
+      const managedPolicies = await safe(chrome.storage.managed.get(["policies"]));
+      return managedPolicies?.policies || {};
     } catch (error) {
       logger.log("Check: No enterprise policies available");
       return {};
@@ -443,11 +453,16 @@ export class PolicyManager {
 
   async updatePolicies(newPolicies) {
     try {
+      // Safe wrapper for chrome.* operations
+      const safe = async (promise) => {
+        try { return await promise; } catch(_) { return undefined; }
+      };
+      
       // Prevent updating enterprise-enforced policies
       if (this.enterprisePolicies?.enforcedPolicies) {
         Object.keys(this.enterprisePolicies.enforcedPolicies).forEach(
           (policy) => {
-            if (this.enterprisePolicies.enforcedPolicies[policy].locked) {
+            if (this.enterprisePolicies.enforcedPolicies[policy]?.locked) {
               delete newPolicies[policy];
             }
           }
@@ -457,8 +472,8 @@ export class PolicyManager {
       // Merge with existing policies
       const updatedPolicies = { ...this.policies, ...newPolicies };
 
-      // Save to storage
-      await chrome.storage.local.set({ policies: updatedPolicies });
+      // Save to storage with safe wrapper
+      await safe(chrome.storage.local.set({ policies: updatedPolicies }));
       this.policies = updatedPolicies;
 
       logger.log("Check: Policies updated");
@@ -508,8 +523,13 @@ export class PolicyManager {
 
   async getAuditLog() {
     try {
-      const auditLog = await chrome.storage.local.get(["auditLog"]);
-      return auditLog.auditLog || [];
+      // Safe wrapper for chrome.* operations
+      const safe = async (promise) => {
+        try { return await promise; } catch(_) { return {}; }
+      };
+      
+      const auditLog = await safe(chrome.storage.local.get(["auditLog"]));
+      return auditLog?.auditLog || [];
     } catch (error) {
       logger.error("Check: Failed to get audit log:", error);
       return [];
@@ -518,6 +538,11 @@ export class PolicyManager {
 
   async logAuditEvent(event) {
     try {
+      // Safe wrapper for chrome.* operations
+      const safe = async (promise) => {
+        try { return await promise; } catch(_) { return {}; }
+      };
+      
       const auditEntry = {
         timestamp: new Date().toISOString(),
         event,
@@ -525,8 +550,8 @@ export class PolicyManager {
         source: "policy_manager",
       };
 
-      const auditLog = await chrome.storage.local.get(["auditLog"]);
-      const logs = auditLog.auditLog || [];
+      const auditLog = await safe(chrome.storage.local.get(["auditLog"]));
+      const logs = auditLog?.auditLog || [];
       logs.push(auditEntry);
 
       // Keep only last 10000 audit entries
@@ -534,7 +559,7 @@ export class PolicyManager {
         logs.splice(0, logs.length - 10000);
       }
 
-      await chrome.storage.local.set({ auditLog: logs });
+      await safe(chrome.storage.local.set({ auditLog: logs }));
     } catch (error) {
       logger.error("Check: Failed to log audit event:", error);
     }

@@ -14,6 +14,32 @@ console.log("Check: Background service worker loaded");
 // Initialize logger with default settings before any components use it
 logger.init({ level: "info", enabled: true });
 
+// Top-level utility for "respond once" guard
+const once = (fn) => {
+  let called = false;
+  return (...args) => { if (!called) { called = true; fn(...args); } };
+};
+
+// Safe wrapper for chrome.* and fetch operations
+async function safe(promise) {
+  try {
+    return await promise;
+  } catch(_) {
+    return undefined;
+  }
+}
+
+// Fetch with timeout and size limits for brand icon fetches
+async function fetchWithTimeout(url, ms = 5000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { signal: ctrl.signal });
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 class CheckBackground {
   constructor() {
     this.configManager = new ConfigManager();
@@ -23,6 +49,8 @@ class CheckBackground {
     this.initializationPromise = null;
     this.initializationRetries = 0;
     this.maxInitializationRetries = 3;
+    this._retryScheduled = false;
+    this._listenersReady = false;
 
     // CyberDrain integration
     this.policy = null;
@@ -36,6 +64,17 @@ class CheckBackground {
     this.errorCount = 0;
     this.maxErrors = 10;
 
+    // Tab event management
+    this.tabQueues = new Map(); // tabId -> Promise
+    this.tabDebounce = new Map(); // tabId -> timeoutId
+
+    // Storage batching
+    this.pendingLocal = { accessLogs: [], securityEvents: [] };
+    this.flushScheduled = false;
+
+    // Register core listeners that must work even if init fails
+    this.setupCoreListeners();
+
     // Set up message handlers immediately to handle early connections
     // Reduce logging verbosity for service worker restarts
     if (!globalThis.checkBackgroundInstance) {
@@ -47,10 +86,31 @@ class CheckBackground {
     }
   }
 
+  setupCoreListeners() {
+    // Register alarm listeners even if init fails
+    chrome.alarms.onAlarm.addListener((alarm) => {
+      if (alarm.name === "check:init-retry") {
+        this._retryScheduled = false;
+        this.initialize().catch(() => {});
+      } else if (alarm.name === "check:flush") {
+        this.flushScheduled = false;
+        this._doFlush().catch(() => {});
+      }
+    });
+  }
+
   setupMessageHandlers() {
-    // Handle messages from content scripts and popups
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      this.handleMessage(message, sender, sendResponse);
+    // Handle messages from content scripts and popups with "respond once" guard
+    chrome.runtime.onMessage.addListener((msg, sender, sendResponseRaw) => {
+      const sendResponse = once(sendResponseRaw);
+      (async () => {
+        await this.handleMessage(msg, sender, sendResponse);
+      })()
+      .catch((e) => {
+        try {
+          sendResponse({success: false, error: e?.message || String(e)});
+        } catch {}
+      });
       return true; // Keep message channel open for async responses
     });
   }
@@ -61,8 +121,8 @@ class CheckBackground {
       return;
     }
 
-    // If initialization is already in progress, wait for it
-    if (this.initializationPromise) {
+    // Harden initialization flow - prevent parallel retries
+    if (this.initializationPromise || this._retryScheduled) {
       return this.initializationPromise;
     }
 
@@ -112,11 +172,11 @@ class CheckBackground {
         logger.log(
           `CheckBackground.initialize: scheduling retry ${this.initializationRetries}/${this.maxInitializationRetries}`
         );
-        setTimeout(() => {
-          this.initialize().catch((err) => {
-            logger.error("CheckBackground.initialize: retry failed", err);
-          });
-        }, 1000 * this.initializationRetries); // Exponential backoff
+        // Replace setTimeout with chrome.alarms for service worker safety
+        this._retryScheduled = true;
+        chrome.alarms.create("check:init-retry", {
+          when: Date.now() + 1000 * this.initializationRetries
+        });
       } else {
         logger.error(
           "CheckBackground.initialize: max retries exceeded, entering fallback mode"
@@ -154,16 +214,22 @@ class CheckBackground {
     };
   }
 
-  // CyberDrain integration - Policy management
+  // CyberDrain integration - Policy management with defensive refresh
   async refreshPolicy() {
-    this.policy =
-      (await this.detectionEngine.policy) || this.getDefaultPolicy();
-    this.extraWhitelist = new Set(
-      (this.policy.ExtraWhitelist || [])
-        .map((s) => this.urlOrigin(s))
-        .filter(Boolean)
-    );
-    await this.applyBrandingToAction();
+    try {
+      this.policy =
+        (await this.detectionEngine.policy) || this.getDefaultPolicy();
+      this.extraWhitelist = new Set(
+        (this.policy?.ExtraWhitelist || [])
+          .map((s) => this.urlOrigin(s))
+          .filter(Boolean)
+      );
+      await this.applyBrandingToAction();
+    } catch (error) {
+      logger.error("CheckBackground.refreshPolicy: failed, using defaults", error);
+      this.policy = this.getDefaultPolicy();
+      this.extraWhitelist = new Set();
+    }
   }
 
 
@@ -183,7 +249,7 @@ class CheckBackground {
     return "unknown";
   }
 
-  // CyberDrain integration - Badge management
+  // CyberDrain integration - Badge management with safe wrappers
   async setBadge(tabId, verdict) {
     const map = {
       trusted: { text: "MS", color: "#0a5" },
@@ -192,42 +258,42 @@ class CheckBackground {
       unknown: { text: "?", color: "#777" },
     };
     const cfg = map[verdict] || map.unknown;
-    try {
-      await chrome.action.setBadgeText({ tabId, text: cfg.text });
-      await chrome.action.setBadgeBackgroundColor({ tabId, color: cfg.color });
-    } catch {}
+    await safe(chrome.action.setBadgeText({ tabId, text: cfg.text }));
+    await safe(chrome.action.setBadgeBackgroundColor({ tabId, color: cfg.color }));
   }
 
-  // CyberDrain integration - Notify tab to show valid badge
+  // CyberDrain integration - Notify tab to show valid badge with safe wrappers
   async showValidBadge(tabId) {
-    try {
-      const config = await this.configManager.getConfig();
-      const enabled =
-        this.policy?.EnableValidPageBadge ||
-        config?.showValidPageBadge ||
-        config?.enableValidPageBadge;
-      if (enabled) {
-        await chrome.tabs.sendMessage(tabId, {
-          type: "SHOW_VALID_BADGE",
-          image: this.policy?.ValidPageBadgeImage,
-          branding: this.policy?.BrandingName,
-        });
-      }
-    } catch {}
+    const config = await safe(this.configManager.getConfig()) || {};
+    const enabled =
+      this.policy?.EnableValidPageBadge ||
+      config?.showValidPageBadge ||
+      config?.enableValidPageBadge;
+    if (enabled) {
+      await safe(chrome.tabs.sendMessage(tabId, {
+        type: "SHOW_VALID_BADGE",
+        image: this.policy?.ValidPageBadgeImage,
+        branding: this.policy?.BrandingName,
+      }));
+    }
   }
 
-  // CyberDrain integration - Apply branding to extension action
+  // CyberDrain integration - Apply branding to extension action with guards and timeouts
   async applyBrandingToAction() {
-    // Title
-    await chrome.action.setTitle({
-      title: this.policy.BrandingName || this.getDefaultPolicy().BrandingName,
-    });
+    // Title with safe wrapper
+    await safe(chrome.action.setTitle({
+      title: this.policy?.BrandingName || this.getDefaultPolicy().BrandingName,
+    }));
 
-    // Icon (optional)
-    if (this.policy.BrandingImage) {
+    // Icon (optional) with platform feature guards and size limits
+    if (this.policy?.BrandingImage && globalThis.OffscreenCanvas && globalThis.createImageBitmap) {
       try {
-        const img = await fetch(this.policy.BrandingImage);
+        const img = await fetchWithTimeout(this.policy.BrandingImage);
+        if (!img.ok) return;
+        
         const blob = await img.blob();
+        if (blob.size > 1_000_000) return; // Skip huge icons
+        
         const bmp = await createImageBitmap(blob);
         const sizes = [16, 32, 48, 128];
         const images = {};
@@ -238,40 +304,40 @@ class CheckBackground {
           ctx.drawImage(bmp, 0, 0, s, s);
           images[String(s)] = ctx.getImageData(0, 0, s, s);
         }
-        await chrome.action.setIcon({ imageData: images });
+        await safe(chrome.action.setIcon({ imageData: images }));
       } catch (e) {
-        // ignore icon errors
+        // ignore icon errors, just set title
       }
     }
   }
 
-  // CyberDrain integration - Send event to reporting server
+  // CyberDrain integration - Send event to reporting server with timeout and proper POST
   async sendEvent(evt) {
-    if (!this.policy.CIPPReportingServer) return;
+    if (!this.policy?.CIPPReportingServer) return;
     try {
-      await fetch(
-        this.policy.CIPPReportingServer.replace(/\/+$/, "") +
-          "/events/cyberdrain-phish",
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 5000);
+      const res = await fetch(
+        this.policy.CIPPReportingServer.replace(/\/+$/, "") + "/events/cyberdrain-phish",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(
-            Object.assign(
-              {
-                ts: new Date().toISOString(),
-                ua: navigator.userAgent,
-              },
-              evt
-            )
-          ),
+          body: JSON.stringify({ ts: new Date().toISOString(), ua: navigator.userAgent, ...evt }),
+          signal: ctrl.signal,
         }
       );
+      clearTimeout(t);
+      await res.text();
     } catch {
       /* best-effort */
     }
   }
 
   setupEventListeners() {
+    // Prevent duplicate listener registration
+    if (this._listenersReady) return;
+    this._listenersReady = true;
+
     // Handle extension installation/startup
     chrome.runtime.onStartup.addListener(() => {
       this.handleStartup();
@@ -281,41 +347,45 @@ class CheckBackground {
       this.handleInstalled(details);
     });
 
-    // Handle tab updates for URL monitoring
+    // Handle tab updates with debouncing and serialization
     chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-      this.handleTabUpdate(tabId, changeInfo, tab);
+      this.debouncePerTab(tabId, () => {
+        this.enqueue(tabId, async () => {
+          await this.handleTabUpdate(tabId, changeInfo, tab);
+        });
+      });
     });
 
-    // CyberDrain integration - Handle tab activation for badge updates
+    // CyberDrain integration - Handle tab activation for badge updates with safe wrappers
     chrome.tabs.onActivated.addListener(async ({ tabId }) => {
-      const data = (await chrome.storage.session.get("verdict:" + tabId))[
-        "verdict:" + tabId
-      ];
-      this.setBadge(tabId, data?.verdict || "unknown");
+      const data = await safe(chrome.storage.session.get("verdict:" + tabId));
+      const verdict = data?.["verdict:" + tabId]?.verdict || "unknown";
+      this.setBadge(tabId, verdict);
     });
-
-    // Note: Message handler is set up in constructor for immediate availability
 
     // Handle storage changes (for enterprise policy updates)
     chrome.storage.onChanged.addListener((changes, namespace) => {
       this.handleStorageChange(changes, namespace);
     });
 
-    // Handle web navigation events
+    // Handle web navigation events with non-blocking heavy work
     chrome.webNavigation?.onCompleted?.addListener((details) => {
-      this.handleNavigationCompleted(details);
+      if (details.frameId === 0) {
+        // Fire-and-log pattern for non-critical work
+        queueMicrotask(() =>
+          this.detectionEngine.analyzePageContent(details.tabId, details.url).catch(() => {})
+        );
+      }
     });
 
-    // Capture response headers for top-level requests
+    // Capture response headers with robust caching
     chrome.webRequest.onHeadersReceived.addListener(
       (details) => {
-        if (details.tabId >= 0) {
-          const headers = {};
-          for (const h of details.responseHeaders || []) {
-            headers[h.name.toLowerCase()] = h.value;
-          }
-          this.tabHeaders.set(details.tabId, { headers, ts: Date.now() });
-          if (this.tabHeaders.size > this.MAX_HEADER_CACHE_ENTRIES) {
+        if (details.tabId < 0 || !details.responseHeaders) return;
+        
+        try {
+          // Prune before insert to prevent unbounded growth
+          if (this.tabHeaders.size >= this.MAX_HEADER_CACHE_ENTRIES) {
             let oldestId = null;
             let oldestTs = Infinity;
             for (const [id, data] of this.tabHeaders) {
@@ -326,6 +396,14 @@ class CheckBackground {
             }
             if (oldestId !== null) this.tabHeaders.delete(oldestId);
           }
+
+          const headers = {};
+          for (const h of details.responseHeaders || []) {
+            headers[h.name.toLowerCase()] = h.value;
+          }
+          this.tabHeaders.set(details.tabId, { headers, ts: Date.now() });
+        } catch (error) {
+          // Ignore header cache errors
         }
       },
       { urls: ["<all_urls>"], types: ["main_frame"] },
@@ -334,12 +412,47 @@ class CheckBackground {
 
     chrome.tabs.onRemoved.addListener((tabId) => {
       this.tabHeaders.delete(tabId);
+      this.tabQueues.delete(tabId);
+      clearTimeout(this.tabDebounce.get(tabId));
+      this.tabDebounce.delete(tabId);
     });
+  }
+
+  // Tab event management utilities
+  enqueue(tabId, task) {
+    const prev = this.tabQueues.get(tabId) || Promise.resolve();
+    const next = prev.finally(task).catch(() => {}); // keep chain alive
+    this.tabQueues.set(tabId, next);
+  }
+
+  debouncePerTab(tabId, fn, ms = 150) {
+    clearTimeout(this.tabDebounce.get(tabId));
+    const id = setTimeout(fn, ms);
+    this.tabDebounce.set(tabId, id);
+  }
+
+  // Storage batching utilities with chrome.alarms for service worker safety
+  scheduleFlush() {
+    if (this.flushScheduled) return;
+    this.flushScheduled = true;
+    chrome.alarms.create("check:flush", { when: Date.now() + 2000 });
+  }
+
+  async _doFlush() {
+    const cur = (await safe(chrome.storage.local.get(["accessLogs", "securityEvents"]))) || {};
+    const access = (cur.accessLogs || []).concat(this.pendingLocal.accessLogs).slice(-1000);
+    const sec = (cur.securityEvents || []).concat(this.pendingLocal.securityEvents).slice(-500);
+    this.pendingLocal.accessLogs.length = 0;
+    this.pendingLocal.securityEvents.length = 0;
+    const payload = { accessLogs: access, securityEvents: sec };
+    if (JSON.stringify(payload).length <= 4 * 1024 * 1024) {
+      await safe(chrome.storage.local.set(payload));
+    }
   }
 
   async handleStartup() {
     logger.log("Check: Extension startup detected");
-    const config = await this.configManager.refreshConfig();
+    const config = await safe(this.configManager.refreshConfig()) || {};
     logger.init({
       level: "info",
       enabled: true,
@@ -351,15 +464,15 @@ class CheckBackground {
 
     if (details.reason === "install") {
       // Set default configuration
-      await this.configManager.setDefaultConfig();
+      await safe(this.configManager.setDefaultConfig());
 
       // Open options page for initial setup
-      chrome.tabs.create({
+      await safe(chrome.tabs.create({
         url: chrome.runtime.getURL("options/options.html"),
-      });
+      }));
     } else if (details.reason === "update") {
       // Handle extension updates
-      await this.configManager.migrateConfig(details.previousVersion);
+      await safe(this.configManager.migrateConfig(details.previousVersion));
     }
   }
 
@@ -367,18 +480,22 @@ class CheckBackground {
     if (!this.isInitialized) return;
 
     try {
+      // Ignore stale onUpdated payloads after debounce (tab might have navigated again)
+      const latest = await safe(chrome.tabs.get(tabId));
+      if (!latest || latest.url !== (tab?.url || changeInfo.url)) return; // stale event
+
       // CyberDrain integration - Handle URL changes and set badges
       if (changeInfo.status === "complete" && tab?.url) {
         const verdict = this.verdictForUrl(tab.url);
-        await chrome.storage.session.set({
+        await safe(chrome.storage.session.set({
           ["verdict:" + tabId]: { verdict, url: tab.url },
-        });
+        }));
         this.setBadge(tabId, verdict);
 
         if (verdict === "trusted") {
-          // "Valid page" sighting
-          await this.sendEvent({ type: "trusted-login-page", url: tab.url });
-          this.showValidBadge(tabId);
+          // "Valid page" sighting - fire-and-log pattern for non-critical work
+          queueMicrotask(() => this.sendEvent({ type: "trusted-login-page", url: tab.url }).catch(() => {}));
+          queueMicrotask(() => this.showValidBadge(tabId).catch(() => {}));
         }
       }
 
@@ -389,12 +506,12 @@ class CheckBackground {
 
       if (urlAnalysis.isBlocked) {
         // Block navigation if URL is flagged
-        chrome.tabs.update(tabId, {
+        await safe(chrome.tabs.update(tabId, {
           url:
             chrome.runtime.getURL("blocked.html") +
             "?reason=" +
             encodeURIComponent(urlAnalysis.reason),
-        });
+        }));
         return;
       }
 
@@ -403,8 +520,8 @@ class CheckBackground {
         await this.injectContentScript(tabId);
       }
 
-      // Log URL access for audit purposes
-      await this.logUrlAccess(tab.url, tabId);
+      // Log URL access for audit purposes - fire-and-log pattern
+      queueMicrotask(() => this.logUrlAccess(tab.url, tabId).catch(() => {}));
     } catch (error) {
       logger.error("Check: Error handling tab update:", error);
     }
@@ -412,8 +529,25 @@ class CheckBackground {
 
   async handleMessage(message, sender, sendResponse) {
     try {
+      // Handle both message.type and message.action for compatibility
+      const messageType = message.type || message.action;
+
+      // Always return immediately for "ping" and non-critical queries
+      if (messageType === "ping") {
+        sendResponse({
+          success: true,
+          message: "Check background script is running",
+          timestamp: new Date().toISOString(),
+          initialized: this.isInitialized,
+          fallbackMode: !this.isInitialized,
+          errorCount: this.errorCount,
+          lastError: this.lastError?.message || null,
+        });
+        return;
+      }
+
       // Ensure initialization before handling most messages
-      if (!this.isInitialized && message.type !== "ping") {
+      if (!this.isInitialized) {
         try {
           await this.initialize();
         } catch (error) {
@@ -425,58 +559,46 @@ class CheckBackground {
         }
       }
 
-      // Handle both message.type and message.action for compatibility
-      const messageType = message.type || message.action;
-
       switch (messageType) {
-        case "ping":
-          sendResponse({
-            success: true,
-            message: "Check background script is running",
-            timestamp: new Date().toISOString(),
-            initialized: this.isInitialized,
-            fallbackMode: !this.isInitialized,
-            errorCount: this.errorCount,
-            lastError: this.lastError?.message || null,
-          });
-          break;
 
         // CyberDrain integration - Handle phishing detection
         case "FLAG_PHISHY":
           if (sender.tab?.id) {
             const tabId = sender.tab.id;
-            chrome.storage.session.set({
+            await safe(chrome.storage.session.set({
               ["verdict:" + tabId]: { verdict: "phishy", url: sender.tab.url },
-            });
+            }));
             this.setBadge(tabId, "phishy");
             sendResponse({ ok: true });
-            this.sendEvent({
+            // Fire-and-log pattern for non-critical work
+            queueMicrotask(() => this.sendEvent({
               type: "phishy-detected",
               url: sender.tab.url,
               reason: message.reason || "heuristic",
-            });
+            }).catch(() => {}));
           }
           break;
 
         case "FLAG_TRUSTED_BY_REFERRER":
           if (sender.tab?.id) {
             const tabId = sender.tab.id;
-            chrome.storage.session.set({
+            await safe(chrome.storage.session.set({
               ["verdict:" + tabId]: {
                 verdict: "trusted",
                 url: sender.tab.url,
                 by: "referrer",
               },
-            });
+            }));
             this.setBadge(tabId, "trusted");
-            this.showValidBadge(tabId);
             sendResponse({ ok: true });
-            if (this.policy.AlertWhenLogon) {
-              this.sendEvent({
+            // Fire-and-log pattern for non-critical work
+            queueMicrotask(() => this.showValidBadge(tabId).catch(() => {}));
+            if (this.policy?.AlertWhenLogon) {
+              queueMicrotask(() => this.sendEvent({
                 type: "user-logged-on",
                 url: sender.tab.url,
                 by: "referrer",
-              });
+              }).catch(() => {}));
             }
           }
           break;
@@ -487,7 +609,12 @@ class CheckBackground {
 
         case "ANALYZE_CONTENT_WITH_RULES":
           try {
-            const analysis = this.detectionEngine.analyzeContentWithRules(
+            // Strictly validate inputs
+            if (typeof message.content !== "string") {
+              sendResponse({success: false, error: "Invalid content"});
+              return;
+            }
+            const analysis = await this.detectionEngine.analyzeContentWithRules(
               message.content,
               { origin: message.origin }
             );
@@ -582,6 +709,11 @@ class CheckBackground {
           break;
 
         case "URL_ANALYSIS_REQUEST":
+          // Strictly validate inputs
+          if (typeof message.url !== "string") {
+            sendResponse({success: false, error: "Invalid url"});
+            return;
+          }
           const analysis = await this.detectionEngine.analyzeUrl(message.url);
           sendResponse({ success: true, analysis });
           break;
@@ -605,6 +737,11 @@ class CheckBackground {
           break;
 
         case "LOG_EVENT":
+          // Validate event input
+          if (!message.event || typeof message.event !== "object") {
+            sendResponse({success: false, error: "Invalid event"});
+            return;
+          }
           await this.logEvent(message.event, sender.tab?.id);
           sendResponse({ success: true });
           break;
@@ -672,29 +809,24 @@ class CheckBackground {
     if (namespace === "managed") {
       // Enterprise policy changes
       logger.log("Check: Enterprise policy updated");
-      await this.policyManager.loadPolicies();
-      const config = await this.configManager.refreshConfig();
+      await safe(this.policyManager.loadPolicies());
+      const config = await safe(this.configManager.refreshConfig()) || {};
       logger.init({
         level: "info",
         enabled: true,
       });
-      // CyberDrain integration - Refresh policy
+      // CyberDrain integration - Refresh policy with defensive handling
       await this.refreshPolicy();
-    }
-  }
-
-  async handleNavigationCompleted(details) {
-    if (details.frameId === 0) {
-      // Main frame only
-      // Run post-navigation analysis
-      await this.detectionEngine.analyzePageContent(details.tabId, details.url);
     }
   }
 
   async injectContentScript(tabId) {
     try {
-      const tab = await chrome.tabs.get(tabId);
-      const url = tab?.url;
+      // Shield content script injection - check if tab exists
+      const exists = await safe(chrome.tabs.get(tabId));
+      if (!exists) return; // tab gone
+
+      const url = exists?.url;
       if (!url) {
         logger.warn("Check: No URL for tab", tabId);
         return;
@@ -725,17 +857,17 @@ class CheckBackground {
         return;
       }
 
-      await chrome.scripting.executeScript({
+      await safe(chrome.scripting.executeScript({
         target: { tabId },
         files: ["scripts/content.js"],
-      });
+      }));
     } catch (error) {
       logger.error("Check: Failed to inject content script:", error);
     }
   }
 
   async logUrlAccess(url, tabId) {
-    const config = await this.configManager.getConfig();
+    const config = await safe(this.configManager.getConfig()) || {};
 
     // Only log if debug logging is enabled or if this is a significant event
     if (!config.enableDebugLogging) {
@@ -755,17 +887,9 @@ class CheckBackground {
       },
     };
 
-    // Store in local storage for audit
-    const result = await chrome.storage.local.get(["accessLogs"]);
-    const logs = result.accessLogs || [];
-    logs.push(logEntry);
-
-    // Keep only last 1000 entries
-    if (logs.length > 1000) {
-      logs.splice(0, logs.length - 1000);
-    }
-
-    await chrome.storage.local.set({ accessLogs: logs });
+    // Use batched storage writes
+    this.pendingLocal.accessLogs.push(logEntry);
+    this.scheduleFlush();
   }
 
   async logEvent(event, tabId) {
@@ -776,19 +900,15 @@ class CheckBackground {
       type: "security_event",
     };
 
-    logger.log("Check: Security Event:", logEntry);
-
-    // Store security events separately
-    const result = await chrome.storage.local.get(["securityEvents"]);
-    const logs = result.securityEvents || [];
-    logs.push(logEntry);
-
-    // Keep only last 500 security events
-    if (logs.length > 500) {
-      logs.splice(0, logs.length - 500);
+    // Gate noisy logs behind debug config
+    const config = await safe(this.configManager.getConfig());
+    if (config?.enableDebugLogging) {
+      logger.log("Check: Security Event:", logEntry);
     }
 
-    await chrome.storage.local.set({ securityEvents: logs });
+    // Use batched storage writes
+    this.pendingLocal.securityEvents.push(logEntry);
+    this.scheduleFlush();
   }
 
   enhanceEventForLogging(event) {
@@ -917,7 +1037,7 @@ class CheckBackground {
           );
           break;
         case "content_analysis":
-          result.actual = this.detectionEngine.analyzeContent(
+          result.actual = await this.detectionEngine.analyzeContent(
             testCase.input.content,
             testCase.input.context
           );

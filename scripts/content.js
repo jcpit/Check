@@ -76,6 +76,11 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
     logger.error("Failed to load logger, using fallback:", err);
   }
 
+  // Safe wrapper for chrome.* operations
+  const safe = async (promise) => {
+    try { return await promise; } catch(_) { return undefined; }
+  };
+
   // Silent ping with no error logging to avoid Chrome error list
   const pingBackground = () => {
     try {
@@ -161,18 +166,27 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
   // Load detection rules: prefer cached rules, fall back to bundled JSON
   async function loadRulesFast() {
     try {
-      const { rulesCached } = await chrome.storage.local.get("rulesCached");
-      if (rulesCached && (rulesCached.rules || rulesCached.signals)) {
-        return rulesCached;
+      const cached = await safe(chrome.storage.local.get("rulesCached"));
+      if (cached?.rulesCached && (cached.rulesCached.rules || cached.rulesCached.signals)) {
+        return cached.rulesCached;
       }
     } catch {}
 
     try {
-      const res = await fetch(
-        chrome.runtime.getURL("rules/detection-rules.json"),
-        { cache: "no-cache" }
-      );
-      return res.ok ? await res.json() : { rules: [], thresholds: {} };
+      // Add timeout to fetch operations
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      try {
+        const res = await fetch(
+          chrome.runtime.getURL("rules/detection-rules.json"),
+          { cache: "no-cache", signal: controller.signal }
+        );
+        clearTimeout(timeoutId);
+        return res.ok ? await res.json() : { rules: [], thresholds: {} };
+      } finally {
+        clearTimeout(timeoutId);
+      }
     } catch {
       return { rules: [], thresholds: {} };
     }
@@ -242,10 +256,20 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
           case "header": {
             if (!headersCache) {
               headersCache = await new Promise((resolve) => {
-                chrome.runtime.sendMessage(
-                  { type: "GET_PAGE_HEADERS" },
-                  (resp) => resolve(resp?.headers || {})
-                );
+                try {
+                  chrome.runtime.sendMessage(
+                    { type: "GET_PAGE_HEADERS" },
+                    (resp) => {
+                      if (chrome.runtime.lastError) {
+                        resolve({});
+                      } else {
+                        resolve(resp?.headers || {});
+                      }
+                    }
+                  );
+                } catch (error) {
+                  resolve({});
+                }
               });
             }
             const headerName = rule.condition?.header_name?.toLowerCase();
@@ -439,16 +463,22 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
       }
     }
 
-    // CyberDrain integration - Get policy from background
+    // CyberDrain integration - Get policy from background with safe wrapper
     async getPolicyFromBackground() {
       return new Promise((resolve) => {
-        chrome.runtime.sendMessage({ type: "REQUEST_POLICY" }, (response) => {
-          if (response && response.policy) {
-            resolve(response.policy);
-          } else {
-            resolve(this.getDefaultPolicy());
-          }
-        });
+        try {
+          chrome.runtime.sendMessage({ type: "REQUEST_POLICY" }, (response) => {
+            if (chrome.runtime.lastError) {
+              resolve(this.getDefaultPolicy());
+            } else if (response && response.policy) {
+              resolve(response.policy);
+            } else {
+              resolve(this.getDefaultPolicy());
+            }
+          });
+        } catch (error) {
+          resolve(this.getDefaultPolicy());
+        }
       });
     }
 
@@ -523,6 +553,7 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
       this.evaluateAADFingerprint(); // initial evaluation
 
       // Stop observing after timeout to reduce overhead
+      // Note: Using setTimeout here is acceptable as it's for cleanup, not critical functionality
       setTimeout(() => {
         observer.disconnect();
         const index = this.observers.indexOf(observer);
@@ -536,17 +567,27 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
 
       const origin = location.origin;
 
-      // Request rule-driven analysis from background
+      // Request rule-driven analysis from background with safe wrapper
       try {
         const response = await new Promise((resolve) => {
-          chrome.runtime.sendMessage(
-            {
-              type: "ANALYZE_CONTENT_WITH_RULES",
-              content: document.documentElement.outerHTML,
-              origin: origin,
-            },
-            resolve
-          );
+          try {
+            chrome.runtime.sendMessage(
+              {
+                type: "ANALYZE_CONTENT_WITH_RULES",
+                content: document.documentElement.outerHTML,
+                origin: origin,
+              },
+              (resp) => {
+                if (chrome.runtime.lastError) {
+                  resolve({ success: false, error: chrome.runtime.lastError.message });
+                } else {
+                  resolve(resp);
+                }
+              }
+            );
+          } catch (error) {
+            resolve({ success: false, error: error.message });
+          }
         });
 
         if (response && response.success) {
@@ -800,24 +841,42 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
 
     async getConfigFromBackground() {
       return new Promise((resolve) => {
-        chrome.runtime.sendMessage(
-          {
-            type: "GET_CONFIG",
-          },
-          (response) => {
-            if (response && response.success) {
-              resolve(response.config);
-            } else {
-              resolve({
-                extensionEnabled: true,
-                enableContentManipulation: true,
-                enableUrlMonitoring: true,
-                showNotifications: true,
-                enableDebugLogging: false,
-              });
+        try {
+          chrome.runtime.sendMessage(
+            {
+              type: "GET_CONFIG",
+            },
+            (response) => {
+              if (chrome.runtime.lastError) {
+                resolve({
+                  extensionEnabled: true,
+                  enableContentManipulation: true,
+                  enableUrlMonitoring: true,
+                  showNotifications: true,
+                  enableDebugLogging: false,
+                });
+              } else if (response && response.success) {
+                resolve(response.config);
+              } else {
+                resolve({
+                  extensionEnabled: true,
+                  enableContentManipulation: true,
+                  enableUrlMonitoring: true,
+                  showNotifications: true,
+                  enableDebugLogging: false,
+                });
+              }
             }
-          }
-        );
+          );
+        } catch (error) {
+          resolve({
+            extensionEnabled: true,
+            enableContentManipulation: true,
+            enableUrlMonitoring: true,
+            showNotifications: true,
+            enableDebugLogging: false,
+          });
+        }
       });
     }
 

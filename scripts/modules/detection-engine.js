@@ -40,19 +40,25 @@ export class DetectionEngine {
     }
   }
 
-  // CyberDrain integration - Policy management
+  // CyberDrain integration - Policy management with safe wrappers
   async loadPolicy() {
     try {
-      const managed = await chrome.storage.managed.get(null).catch(() => ({}));
-      const local = await chrome.storage.sync.get(null).catch(() => ({}));
+      // Safe wrapper for chrome.* operations
+      const safe = async (promise) => {
+        try { return await promise; } catch(_) { return {}; }
+      };
+      
+      const managed = await safe(chrome.storage.managed.get(null));
+      const local = await safe(chrome.storage.sync.get(null));
       
       this.policy = Object.assign({}, this.getDefaultPolicy(), managed, local);
-      this.extraWhitelist = new Set((this.policy.ExtraWhitelist || []).map(s => this.urlOrigin(s)).filter(Boolean));
+      this.extraWhitelist = new Set((this.policy?.ExtraWhitelist || []).map(s => this.urlOrigin(s)).filter(Boolean));
       
       logger.log("Check: Policy loaded successfully");
     } catch (error) {
       logger.error("Check: Failed to load policy:", error);
       this.policy = this.getDefaultPolicy();
+      this.extraWhitelist = new Set();
     }
   }
 
@@ -98,31 +104,47 @@ export class DetectionEngine {
 
   async loadDetectionRules() {
     try {
-      // Load built-in detection rules
-      const response = await fetch(
-        chrome.runtime.getURL("rules/detection-rules.json")
-      );
-      this.detectionRules = await response.json();
+      // Safe wrapper for fetch operations
+      const safe = async (promise) => {
+        try { return await promise; } catch(_) { return undefined; }
+      };
+      
+      // Load built-in detection rules with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      try {
+        const response = await fetch(
+          chrome.runtime.getURL("rules/detection-rules.json"),
+          { signal: controller.signal }
+        );
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        this.detectionRules = await response.json();
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       // CyberDrain integration - Load trusted origins from rules
-      if (this.detectionRules.trusted_origins) {
+      if (this.detectionRules?.trusted_origins) {
         this.TRUSTED_ORIGINS = new Set(this.detectionRules.trusted_origins);
       }
 
       // Load AAD detection elements from rules
-      this.aadDetectionElements = this.detectionRules.aad_detection_elements || [];
-      this.requiredElements = this.detectionRules.required_elements || [];
-      this.detectionLogic = this.detectionRules.detection_logic || {};
+      this.aadDetectionElements = this.detectionRules?.aad_detection_elements || [];
+      this.requiredElements = this.detectionRules?.required_elements || [];
+      this.detectionLogic = this.detectionRules?.detection_logic || {};
 
       // Parse patterns for faster matching
       this.maliciousPatterns = this.compilePatterns(
-        this.detectionRules.malicious || []
+        this.detectionRules?.malicious || []
       );
       this.phishingPatterns = this.compilePatterns(
-        this.detectionRules.phishing || []
+        this.detectionRules?.phishing || []
       );
       this.suspiciousPatterns = this.compilePatterns(
-        this.detectionRules.suspicious || []
+        this.detectionRules?.suspicious || []
       );
 
       logger.log("Check: Detection rules loaded with CyberDrain integration");
@@ -134,10 +156,15 @@ export class DetectionEngine {
 
   async loadDomainLists() {
     try {
+      // Safe wrapper for chrome.* operations
+      const safe = async (promise) => {
+        try { return await promise; } catch(_) { return {}; }
+      };
+      
       // Get configuration to load domain lists
-      const config = await chrome.storage.local.get(["config"]);
+      const config = await safe(chrome.storage.local.get(["config"]));
 
-      if (config.config) {
+      if (config?.config) {
         this.whitelistedDomains = new Set(
           config.config.whitelistedDomains || []
         );
@@ -437,11 +464,20 @@ export class DetectionEngine {
 
   async analyzePageContent(tabId, url) {
     try {
+      // Safe wrapper for chrome.* operations
+      const safe = async (promise) => {
+        try { return await promise; } catch(_) { return undefined; }
+      };
+      
+      // Shield content script injection - check if tab exists first
+      const exists = await safe(chrome.tabs.get(tabId));
+      if (!exists) return; // tab gone
+
       // Execute content analysis script
-      const results = await chrome.scripting.executeScript({
+      const results = await safe(chrome.scripting.executeScript({
         target: { tabId },
         function: this.contentAnalysisFunction,
-      });
+      }));
 
       if (results && results[0] && results[0].result) {
         const contentAnalysis = results[0].result;
@@ -562,17 +598,25 @@ export class DetectionEngine {
       });
     }
 
-    // Log content analysis results
+    // Log content analysis results with safe wrapper
     if (threats.length > 0) {
-      chrome.runtime.sendMessage({
-        type: "LOG_EVENT",
-        event: {
-          type: "content_threat_detected",
-          url,
-          threats,
-          analysis: contentAnalysis,
-        },
-      });
+      try {
+        chrome.runtime.sendMessage({
+          type: "LOG_EVENT",
+          event: {
+            type: "content_threat_detected",
+            url,
+            threats,
+            analysis: contentAnalysis,
+          },
+        }, () => {
+          if (chrome.runtime.lastError) {
+            // Silently handle errors
+          }
+        });
+      } catch (error) {
+        // Silently handle errors
+      }
     }
 
     return threats;
@@ -580,13 +624,18 @@ export class DetectionEngine {
 
   async updateDetectionRules(newRules) {
     try {
+      // Safe wrapper for chrome.* operations
+      const safe = async (promise) => {
+        try { return await promise; } catch(_) { return undefined; }
+      };
+      
       this.detectionRules = newRules;
-      this.maliciousPatterns = this.compilePatterns(newRules.malicious || []);
-      this.phishingPatterns = this.compilePatterns(newRules.phishing || []);
-      this.suspiciousPatterns = this.compilePatterns(newRules.suspicious || []);
+      this.maliciousPatterns = this.compilePatterns(newRules?.malicious || []);
+      this.phishingPatterns = this.compilePatterns(newRules?.phishing || []);
+      this.suspiciousPatterns = this.compilePatterns(newRules?.suspicious || []);
 
-      // Save to storage
-      await chrome.storage.local.set({ detectionRules: newRules });
+      // Save to storage with safe wrapper
+      await safe(chrome.storage.local.set({ detectionRules: newRules }));
 
       logger.log("Check: Detection rules updated");
     } catch (error) {

@@ -344,17 +344,27 @@ class CheckOptions {
       // Wait for runtime to be ready before calling chrome.runtime.getURL
       await this.waitForRuntimeReady();
 
-      const response = await fetch(
-        chrome.runtime.getURL("config/branding.json")
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          `Failed to load branding config: ${response.status} ${response.statusText}`
+      // Add timeout to fetch operations
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      try {
+        const response = await fetch(
+          chrome.runtime.getURL("config/branding.json"),
+          { signal: controller.signal }
         );
-      }
+        clearTimeout(timeoutId);
 
-      this.brandingConfig = await response.json();
+        if (!response.ok) {
+          throw new Error(
+            `Failed to load branding config: ${response.status} ${response.statusText}`
+          );
+        }
+
+        this.brandingConfig = await response.json();
+      } finally {
+        clearTimeout(timeoutId);
+      }
     } catch (error) {
       console.warn(
         "Failed to load branding configuration, using defaults:",
@@ -677,16 +687,28 @@ class CheckOptions {
 
   async loadDefaultDetectionRules() {
     try {
-      const response = await fetch(
-        chrome.runtime.getURL("rules/detection-rules.json")
-      );
-      const defaultRules = await response.json();
-      this.elements.customRulesEditor.value = JSON.stringify(
-        defaultRules,
-        null,
-        2
-      );
-      this.showToast("Default rules loaded", "success");
+      // Add timeout to fetch operations
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      try {
+        const response = await fetch(
+          chrome.runtime.getURL("rules/detection-rules.json"),
+          { signal: controller.signal }
+        );
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const defaultRules = await response.json();
+        this.elements.customRulesEditor.value = JSON.stringify(
+          defaultRules,
+          null,
+          2
+        );
+        this.showToast("Default rules loaded", "success");
+      } finally {
+        clearTimeout(timeoutId);
+      }
     } catch (error) {
       console.error("Failed to load default rules:", error);
       this.showToast("Failed to load default rules", "error");
@@ -695,14 +717,19 @@ class CheckOptions {
 
   async loadLogs() {
     try {
-      const result = await chrome.storage.local.get([
+      // Safe wrapper for chrome.* operations
+      const safe = async (promise) => {
+        try { return await promise; } catch(_) { return {}; }
+      };
+      
+      const result = await safe(chrome.storage.local.get([
         "securityEvents",
         "accessLogs",
         "debugLogs",
-      ]);
-      const securityEvents = result.securityEvents || [];
-      const accessLogs = result.accessLogs || [];
-      const debugLogs = result.debugLogs || [];
+      ]));
+      const securityEvents = result?.securityEvents || [];
+      const accessLogs = result?.accessLogs || [];
+      const debugLogs = result?.debugLogs || [];
 
       // Combine and sort logs
       const allLogs = [
@@ -799,9 +826,14 @@ class CheckOptions {
 
   async loadPolicyInfo() {
     try {
+      // Safe wrapper for chrome.* operations
+      const safe = async (promise) => {
+        try { return await promise; } catch(_) { return {}; }
+      };
+      
       // Check if extension is managed
-      const policies = await chrome.storage.managed.get(null);
-      const isManaged = Object.keys(policies).length > 0;
+      const policies = await safe(chrome.storage.managed.get(null));
+      const isManaged = policies && Object.keys(policies).length > 0;
 
       if (isManaged) {
         // Show policy badge
@@ -1018,11 +1050,16 @@ class CheckOptions {
 
     if (confirmed) {
       try {
-        await chrome.storage.local.remove([
+        // Safe wrapper for chrome.* operations
+        const safe = async (promise) => {
+          try { return await promise; } catch(_) { return undefined; }
+        };
+        
+        await safe(chrome.storage.local.remove([
           "securityEvents",
           "accessLogs",
           "debugLogs",
-        ]);
+        ]));
         this.loadLogs();
         this.showToast("Logs cleared successfully", "success");
       } catch (error) {
@@ -1034,15 +1071,20 @@ class CheckOptions {
 
   async exportLogs() {
     try {
-      const result = await chrome.storage.local.get([
+      // Safe wrapper for chrome.* operations
+      const safe = async (promise) => {
+        try { return await promise; } catch(_) { return {}; }
+      };
+      
+      const result = await safe(chrome.storage.local.get([
         "securityEvents",
         "accessLogs",
         "debugLogs",
-      ]);
+      ]));
       const exportData = {
-        securityEvents: result.securityEvents || [],
-        accessLogs: result.accessLogs || [],
-        debugLogs: result.debugLogs || [],
+        securityEvents: result?.securityEvents || [],
+        accessLogs: result?.accessLogs || [],
+        debugLogs: result?.debugLogs || [],
         timestamp: new Date().toISOString(),
         version: chrome.runtime.getManifest().version,
       };
@@ -1107,6 +1149,12 @@ class CheckOptions {
       console.error("Failed to send message after retries:", error);
       throw error;
     }
+  }
+
+  // Add "respond once" guard for options page
+  createOnceGuard(fn) {
+    let called = false;
+    return (...args) => { if (!called) { called = true; fn(...args); } };
   }
 
   showToast(message, type = "info") {

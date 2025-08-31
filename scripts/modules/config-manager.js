@@ -14,18 +14,23 @@ export class ConfigManager {
 
   async loadConfig() {
     try {
+      // Safe wrapper for chrome.* operations
+      const safe = async (promise) => {
+        try { return await promise; } catch(_) { return {}; }
+      };
+      
       // Load enterprise configuration from managed storage (GPO/Intune)
       this.enterpriseConfig = await this.loadEnterpriseConfig();
 
-      // Load local configuration
-      const localConfig = await chrome.storage.local.get(["config"]);
+      // Load local configuration with safe wrapper
+      const localConfig = await safe(chrome.storage.local.get(["config"]));
 
       // Load branding configuration
       this.brandingConfig = await this.loadBrandingConfig();
 
       // Merge configurations with enterprise taking precedence
       this.config = this.mergeConfigurations(
-        localConfig.config,
+        localConfig?.config,
         this.enterpriseConfig,
         this.brandingConfig
       );
@@ -40,10 +45,15 @@ export class ConfigManager {
 
   async loadEnterpriseConfig() {
     try {
+      // Safe wrapper for chrome.* operations
+      const safe = async (promise) => {
+        try { return await promise; } catch(_) { return {}; }
+      };
+      
       // Attempt to load from managed storage (deployed via GPO/Intune)
-      const managedConfig = await chrome.storage.managed.get(null);
+      const managedConfig = await safe(chrome.storage.managed.get(null));
 
-      if (Object.keys(managedConfig).length > 0) {
+      if (managedConfig && Object.keys(managedConfig).length > 0) {
         logger.log("Check: Enterprise configuration found");
         return managedConfig;
       }
@@ -57,12 +67,23 @@ export class ConfigManager {
 
   async loadBrandingConfig() {
     try {
-      // Load branding configuration from config file
-      const response = await fetch(
-        chrome.runtime.getURL("config/branding.json")
-      );
-      const brandingConfig = await response.json();
-      return brandingConfig;
+      // Load branding configuration from config file with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      try {
+        const response = await fetch(
+          chrome.runtime.getURL("config/branding.json"),
+          { signal: controller.signal }
+        );
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const brandingConfig = await response.json();
+        return brandingConfig;
+      } finally {
+        clearTimeout(timeoutId);
+      }
     } catch (error) {
       logger.log("Check: Using default branding configuration");
       return this.getDefaultBrandingConfig();
@@ -180,13 +201,28 @@ export class ConfigManager {
   }
 
   async setDefaultConfig() {
-    const defaultConfig = this.getDefaultConfig();
-    await chrome.storage.local.set({ config: defaultConfig });
-    this.config = defaultConfig;
+    try {
+      // Safe wrapper for chrome.* operations
+      const safe = async (promise) => {
+        try { return await promise; } catch(_) { return undefined; }
+      };
+      
+      const defaultConfig = this.getDefaultConfig();
+      await safe(chrome.storage.local.set({ config: defaultConfig }));
+      this.config = defaultConfig;
+    } catch (error) {
+      logger.error("Check: Failed to set default config:", error);
+      this.config = this.getDefaultConfig();
+    }
   }
 
   async updateConfig(updates) {
     try {
+      // Safe wrapper for chrome.* operations
+      const safe = async (promise) => {
+        try { return await promise; } catch(_) { return undefined; }
+      };
+      
       const currentConfig = await this.getConfig();
       const updatedConfig = { ...currentConfig, ...updates };
 
@@ -195,7 +231,7 @@ export class ConfigManager {
         Object.keys(this.enterpriseConfig.enforcedPolicies).forEach(
           (policy) => {
             if (
-              this.enterpriseConfig.enforcedPolicies[policy].locked &&
+              this.enterpriseConfig.enforcedPolicies[policy]?.locked &&
               updates[policy] !== undefined &&
               updates[policy] !== this.enterpriseConfig[policy]
             ) {
@@ -207,14 +243,22 @@ export class ConfigManager {
         );
       }
 
-      await chrome.storage.local.set({ config: updatedConfig });
+      await safe(chrome.storage.local.set({ config: updatedConfig }));
       this.config = updatedConfig;
 
-      // Notify other components of configuration change
-      chrome.runtime.sendMessage({
-        type: "CONFIG_UPDATED",
-        config: updatedConfig,
-      });
+      // Notify other components of configuration change with safe wrapper
+      try {
+        chrome.runtime.sendMessage({
+          type: "CONFIG_UPDATED",
+          config: updatedConfig,
+        }, () => {
+          if (chrome.runtime.lastError) {
+            // Silently handle errors
+          }
+        });
+      } catch (error) {
+        // Silently handle errors
+      }
 
       return updatedConfig;
     } catch (error) {
@@ -246,12 +290,17 @@ export class ConfigManager {
 
   async migrateConfig(previousVersion) {
     try {
+      // Safe wrapper for chrome.* operations
+      const safe = async (promise) => {
+        try { return await promise; } catch(_) { return {}; }
+      };
+      
       logger.log(
         `Check: Migrating configuration from version ${previousVersion}`
       );
 
-      const currentConfig = await chrome.storage.local.get(["config"]);
-      if (!currentConfig.config) return;
+      const currentConfig = await safe(chrome.storage.local.get(["config"]));
+      if (!currentConfig?.config) return;
 
       // Add migration logic here for future versions
       // Example:
@@ -305,9 +354,12 @@ export class ConfigManager {
       // Update configuration
       await this.updateConfig(importData.config);
 
-      // Update branding if provided
+      // Update branding if provided with safe wrapper
       if (importData.branding) {
-        await chrome.storage.local.set({ branding: importData.branding });
+        const safe = async (promise) => {
+          try { return await promise; } catch(_) { return undefined; }
+        };
+        await safe(chrome.storage.local.set({ branding: importData.branding }));
         this.brandingConfig = importData.branding;
       }
 

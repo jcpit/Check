@@ -155,8 +155,16 @@ class CheckPopup {
   }
 
   async getCurrentTab() {
-    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-    return tabs[0];
+    try {
+      const tabs = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+      return tabs[0];
+    } catch (error) {
+      console.error("Check: Failed to get current tab:", error);
+      return null;
+    }
   }
 
   async loadConfiguration() {
@@ -226,10 +234,22 @@ class CheckPopup {
 
   async loadBrandingConfiguration() {
     try {
-      const response = await fetch(
-        chrome.runtime.getURL("config/branding.json")
-      );
-      this.brandingConfig = await response.json();
+      // Add timeout to fetch operations
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      try {
+        const response = await fetch(
+          chrome.runtime.getURL("config/branding.json"),
+          { signal: controller.signal }
+        );
+        clearTimeout(timeoutId);
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        this.brandingConfig = await response.json();
+      } finally {
+        clearTimeout(timeoutId);
+      }
     } catch (error) {
       console.log("Using default branding configuration");
       this.brandingConfig = {
@@ -361,9 +381,18 @@ class CheckPopup {
 
   async loadStatistics() {
     try {
+      // Safe wrapper for chrome.* operations
+      const safe = async (promise) => {
+        try {
+          return await promise;
+        } catch (_) {
+          return {};
+        }
+      };
+
       // Get statistics from storage
-      const result = await chrome.storage.local.get(["statistics"]);
-      if (result.statistics) {
+      const result = await safe(chrome.storage.local.get(["statistics"]));
+      if (result?.statistics) {
         this.stats = { ...this.stats, ...result.statistics };
       }
 
@@ -429,7 +458,7 @@ class CheckPopup {
         this.showSecurityBadge("safe", "Analysis unavailable");
       }
 
-      // Get page info from content script with silent error handling
+      // Get page info from content script with safe wrapper
       try {
         chrome.tabs.sendMessage(
           this.currentTab.id,
@@ -440,6 +469,7 @@ class CheckPopup {
               // Content script may not be ready yet, which is normal
               return;
             } else if (response && response.success) {
+              console.log("Page info processing:", response.info);
               this.updatePageInfo(response.info);
             }
           }
@@ -596,10 +626,25 @@ class CheckPopup {
   }
 
   openSettings() {
-    chrome.tabs.create({
-      url: chrome.runtime.getURL("options/options.html"),
-    });
-    window.close();
+    try {
+      chrome.tabs.create(
+        {
+          url: chrome.runtime.getURL("options/options.html"),
+        },
+        () => {
+          if (chrome.runtime.lastError) {
+            console.error(
+              "Check: Failed to open settings:",
+              chrome.runtime.lastError.message
+            );
+          } else {
+            window.close();
+          }
+        }
+      );
+    } catch (error) {
+      console.error("Check: Failed to open settings:", error);
+    }
   }
 
   handleFooterLink(event, linkType) {
@@ -619,8 +664,20 @@ class CheckPopup {
     }
 
     if (url) {
-      chrome.tabs.create({ url });
-      window.close();
+      try {
+        chrome.tabs.create({ url }, () => {
+          if (chrome.runtime.lastError) {
+            console.error(
+              "Check: Failed to open link:",
+              chrome.runtime.lastError.message
+            );
+          } else {
+            window.close();
+          }
+        });
+      } catch (error) {
+        console.error("Check: Failed to open link:", error);
+      }
     }
   }
 
@@ -665,36 +722,48 @@ class CheckPopup {
 
   async sendMessage(message, retryCount = 0) {
     return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage(message, (response) => {
-        // Check for connection errors
-        if (chrome.runtime.lastError) {
-          console.warn(
-            "Check: Background script connection failed:",
-            chrome.runtime.lastError.message
-          );
-
-          // Retry up to 3 times with increasing delay
-          if (retryCount < 3) {
-            setTimeout(() => {
-              this.sendMessage(message, retryCount + 1)
-                .then(resolve)
-                .catch(reject);
-            }, 500 * (retryCount + 1));
-            return;
-          } else {
-            reject(
-              new Error(
-                `Connection failed after ${retryCount + 1} attempts: ${
-                  chrome.runtime.lastError.message
-                }`
-              )
+      try {
+        chrome.runtime.sendMessage(message, (response) => {
+          // Check for connection errors
+          if (chrome.runtime.lastError) {
+            console.warn(
+              "Check: Background script connection failed:",
+              chrome.runtime.lastError.message
             );
-            return;
-          }
-        }
 
-        resolve(response);
-      });
+            // Retry up to 3 times with increasing delay
+            if (retryCount < 3) {
+              setTimeout(() => {
+                this.sendMessage(message, retryCount + 1)
+                  .then(resolve)
+                  .catch(reject);
+              }, 500 * (retryCount + 1));
+              return;
+            } else {
+              reject(
+                new Error(
+                  `Connection failed after ${retryCount + 1} attempts: ${
+                    chrome.runtime.lastError.message
+                  }`
+                )
+              );
+              return;
+            }
+          }
+
+          resolve(response);
+        });
+      } catch (error) {
+        if (retryCount < 3) {
+          setTimeout(() => {
+            this.sendMessage(message, retryCount + 1)
+              .then(resolve)
+              .catch(reject);
+          }, 500 * (retryCount + 1));
+        } else {
+          reject(error);
+        }
+      }
     });
   }
 
