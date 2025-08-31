@@ -8,7 +8,11 @@
  * suspicious pages, then the full engine performs deeper analysis.
  */
 
-let logger = console;
+// Prevent multiple logger declarations
+if (typeof window.checkLogger === 'undefined') {
+  window.checkLogger = console;
+}
+let logger = window.checkLogger;
 
 // Enhanced fallback logger with content script identification
 const fallbackLogger = {
@@ -69,13 +73,24 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
     logger.error("Failed to load logger, using fallback:", err);
   }
 
-  chrome.runtime.sendMessage({ type: "ping" }, (response) => {
-    if (chrome.runtime.lastError) {
-      logger.error("Ping error:", chrome.runtime.lastError.message);
-    } else {
-      logger.log("Ping response:", response);
+  // Improved ping with better error handling
+  const pingBackground = () => {
+    try {
+      chrome.runtime.sendMessage({ type: "ping" }, (response) => {
+        if (chrome.runtime.lastError) {
+          // Don't log ping errors as errors since they're expected during service worker restarts
+          logger.debug("Background script not ready:", chrome.runtime.lastError.message);
+        } else if (response) {
+          logger.debug("Background script connected:", response);
+        }
+      });
+    } catch (error) {
+      logger.debug("Failed to ping background script:", error);
     }
-  });
+  };
+
+  // Ping with delay to allow background script to initialize
+  setTimeout(pingBackground, 100);
 
   // CyberDrain integration - Precomputed Microsoft login origins
   const DEFAULT_TRUSTED_ORIGINS = [

@@ -34,7 +34,6 @@ class CheckPopup {
     this.elements.statusText = document.getElementById("statusText");
 
     // Action buttons
-    this.elements.scanCurrentPage = document.getElementById("scanCurrentPage");
     this.elements.viewLogs = document.getElementById("viewLogs");
     this.elements.openSettings = document.getElementById("openSettings");
     this.elements.reportIssue = document.getElementById("reportIssue");
@@ -95,26 +94,12 @@ class CheckPopup {
 
   setupEventListeners() {
     // Action button listeners
-    this.elements.scanCurrentPage.addEventListener("click", () =>
-      this.scanCurrentPage()
-    );
     this.elements.viewLogs.addEventListener("click", () => this.viewLogs());
     this.elements.openSettings.addEventListener("click", () =>
       this.openSettings()
     );
     this.elements.reportIssue.addEventListener("click", () =>
       this.reportIssue()
-    );
-
-    // Testing button listeners
-    this.elements.testRules?.addEventListener("click", () =>
-      this.toggleTestingSection()
-    );
-    this.elements.runComprehensiveTest?.addEventListener("click", () =>
-      this.runComprehensiveTest()
-    );
-    this.elements.validateEngine?.addEventListener("click", () =>
-      this.validateDetectionEngine()
     );
 
     // Footer link listeners
@@ -438,7 +423,6 @@ class CheckPopup {
   }
 
   handleBlockedRoute() {
-    this.elements.scanCurrentPage.style.display = "none";
     this.elements.pageInfoSection.style.display = "none";
 
     try {
@@ -731,25 +715,22 @@ class CheckPopup {
   }
 
   reportIssue() {
-    if (this.brandingConfig.supportEmail) {
-      const subject = encodeURIComponent("Check - Issue Report");
-      const body = encodeURIComponent(`
+    const supportEmail = this.brandingConfig.supportEmail || "support@cyberdrain.com";
+    const subject = encodeURIComponent("Microsoft 365 Phishing Protection - Issue Report");
+    const body = encodeURIComponent(`
 Extension Version: ${chrome.runtime.getManifest().version}
 Current URL: ${this.currentTab?.url || "N/A"}
 Browser: ${navigator.userAgent}
+Timestamp: ${new Date().toISOString()}
 
 Issue Description:
 [Please describe the issue you're experiencing]
-      `);
 
-      window.open(
-        `mailto:${this.brandingConfig.supportEmail}?subject=${subject}&body=${body}`
-      );
-    } else if (this.brandingConfig.supportUrl) {
-      chrome.tabs.create({ url: this.brandingConfig.supportUrl });
-    } else {
-      this.showNotification("Support contact not configured", "warning");
-    }
+Additional Information:
+[Any additional details that might help us resolve the issue]
+    `);
+
+    window.open(`mailto:${supportEmail}?subject=${subject}&body=${body}`);
     window.close();
   }
 
