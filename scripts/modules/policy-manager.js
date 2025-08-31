@@ -475,7 +475,7 @@ export class PolicyManager {
     return this.policies;
   }
 
-  async getEnforcedPolicies() {
+  getEnforcedPolicies() {
     return this.policies?.enforcedPolicies || {};
   }
 
@@ -493,14 +493,14 @@ export class PolicyManager {
       version: chrome.runtime.getManifest().version,
       policies: this.policies,
       enforcedPolicies: this.policies?.enforcedPolicies || {},
-      violations: await this.getComplianceViolations(),
+      violations: this.getComplianceViolations(),
       auditLog: await this.getAuditLog(),
     };
 
     return report;
   }
 
-  async getComplianceViolations() {
+  getComplianceViolations() {
     // Implementation would check for policy violations
     // This is a placeholder for actual compliance checking logic
     return [];

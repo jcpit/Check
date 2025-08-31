@@ -627,7 +627,7 @@ export class DetectionEngine {
   }
 
   // Testing and Validation Methods
-  async analyzeContent(content, context = {}) {
+  analyzeContent(content, context = {}) {
     const analysis = {
       timestamp: new Date().toISOString(),
       content_length: content.length,
@@ -729,7 +729,7 @@ export class DetectionEngine {
   }
 
   // CyberDrain integration - Form action validation
-  async analyzeFormActions(content, currentOrigin) {
+  analyzeFormActions(content, currentOrigin) {
     const analysis = {
       timestamp: new Date().toISOString(),
       forms: [],
@@ -775,7 +775,7 @@ export class DetectionEngine {
   }
 
   // CyberDrain integration - Subresource origin audit
-  async auditSubresourceOrigins(content, currentOrigin) {
+  auditSubresourceOrigins(content, currentOrigin) {
     const analysis = {
       timestamp: new Date().toISOString(),
       origins: [],
@@ -986,7 +986,7 @@ export class DetectionEngine {
     }
   }
 
-  async runRuleValidation() {
+  runRuleValidation() {
     const validation = {
       timestamp: new Date().toISOString(),
       rules_loaded: !!this.detectionRules,
@@ -1159,7 +1159,7 @@ export class DetectionEngine {
   }
 
   // CyberDrain integration - Rule-driven content analysis
-  async analyzeContentWithRules(content, context = {}) {
+  analyzeContentWithRules(content, context = {}) {
     const analysis = {
       timestamp: new Date().toISOString(),
       content_length: content.length,

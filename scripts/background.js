@@ -487,7 +487,7 @@ class CheckBackground {
 
         case "ANALYZE_CONTENT_WITH_RULES":
           try {
-            const analysis = await this.detectionEngine.analyzeContentWithRules(
+            const analysis = this.detectionEngine.analyzeContentWithRules(
               message.content,
               { origin: message.origin }
             );
@@ -917,7 +917,7 @@ class CheckBackground {
           );
           break;
         case "content_analysis":
-          result.actual = await this.detectionEngine.analyzeContent(
+          result.actual = this.detectionEngine.analyzeContent(
             testCase.input.content,
             testCase.input.context
           );
@@ -974,10 +974,10 @@ class CheckBackground {
 
     try {
       // Validate rules structure
-      validation.rulesValidation = await this.validateRulesStructure();
+      validation.rulesValidation = this.validateRulesStructure();
 
       // Validate components
-      validation.componentsStatus = await this.validateComponents();
+      validation.componentsStatus = this.validateComponents();
 
       // Validate configuration
       validation.configurationStatus = await this.validateConfiguration();
@@ -1084,7 +1084,7 @@ class CheckBackground {
     return expected === actual;
   }
 
-  async validateRulesStructure() {
+  validateRulesStructure() {
     const validation = {
       hasRules: false,
       rulesCount: 0,
@@ -1126,7 +1126,7 @@ class CheckBackground {
     return requiredFields.every((field) => field in rule);
   }
 
-  async validateComponents() {
+  validateComponents() {
     return {
       configManager: this.configManager ? "loaded" : "not_loaded",
       detectionEngine: this.detectionEngine ? "loaded" : "not_loaded",

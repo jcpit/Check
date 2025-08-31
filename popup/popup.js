@@ -576,12 +576,12 @@ class CheckPopup {
       }
 
       // Update compliance status
-      const isCompliant = await this.checkCompliance();
+      const isCompliant = this.checkCompliance();
       this.updateComplianceStatus(isCompliant);
     }
   }
 
-  async checkCompliance() {
+  checkCompliance() {
     // Placeholder for compliance checking logic
     return true;
   }
