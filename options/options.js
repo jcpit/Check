@@ -544,21 +544,20 @@ class CheckOptions {
   gatherFormData() {
     return {
       // General settings
-      extensionEnabled: this.elements.extensionEnabled.checked,
-      enableContentManipulation:
-        this.elements.enableContentManipulation.checked,
-      enableUrlMonitoring: this.elements.enableUrlMonitoring.checked,
-      showNotifications: this.elements.showNotifications.checked,
-      notificationDuration: parseInt(this.elements.notificationDuration.value),
-      enableValidPageBadge: this.elements.enableValidPageBadge.checked,
+      extensionEnabled: this.elements.extensionEnabled?.checked || false,
+      enableContentManipulation: this.elements.enableContentManipulation?.checked || false,
+      enableUrlMonitoring: this.elements.enableUrlMonitoring?.checked || false,
+      showNotifications: this.elements.showNotifications?.checked || false,
+      notificationDuration: parseInt(this.elements.notificationDuration?.value || 5000),
+      enableValidPageBadge: this.elements.enableValidPageBadge?.checked || false,
 
       // Detection settings
-      enableCustomRules: this.elements.enableCustomRules.checked,
-      customRulesUrl: this.elements.customRulesUrl.value,
-      updateInterval: parseInt(this.elements.updateInterval.value),
+      enableCustomRules: this.elements.enableCustomRules?.checked || false,
+      customRulesUrl: this.elements.customRulesUrl?.value || "",
+      updateInterval: parseInt(this.elements.updateInterval?.value || 24),
 
       // Debug logging setting
-      enableDebugLogging: this.elements.enableDebugLogging.checked,
+      enableDebugLogging: this.elements.enableDebugLogging?.checked || false,
     };
   }
 
@@ -1013,11 +1012,8 @@ class CheckOptions {
           }
         case "content_threat_detected":
           let details = `Malicious content detected`;
-          if (log.event.url) {
-            details += ` on ${this.defangUrl(log.event.url)}`;
-          }
           if (log.event.reason) {
-            details += `. Reason: ${log.event.reason}`;
+            details += `: ${log.event.reason}`;
           }
           if (log.event.details) {
             details += `. ${log.event.details}`;
@@ -1035,9 +1031,6 @@ class CheckOptions {
           return details;
         case "threat_detected":
           let threatDetails = `Security threat detected`;
-          if (log.event.url) {
-            threatDetails += ` on ${this.defangUrl(log.event.url)}`;
-          }
           if (log.event.reason) {
             threatDetails += `: ${log.event.reason}`;
           }
@@ -1083,8 +1076,8 @@ class CheckOptions {
 
   defangUrl(url) {
     try {
-      // Defang URLs by replacing dots and other characters to make them non-clickable
-      return url.replace(/\./g, "[.]").replace(/:/g, "[:]").replace(/\//g, "[/]");
+      // Defang URLs by only replacing colons to prevent clickability while keeping readability
+      return url.replace(/:/g, "[:]");
     } catch (e) {
       return url; // Return original if defanging fails
     }

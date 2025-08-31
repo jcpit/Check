@@ -1094,12 +1094,29 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
 
       // Check for iframe elements
       if (element.tagName === "IFRAME") {
-        this.analyzeIframe(element);
+        this.logSecurityEvent({
+          type: "iframe_detected",
+          src: element.src,
+          sandbox: element.getAttribute("sandbox"),
+          url: window.location.href,
+          timestamp: new Date().toISOString(),
+        });
       }
 
       // Check for form elements
       if (element.tagName === "FORM") {
-        this.analyzeForm(element);
+        const hasPasswordField = element.querySelector('input[type="password"]');
+        const hasFileField = element.querySelector('input[type="file"]');
+
+        this.logSecurityEvent({
+          type: "form_detected",
+          action: element.action,
+          method: element.method,
+          hasPassword: !!hasPasswordField,
+          hasFileUpload: !!hasFileField,
+          url: window.location.href,
+          timestamp: new Date().toISOString(),
+        });
       }
 
       // Recursively check child elements
@@ -1433,16 +1450,6 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
         'meta[http-equiv="Content-Security-Policy"]'
       );
       return cspMeta ? cspMeta.getAttribute("content") : null;
-    }
-
-    analyzeIframe(iframe) {
-      this.logSecurityEvent({
-        type: "iframe_detected",
-        src: iframe.src,
-        sandbox: iframe.getAttribute("sandbox"),
-        url: window.location.href,
-        timestamp: new Date().toISOString(),
-      });
     }
 
     analyzeForm(form) {

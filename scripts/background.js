@@ -21,6 +21,8 @@ class CheckBackground {
     this.policyManager = new PolicyManager();
     this.isInitialized = false;
     this.initializationPromise = null;
+    this.initializationRetries = 0;
+    this.maxInitializationRetries = 3;
 
     // CyberDrain integration
     this.policy = null;
@@ -28,6 +30,11 @@ class CheckBackground {
     this.tabHeaders = new Map();
     this.HEADER_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
     this.MAX_HEADER_CACHE_ENTRIES = 100;
+
+    // Error recovery
+    this.lastError = null;
+    this.errorCount = 0;
+    this.maxErrors = 10;
 
     // Set up message handlers immediately to handle early connections
     // Reduce logging verbosity for service worker restarts
@@ -87,15 +94,69 @@ class CheckBackground {
 
       this.setupEventListeners();
       this.isInitialized = true;
+      this.initializationRetries = 0; // Reset retry count on success
+      this.errorCount = 0; // Reset error count on success
 
       if (isFirstInstance) {
         logger.log("CheckBackground.initialize: complete");
       }
     } catch (error) {
       logger.error("CheckBackground.initialize: error", error);
-      this.initializationPromise = null; // Reset promise on error to allow retry
+      this.lastError = error;
+      this.initializationRetries++;
+      
+      // Reset promise to allow retry
+      this.initializationPromise = null;
+      
+      // If we haven't exceeded max retries, schedule a retry
+      if (this.initializationRetries < this.maxInitializationRetries) {
+        logger.log(`CheckBackground.initialize: scheduling retry ${this.initializationRetries}/${this.maxInitializationRetries}`);
+        setTimeout(() => {
+          this.initialize().catch(err => {
+            logger.error("CheckBackground.initialize: retry failed", err);
+          });
+        }, 1000 * this.initializationRetries); // Exponential backoff
+      } else {
+        logger.error("CheckBackground.initialize: max retries exceeded, entering fallback mode");
+        this.enterFallbackMode();
+      }
+      
       throw error;
     }
+  }
+
+  enterFallbackMode() {
+    // Set up minimal functionality when initialization fails
+    this.isInitialized = false;
+    this.config = this.getDefaultConfig();
+    this.policy = this.getDefaultPolicy();
+    
+    logger.log("CheckBackground: entering fallback mode with minimal functionality");
+  }
+
+  getDefaultConfig() {
+    return {
+      extensionEnabled: true,
+      enableContentManipulation: true,
+      enableUrlMonitoring: true,
+      showNotifications: true,
+      enableDebugLogging: false,
+      logLevel: "info"
+    };
+  }
+
+  getDefaultPolicy() {
+    return {
+      BrandingName: "Microsoft 365 Phishing Protection",
+      BrandingImage: "",
+      ExtraWhitelist: [],
+      CIPPReportingServer: "",
+      AlertWhenLogon: true,
+      ValidPageBadgeImage: "",
+      StrictResourceAudit: true,
+      RequireMicrosoftAction: true,
+      EnableValidPageBadge: false,
+    };
   }
 
   // CyberDrain integration - Policy management
@@ -369,6 +430,16 @@ class CheckBackground {
 
   async handleMessage(message, sender, sendResponse) {
     try {
+      // Ensure initialization before handling most messages
+      if (!this.isInitialized && message.type !== "ping") {
+        try {
+          await this.initialize();
+        } catch (error) {
+          logger.warn("CheckBackground.handleMessage: initialization failed, using fallback", error);
+          // Continue with fallback mode
+        }
+      }
+
       // Handle both message.type and message.action for compatibility
       const messageType = message.type || message.action;
 
@@ -379,6 +450,9 @@ class CheckBackground {
             message: "Check background script is running",
             timestamp: new Date().toISOString(),
             initialized: this.isInitialized,
+            fallbackMode: !this.isInitialized,
+            errorCount: this.errorCount,
+            lastError: this.lastError?.message || null
           });
           break;
 
@@ -590,6 +664,19 @@ class CheckBackground {
       }
     } catch (error) {
       logger.error("Check: Error handling message:", error);
+      this.errorCount++;
+      
+      // If we've had too many errors, try to reinitialize
+      if (this.errorCount > this.maxErrors) {
+        logger.warn("CheckBackground: too many errors, attempting reinitialization");
+        this.errorCount = 0;
+        this.isInitialized = false;
+        this.initializationPromise = null;
+        this.initialize().catch(err => {
+          logger.error("CheckBackground: reinitialization failed", err);
+        });
+      }
+      
       sendResponse({ success: false, error: error.message });
     }
   }
@@ -768,8 +855,8 @@ class CheckBackground {
 
   defangUrl(url) {
     try {
-      // Defang URLs by replacing dots and other characters to make them non-clickable
-      return url.replace(/\./g, "[.]").replace(/:/g, "[:]").replace(/\//g, "[/]");
+      // Defang URLs by only replacing colons to prevent clickability while keeping readability
+      return url.replace(/:/g, "[:]");
     } catch (e) {
       return url; // Return original if defanging fails
     }
