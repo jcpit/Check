@@ -61,8 +61,12 @@ class CheckOptions {
     this.elements.loadDefaultRules =
       document.getElementById("loadDefaultRules");
 
-    // Debug logging setting
-    this.elements.enableDebugLogging = document.getElementById("enableDebugLogging");
+    // Logging settings (moved from privacy section)
+    this.elements.enableLogging = document.getElementById("enableLogging");
+    this.elements.enableDebugLogging =
+      document.getElementById("enableDebugLogging");
+    this.elements.logLevel = document.getElementById("logLevel");
+    this.elements.maxLogEntries = document.getElementById("maxLogEntries");
 
     // Logs
     this.elements.logFilter = document.getElementById("logFilter");
@@ -81,7 +85,6 @@ class CheckOptions {
     this.elements.previewLogo = document.getElementById("previewLogo");
     this.elements.previewTitle = document.getElementById("previewTitle");
     this.elements.previewButton = document.getElementById("previewButton");
-
 
     // Modal
     this.elements.modalOverlay = document.getElementById("modalOverlay");
@@ -207,7 +210,7 @@ class CheckOptions {
       this.populateFormFields();
 
       // Load dynamic content
-      await this.loadPolicyInfo();
+      await this.loadEnterpriseInfo();
       await this.loadLogs();
 
       // Handle initial hash
@@ -418,7 +421,6 @@ class CheckOptions {
     document.getElementById("sidebarVersion").textContent = `v${
       chrome.runtime.getManifest().version
     }`;
-
   }
 
   populateFormFields() {
@@ -436,14 +438,24 @@ class CheckOptions {
 
     // Detection settings
     this.elements.enableCustomRules.checked =
-      this.config.detectionRules?.enableCustomRules || this.config.enableCustomRules || false;
+      this.config.detectionRules?.enableCustomRules ||
+      this.config.enableCustomRules ||
+      false;
     this.elements.customRulesUrl.value =
-      this.config.detectionRules?.customRulesUrl || this.config.customRulesUrl || "";
+      this.config.detectionRules?.customRulesUrl ||
+      this.config.customRulesUrl ||
+      "";
     this.elements.updateInterval.value =
-      (this.config.detectionRules?.updateInterval || this.config.updateInterval * 3600000 || 86400000) / 3600000;
+      (this.config.detectionRules?.updateInterval ||
+        this.config.updateInterval * 3600000 ||
+        86400000) / 3600000;
 
-    // Debug logging setting
-    this.elements.enableDebugLogging.checked = this.config.enableDebugLogging || false;
+    // Logging settings
+    this.elements.enableLogging.checked = this.config.enableLogging;
+    this.elements.enableDebugLogging.checked =
+      this.config.enableDebugLogging || false;
+    this.elements.logLevel.value = this.config.logLevel;
+    this.elements.maxLogEntries.value = this.config.maxLogEntries;
 
     // Branding settings
     this.elements.companyName.value = this.brandingConfig.companyName;
@@ -563,10 +575,7 @@ class CheckOptions {
     }
 
 
-    if (
-      config.updateInterval < 1 ||
-      config.updateInterval > 168
-    ) {
+    if (config.updateInterval < 1 || config.updateInterval > 168) {
       return {
         valid: false,
         message: "Update interval must be between 1-168 hours",
@@ -574,10 +583,7 @@ class CheckOptions {
     }
 
     // URL validation
-    if (
-      config.customRulesUrl &&
-      !this.isValidUrl(config.customRulesUrl)
-    ) {
+    if (config.customRulesUrl && !this.isValidUrl(config.customRulesUrl)) {
       return { valid: false, message: "Custom rules URL is not valid" };
     }
 
