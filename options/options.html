@@ -36,10 +36,6 @@
                     <span class="menu-icon material-icons">palette</span>
                     <span class="menu-text">Branding</span>
                 </a></li>
-                <li><a href="#about" class="menu-item" data-section="about">
-                    <span class="menu-icon material-icons">info</span>
-                    <span class="menu-text">About</span>
-                </a></li>
             </ul>
         </nav>
 
@@ -192,52 +188,13 @@
                     <p>View security events and extension activity</p>
                 </div>
 
-                <div class="settings-grid">
-                    <div class="setting-group">
-                        <h3>Logging Configuration</h3>
-                        <div class="setting-item">
-                            <label class="setting-label">
-                                <input type="checkbox" id="enableLogging" class="setting-checkbox">
-                                <span class="checkbox-custom"></span>
-                                Enable Activity Logging
-                            </label>
-                            <p class="setting-description">Log security events and activities</p>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label class="setting-label">
-                                <input type="checkbox" id="enableDebugLogging" class="setting-checkbox">
-                                <span class="checkbox-custom"></span>
-                                Enable Debug Logging
-                            </label>
-                            <p class="setting-description">Log detailed information about URLs, checks, and scanning activities (may create large logs)</p>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label class="setting-label">
-                                Log Level
-                                <select id="logLevel" class="setting-select">
-                                    <option value="error">Error</option>
-                                    <option value="warn">Warning</option>
-                                    <option value="info">Info</option>
-                                    <option value="debug">Debug</option>
-                                </select>
-                            </label>
-                            <p class="setting-description">Level of detail for logging</p>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label class="setting-label">
-                                Max Log Entries
-                                <input type="number" id="maxLogEntries" class="setting-input" min="100" max="10000" value="1000">
-                            </label>
-                            <p class="setting-description">Maximum number of log entries to keep</p>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="logs-controls">
                     <div class="logs-filters">
+                        <label class="setting-label">
+                            <input type="checkbox" id="enableDebugLogging" class="setting-checkbox">
+                            <span class="checkbox-custom"></span>
+                            Enable Debug Logging
+                        </label>
                         <select id="logFilter" class="setting-select">
                             <option value="all">All Events</option>
                             <option value="security">Security Events</option>
@@ -349,59 +306,6 @@
                 </div>
             </section>
 
-            <!-- About Section -->
-            <section id="about-section" class="settings-section">
-                <div class="section-header">
-                    <h2>About Microsoft 365 Phishing Protection</h2>
-                    <p>Extension information and support resources</p>
-                </div>
-
-                <div class="about-content">
-                    <div class="about-info">
-                        <div class="info-item">
-                            <span class="info-label">Version:</span>
-                            <span class="info-value" id="aboutVersion">1.0.0</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Manifest Version:</span>
-                            <span class="info-value">3</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Build Date:</span>
-                            <span class="info-value" id="buildDate">2024-01-01</span>
-                        </div>
-                    </div>
-
-                    <div class="about-links">
-                        <a href="#" class="about-link" id="supportUrl">
-                            <span class="link-icon material-icons">help</span>
-                            <span class="link-text">Get Support</span>
-                        </a>
-                        <a href="#" class="about-link" id="privacyUrl">
-                            <span class="link-icon material-icons">lock</span>
-                            <span class="link-text">Privacy Policy</span>
-                        </a>
-                        <a href="#" class="about-link" id="termsUrl">
-                            <span class="link-icon material-icons">description</span>
-                            <span class="link-text">Terms of Service</span>
-                        </a>
-                    </div>
-
-                    <div class="system-info">
-                        <h3>System Information</h3>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <span class="info-label">Browser:</span>
-                                <span class="info-value" id="browserInfo">Loading...</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">OS:</span>
-                                <span class="info-value" id="osInfo">Loading...</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
         </main>
     </div>
 

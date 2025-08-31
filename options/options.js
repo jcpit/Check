@@ -61,11 +61,8 @@ class CheckOptions {
     this.elements.loadDefaultRules =
       document.getElementById("loadDefaultRules");
 
-    // Logging settings (moved from privacy section)
-    this.elements.enableLogging = document.getElementById("enableLogging");
+    // Debug logging setting
     this.elements.enableDebugLogging = document.getElementById("enableDebugLogging");
-    this.elements.logLevel = document.getElementById("logLevel");
-    this.elements.maxLogEntries = document.getElementById("maxLogEntries");
 
     // Logs
     this.elements.logFilter = document.getElementById("logFilter");
@@ -85,14 +82,6 @@ class CheckOptions {
     this.elements.previewTitle = document.getElementById("previewTitle");
     this.elements.previewButton = document.getElementById("previewButton");
 
-    // About
-    this.elements.aboutVersion = document.getElementById("aboutVersion");
-    this.elements.buildDate = document.getElementById("buildDate");
-    this.elements.browserInfo = document.getElementById("browserInfo");
-    this.elements.osInfo = document.getElementById("osInfo");
-    this.elements.supportUrl = document.getElementById("supportUrl");
-    this.elements.privacyUrl = document.getElementById("privacyUrl");
-    this.elements.termsUrl = document.getElementById("termsUrl");
 
     // Modal
     this.elements.modalOverlay = document.getElementById("modalOverlay");
@@ -220,7 +209,6 @@ class CheckOptions {
       // Load dynamic content
       await this.loadPolicyInfo();
       await this.loadLogs();
-      await this.loadSystemInfo();
 
       // Handle initial hash
       this.handleHashChange();
@@ -406,10 +394,7 @@ class CheckOptions {
       enableCustomRules: false,
       customRulesUrl: "",
       updateInterval: 24,
-      enableLogging: true,
       enableDebugLogging: false,
-      logLevel: "info",
-      maxLogEntries: 1000,
     };
   }
 
@@ -434,23 +419,6 @@ class CheckOptions {
       chrome.runtime.getManifest().version
     }`;
 
-    // Update about section
-    this.elements.aboutVersion.textContent =
-      chrome.runtime.getManifest().version;
-    this.elements.buildDate.textContent = new Date()
-      .toISOString()
-      .split("T")[0];
-
-    // Update support links
-    if (this.brandingConfig.supportUrl) {
-      this.elements.supportUrl.href = this.brandingConfig.supportUrl;
-    }
-    if (this.brandingConfig.privacyPolicyUrl) {
-      this.elements.privacyUrl.href = this.brandingConfig.privacyPolicyUrl;
-    }
-    if (this.brandingConfig.termsOfServiceUrl) {
-      this.elements.termsUrl.href = this.brandingConfig.termsOfServiceUrl;
-    }
   }
 
   populateFormFields() {
@@ -474,11 +442,8 @@ class CheckOptions {
     this.elements.updateInterval.value =
       (this.config.detectionRules?.updateInterval || this.config.updateInterval * 3600000 || 86400000) / 3600000;
 
-    // Logging settings
-    this.elements.enableLogging.checked = this.config.enableLogging;
+    // Debug logging setting
     this.elements.enableDebugLogging.checked = this.config.enableDebugLogging || false;
-    this.elements.logLevel.value = this.config.logLevel;
-    this.elements.maxLogEntries.value = this.config.maxLogEntries;
 
     // Branding settings
     this.elements.companyName.value = this.brandingConfig.companyName;
