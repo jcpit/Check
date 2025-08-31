@@ -520,8 +520,15 @@ body {
 
 .logs-filters {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+.logs-filters .setting-label {
+  margin: 0;
+  font-size: 14px;
+  white-space: nowrap;
 }
 
 .logs-container {
