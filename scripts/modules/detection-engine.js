@@ -70,7 +70,6 @@ export class DetectionEngine {
     };
   }
 
-  // CyberDrain integration - URL origin helper
   urlOrigin(url) {
     try {
       return new URL(url).origin.toLowerCase();
@@ -79,20 +78,17 @@ export class DetectionEngine {
     }
   }
 
-  // CyberDrain integration - Check if origin is trusted
   isTrustedOrigin(url) {
     const origin = this.urlOrigin(url);
     return this.TRUSTED_ORIGINS.has(origin);
   }
 
-  // CyberDrain integration - Check if referrer is trusted
   isTrustedReferrer(referrer) {
     if (!referrer) return false;
     const origin = this.urlOrigin(referrer);
     return this.TRUSTED_ORIGINS.has(origin);
   }
 
-  // CyberDrain integration - Verdict determination for URL
   verdictForUrl(url) {
     const origin = this.urlOrigin(url);
     if (this.TRUSTED_ORIGINS.has(origin)) return "trusted";
