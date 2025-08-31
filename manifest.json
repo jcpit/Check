@@ -45,7 +45,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["config/*", "rules/*", "blocked.html"],
+      "resources": ["config/*", "rules/*", "blocked.html", "scripts/utils/logger.js"],
       "matches": ["<all_urls>"]
     }
   ],
