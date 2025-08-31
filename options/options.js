@@ -258,24 +258,105 @@ class CheckOptions {
     }
   }
 
-  async loadConfiguration() {
-    return new Promise((resolve) => {
-      chrome.runtime.sendMessage(
-        {
-          type: "GET_CONFIG",
-        },
-        (response) => {
-          if (response && response.success) {
-            this.config = response.config;
-            this.originalConfig = JSON.parse(JSON.stringify(response.config));
-          } else {
-            this.config = this.getDefaultConfig();
-            this.originalConfig = JSON.parse(JSON.stringify(this.config));
-          }
-          resolve();
+  // Robust communication layer to handle service worker termination
+  async ensureServiceWorkerAlive(maxAttempts = 3, initialDelay = 100) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const response = await new Promise((resolve) => {
+          chrome.runtime.sendMessage({ type: "ping" }, (response) => {
+            if (chrome.runtime.lastError) {
+              resolve(null);
+            } else {
+              resolve(response);
+            }
+          });
+        });
+
+        if (response && response.success) {
+          return true;
         }
+      } catch (error) {
+        console.warn(`Service worker ping attempt ${attempt} failed:`, error);
+      }
+
+      if (attempt < maxAttempts) {
+        const delay = initialDelay * Math.pow(2, attempt - 1);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+
+    return false;
+  }
+
+  async sendMessageWithRetry(message, maxAttempts = 3, initialDelay = 200) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        // First ensure service worker is alive
+        if (attempt === 1) {
+          const serviceWorkerAlive = await this.ensureServiceWorkerAlive();
+          if (!serviceWorkerAlive) {
+            throw new Error(
+              "Service worker not responding after wake-up attempts"
+            );
+          }
+        }
+
+        const response = await new Promise((resolve, reject) => {
+          chrome.runtime.sendMessage(message, (response) => {
+            if (chrome.runtime.lastError) {
+              const error = chrome.runtime.lastError.message;
+              if (
+                error.includes("Receiving end does not exist") ||
+                error.includes("Could not establish connection")
+              ) {
+                reject(new Error(`Service worker connection failed: ${error}`));
+              } else {
+                reject(new Error(error));
+              }
+            } else {
+              resolve(response);
+            }
+          });
+        });
+
+        return response;
+      } catch (error) {
+        console.warn(`Message attempt ${attempt} failed:`, error.message);
+
+        if (attempt === maxAttempts) {
+          throw error;
+        }
+
+        // Exponential backoff for retries
+        const delay = initialDelay * Math.pow(2, attempt - 1);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  async loadConfiguration() {
+    try {
+      const response = await this.sendMessageWithRetry({
+        type: "GET_CONFIG",
+      });
+
+      if (response && response.success) {
+        this.config = response.config;
+        this.originalConfig = JSON.parse(JSON.stringify(response.config));
+      } else {
+        console.warn("Failed to load config from background, using defaults");
+        this.config = this.getDefaultConfig();
+        this.originalConfig = JSON.parse(JSON.stringify(this.config));
+      }
+    } catch (error) {
+      console.error("Could not communicate with background script:", error);
+      this.showToast(
+        "Using default settings - background script unavailable",
+        "warning"
       );
-    });
+      this.config = this.getDefaultConfig();
+      this.originalConfig = JSON.parse(JSON.stringify(this.config));
+    }
   }
 
   async waitForRuntimeReady(maxAttempts = 5, initialDelay = 100) {
