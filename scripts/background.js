@@ -442,6 +442,7 @@ class CheckBackground {
           if (message.level && message.message) {
             await storeLog(message.level, message.message);
           }
+          sendResponse({ success: true });
           break;
 
         case "GET_PAGE_HEADERS":
