@@ -78,7 +78,6 @@ class CheckPopup {
       document.getElementById("notificationText");
     this.elements.notificationClose =
       document.getElementById("notificationClose");
-
   }
 
   setupEventListeners() {
@@ -143,7 +142,6 @@ class CheckPopup {
       // Load data
       await this.loadStatistics();
       await this.loadCurrentPageInfo();
-      await this.loadRecentActivity();
       await this.checkEnterpriseMode();
 
       // Update UI
@@ -166,40 +164,47 @@ class CheckPopup {
     return new Promise((resolve) => {
       const attemptConnection = (retryCount = 0) => {
         try {
-          chrome.runtime.sendMessage(
-            { type: "GET_CONFIG" },
-            (response) => {
-              if (chrome.runtime.lastError) {
-                console.warn(
-                  "Check: Background script connection failed:",
-                  chrome.runtime.lastError.message
+          chrome.runtime.sendMessage({ type: "GET_CONFIG" }, (response) => {
+            if (chrome.runtime.lastError) {
+              console.warn(
+                "Check: Background script connection failed:",
+                chrome.runtime.lastError.message
+              );
+
+              // Retry up to 3 times with 5-second delay
+              if (retryCount < 3) {
+                console.log(
+                  `Retrying configuration load in 5 seconds... (attempt ${
+                    retryCount + 1
+                  }/3)`
                 );
-
-                // Retry up to 3 times with 5-second delay
-                if (retryCount < 3) {
-                  console.log(`Retrying configuration load in 5 seconds... (attempt ${retryCount + 1}/3)`);
-                  setTimeout(() => attemptConnection(retryCount + 1), 5000);
-                  return;
-                } else {
-                  console.warn("Check: Using default configuration after all retries failed");
-                  this.config = this.getDefaultConfig();
-                  resolve();
-                  return;
-                }
-              }
-
-              if (response && response.success) {
-                this.config = response.config;
+                setTimeout(() => attemptConnection(retryCount + 1), 5000);
+                return;
               } else {
+                console.warn(
+                  "Check: Using default configuration after all retries failed"
+                );
                 this.config = this.getDefaultConfig();
+                resolve();
+                return;
               }
-              resolve();
             }
-          );
+
+            if (response && response.success) {
+              this.config = response.config;
+            } else {
+              this.config = this.getDefaultConfig();
+            }
+            resolve();
+          });
         } catch (error) {
           console.error("Check: Error sending message:", error);
           if (retryCount < 3) {
-            console.log(`Retrying configuration load in 5 seconds... (attempt ${retryCount + 1}/3)`);
+            console.log(
+              `Retrying configuration load in 5 seconds... (attempt ${
+                retryCount + 1
+              }/3)`
+            );
             setTimeout(() => attemptConnection(retryCount + 1), 5000);
           } else {
             this.config = this.getDefaultConfig();
@@ -533,30 +538,6 @@ class CheckPopup {
     console.log("Page info received:", pageInfo);
   }
 
-  async loadRecentActivity() {
-    try {
-      // Get recent security events
-      const result = await chrome.storage.local.get(["securityEvents"]);
-      const events = result.securityEvents || [];
-
-      // Get recent 5 events
-      const recentEvents = events.slice(-5).reverse();
-
-      if (recentEvents.length === 0) {
-        this.elements.activityList.innerHTML =
-          '<div class="activity-item placeholder"><span class="activity-text">No recent activity</span></div>';
-        return;
-      }
-
-      this.elements.activityList.innerHTML = "";
-      recentEvents.forEach((event) => {
-        this.addActivityItem(event);
-      });
-    } catch (error) {
-      console.error("Failed to load recent activity:", error);
-    }
-  }
-
   addActivityItem(event) {
     const item = document.createElement("div");
     item.className = "activity-item";
@@ -661,7 +642,6 @@ class CheckPopup {
     }
   }
 
-
   viewLogs() {
     chrome.tabs.create({
       url: chrome.runtime.getURL("options/options.html#logs"),
@@ -675,7 +655,6 @@ class CheckPopup {
     });
     window.close();
   }
-
 
   handleFooterLink(event, linkType) {
     event.preventDefault();
@@ -811,7 +790,6 @@ class CheckPopup {
   hideNotification() {
     this.elements.notificationToast.style.display = "none";
   }
-
 }
 
 // Initialize popup when DOM is loaded
