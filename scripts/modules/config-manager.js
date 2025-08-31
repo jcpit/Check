@@ -115,10 +115,6 @@ export class ConfigManager {
         strictMode: false,
       },
 
-      // Logging settings
-      enableLogging: true,
-      logLevel: "info",
-      maxLogEntries: 1000,
 
       // UI settings
       showNotifications: true,

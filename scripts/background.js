@@ -81,8 +81,8 @@ class CheckBackground {
       // Load configuration and initialize logger based on settings
       const config = await this.configManager.loadConfig();
       logger.init({
-        level: config?.logLevel || "info",
-        enabled: config?.enableLogging ?? true,
+        level: "info",
+        enabled: true,
       });
 
       // Load policies and initialize detection engine
@@ -140,8 +140,7 @@ class CheckBackground {
       enableContentManipulation: true,
       enableUrlMonitoring: true,
       showNotifications: true,
-      enableDebugLogging: false,
-      logLevel: "info"
+      enableDebugLogging: false
     };
   }
 
@@ -359,8 +358,8 @@ class CheckBackground {
     logger.log("Check: Extension startup detected");
     const config = await this.configManager.refreshConfig();
     logger.init({
-      level: config?.logLevel || "info",
-      enabled: config?.enableLogging ?? true,
+      level: "info",
+      enabled: true,
     });
   }
 
@@ -688,8 +687,8 @@ class CheckBackground {
       await this.policyManager.loadPolicies();
       const config = await this.configManager.refreshConfig();
       logger.init({
-        level: config?.logLevel || "info",
-        enabled: config?.enableLogging ?? true,
+        level: "info",
+        enabled: true,
       });
       // CyberDrain integration - Refresh policy
       await this.refreshPolicy();

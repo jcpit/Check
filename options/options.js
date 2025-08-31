@@ -62,11 +62,8 @@ class CheckOptions {
       document.getElementById("loadDefaultRules");
 
     // Logging settings (moved from privacy section)
-    this.elements.enableLogging = document.getElementById("enableLogging");
     this.elements.enableDebugLogging =
       document.getElementById("enableDebugLogging");
-    this.elements.logLevel = document.getElementById("logLevel");
-    this.elements.maxLogEntries = document.getElementById("maxLogEntries");
 
     // Logs
     this.elements.logFilter = document.getElementById("logFilter");
@@ -196,29 +193,19 @@ class CheckOptions {
 
   async initialize() {
     try {
-      // Show initial status
-      this.showToast("Connecting to background service...", "info");
-
       // Load configurations
       await this.loadConfiguration();
       await this.loadBrandingConfiguration();
-
       // Apply branding
       this.applyBranding();
-
       // Populate form fields
       this.populateFormFields();
-
       // Load dynamic content
-      await this.loadEnterpriseInfo();
       await this.loadLogs();
-
       // Handle initial hash
       this.handleHashChange();
-
       // Update branding preview
       this.updateBrandingPreview();
-
       this.showToast("Settings loaded successfully", "success");
     } catch (error) {
       console.error("Failed to initialize options page:", error);
@@ -304,7 +291,7 @@ class CheckOptions {
       // Use defaults when background script is unavailable
       this.config = this.getDefaultConfig();
       this.originalConfig = JSON.parse(JSON.stringify(this.config));
-      
+
       // Schedule silent retry in 5 seconds
       setTimeout(() => {
         this.loadConfiguration();
@@ -407,12 +394,14 @@ class CheckOptions {
 
   populateFormFields() {
     // General settings
-    this.elements.extensionEnabled.checked = this.config.extensionEnabled;
+    this.elements.extensionEnabled.checked = this.config?.extensionEnabled;
     this.elements.enableContentManipulation.checked =
-      this.config.enableContentManipulation;
-    this.elements.enableUrlMonitoring.checked = this.config.enableUrlMonitoring;
-    this.elements.showNotifications.checked = this.config.showNotifications;
-    this.elements.notificationDuration.value = this.config.notificationDuration;
+      this.config?.enableContentManipulation;
+    this.elements.enableUrlMonitoring.checked =
+      this.config?.enableUrlMonitoring;
+    this.elements.showNotifications.checked = this.config?.showNotifications;
+    this.elements.notificationDuration.value =
+      this.config?.notificationDuration;
     this.elements.notificationDurationValue.textContent =
       this.config.notificationDuration / 1000 + "s";
     this.elements.enableValidPageBadge.checked =
@@ -433,11 +422,8 @@ class CheckOptions {
         86400000) / 3600000;
 
     // Logging settings
-    this.elements.enableLogging.checked = this.config.enableLogging;
     this.elements.enableDebugLogging.checked =
       this.config.enableDebugLogging || false;
-    this.elements.logLevel.value = this.config.logLevel;
-    this.elements.maxLogEntries.value = this.config.maxLogEntries;
 
     // Branding settings
     this.elements.companyName.value = this.brandingConfig.companyName;
@@ -527,11 +513,15 @@ class CheckOptions {
     return {
       // General settings
       extensionEnabled: this.elements.extensionEnabled?.checked || false,
-      enableContentManipulation: this.elements.enableContentManipulation?.checked || false,
+      enableContentManipulation:
+        this.elements.enableContentManipulation?.checked || false,
       enableUrlMonitoring: this.elements.enableUrlMonitoring?.checked || false,
       showNotifications: this.elements.showNotifications?.checked || false,
-      notificationDuration: parseInt(this.elements.notificationDuration?.value || 5000),
-      enableValidPageBadge: this.elements.enableValidPageBadge?.checked || false,
+      notificationDuration: parseInt(
+        this.elements.notificationDuration?.value || 5000
+      ),
+      enableValidPageBadge:
+        this.elements.enableValidPageBadge?.checked || false,
 
       // Detection settings
       enableCustomRules: this.elements.enableCustomRules?.checked || false,
@@ -554,7 +544,6 @@ class CheckOptions {
         message: "Notification duration must be between 1-10 seconds",
       };
     }
-
 
     if (config.updateInterval < 1 || config.updateInterval > 168) {
       return {
@@ -714,62 +703,6 @@ class CheckOptions {
     }
   }
 
-  async loadEnterpriseInfo() {
-    try {
-      // Check if extension is managed
-      const policies = await chrome.storage.managed.get(null);
-      const isManaged = Object.keys(policies).length > 0;
-
-      if (isManaged) {
-        this.elements.managementStatus.textContent = "Managed";
-        this.elements.managementStatus.classList.add("managed");
-        this.elements.enterpriseStatus.querySelector(
-          ".status-description"
-        ).textContent =
-          "This extension is managed by your organization's IT department";
-
-        // Update policy list
-        this.updatePolicyList(policies);
-      } else {
-        this.elements.managementStatus.textContent = "Not Managed";
-        this.elements.managementStatus.classList.remove("managed");
-      }
-    } catch (error) {
-      console.error("Failed to load enterprise info:", error);
-    }
-  }
-
-  updatePolicyList(policies) {
-    this.elements.policyList.innerHTML = "";
-
-    const policyNames = {
-      extensionEnabled: "Extension Enabled",
-      enableContentManipulation: "Content Manipulation",
-      enableUrlMonitoring: "URL Monitoring",
-      blockMaliciousUrls: "Block Malicious URLs",
-      enableLogging: "Activity Logging",
-    };
-
-    Object.keys(policies).forEach((policyKey) => {
-      if (policyNames[policyKey]) {
-        const item = document.createElement("div");
-        item.className = "policy-item";
-
-        const name = document.createElement("span");
-        name.className = "policy-name";
-        name.textContent = policyNames[policyKey];
-
-        const status = document.createElement("span");
-        status.className = "policy-status enforced";
-        status.textContent = "Enforced";
-
-        item.appendChild(name);
-        item.appendChild(status);
-        this.elements.policyList.appendChild(item);
-      }
-    });
-  }
-
   async loadLogs() {
     try {
       const result = await chrome.storage.local.get([
@@ -857,12 +790,12 @@ class CheckOptions {
 
   filterLogsForDisplay(logs) {
     const debugLoggingEnabled = this.config?.enableDebugLogging || false;
-    
+
     if (debugLoggingEnabled) {
       return logs; // Show all logs including debug
     } else {
       // Filter out page scan events and debug logs unless they're important
-      return logs.filter(log => {
+      return logs.filter((log) => {
         if (log.category === "debug" && log.level === "debug") {
           return false; // Hide debug logs
         }
@@ -885,7 +818,7 @@ class CheckOptions {
         if (this.elements.policyBadge) {
           this.elements.policyBadge.style.display = "flex";
         }
-        
+
         // Disable policy-managed fields
         this.disablePolicyManagedFields(policies);
       } else {
@@ -918,16 +851,16 @@ class CheckOptions {
       if (element) {
         element.disabled = true;
         element.title = "This setting is managed by your organization's policy";
-        
+
         // Add visual indicator
         element.classList.add("policy-managed");
-        
+
         // Add a small lock icon next to the field
         const lockIcon = document.createElement("span");
         lockIcon.className = "material-icons policy-lock";
         lockIcon.textContent = "lock";
         lockIcon.title = "Managed by policy";
-        
+
         if (element.parentNode) {
           element.parentNode.appendChild(lockIcon);
         }
@@ -949,7 +882,9 @@ class CheckOptions {
     try {
       if (log.event?.url) {
         const url = new URL(log.event.url);
-        return log.event.threatDetected ? this.defangUrl(url.hostname) : url.hostname;
+        return log.event.threatDetected
+          ? this.defangUrl(url.hostname)
+          : url.hostname;
       }
       if (log.url) {
         const url = new URL(log.url);
@@ -957,7 +892,10 @@ class CheckOptions {
       }
     } catch (e) {
       // Invalid URL, try to defang the raw URL if it looks like a threat
-      if (log.event?.url && (log.event?.threatDetected || log.event?.threatLevel === "high")) {
+      if (
+        log.event?.url &&
+        (log.event?.threatDetected || log.event?.threatLevel === "high")
+      ) {
         return this.defangUrl(log.event.url);
       }
     }
@@ -968,7 +906,10 @@ class CheckOptions {
     if (log.event?.threatLevel) {
       return log.event.threatLevel.toUpperCase();
     }
-    if (log.event?.type === "threat_detected" || log.event?.type === "content_threat_detected") {
+    if (
+      log.event?.type === "threat_detected" ||
+      log.event?.type === "content_threat_detected"
+    ) {
       return "HIGH";
     }
     if (log.category === "security") {
@@ -981,7 +922,10 @@ class CheckOptions {
     if (log.event?.action) {
       return log.event.action.replace(/_/g, " ").toUpperCase();
     }
-    if (log.event?.type === "content_threat_detected" || log.event?.type === "threat_detected") {
+    if (
+      log.event?.type === "content_threat_detected" ||
+      log.event?.type === "threat_detected"
+    ) {
       return "BLOCKED";
     }
     if (log.event?.type === "url_access") {
@@ -1014,8 +958,12 @@ class CheckOptions {
             const analysis = log.event.analysis;
             const indicators = [];
             if (analysis.aadLike) indicators.push("AAD-like elements");
-            if (analysis.formActionFail) indicators.push("Non-Microsoft form action");
-            if (analysis.nonMicrosoftResources > 0) indicators.push(`${analysis.nonMicrosoftResources} external resources`);
+            if (analysis.formActionFail)
+              indicators.push("Non-Microsoft form action");
+            if (analysis.nonMicrosoftResources > 0)
+              indicators.push(
+                `${analysis.nonMicrosoftResources} external resources`
+              );
             if (indicators.length > 0) {
               details += ` [${indicators.join(", ")}]`;
             }
@@ -1027,12 +975,17 @@ class CheckOptions {
             threatDetails += `: ${log.event.reason}`;
           }
           if (log.event.triggeredRules && log.event.triggeredRules.length > 0) {
-            const ruleNames = log.event.triggeredRules.map(rule => rule.id || rule.type).join(", ");
+            const ruleNames = log.event.triggeredRules
+              .map((rule) => rule.id || rule.type)
+              .join(", ");
             threatDetails += ` [Triggered rules: ${ruleNames}]`;
           } else if (log.event.ruleDetails) {
             threatDetails += ` [${log.event.ruleDetails}]`;
           }
-          if (log.event.score !== undefined && log.event.threshold !== undefined) {
+          if (
+            log.event.score !== undefined &&
+            log.event.threshold !== undefined
+          ) {
             threatDetails += ` [Score: ${log.event.score}/${log.event.threshold}]`;
           }
           if (log.event.details) {
@@ -1053,7 +1006,8 @@ class CheckOptions {
         case "page_scanned":
           return `Page security scan completed`;
         default:
-          let defaultMsg = log.event.description || log.event.type.replace(/_/g, " ");
+          let defaultMsg =
+            log.event.description || log.event.type.replace(/_/g, " ");
           if (log.event.url) {
             defaultMsg += ` on ${this.defangUrl(log.event.url)}`;
           }
@@ -1153,16 +1107,6 @@ class CheckOptions {
         ? logoUrl
         : chrome.runtime.getURL(logoUrl);
     }
-  }
-
-  async loadSystemInfo() {
-    // Browser info
-    const browserInfo = `${navigator.appName} ${navigator.appVersion}`;
-    this.elements.browserInfo.textContent = browserInfo;
-
-    // OS info
-    const platform = navigator.platform;
-    this.elements.osInfo.textContent = platform;
   }
 
   markUnsavedChanges() {
