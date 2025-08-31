@@ -259,74 +259,56 @@ class CheckOptions {
     return false;
   }
 
-  async sendMessageWithRetry(message, maxAttempts = 3, initialDelay = 200) {
+  async sendMessageWithRetry(message, maxAttempts = 3, initialDelay = 5000) {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        // First ensure service worker is alive
-        if (attempt === 1) {
-          const serviceWorkerAlive = await this.ensureServiceWorkerAlive();
-          if (!serviceWorkerAlive) {
-            throw new Error(
-              "Service worker not responding after wake-up attempts"
-            );
-          }
-        }
-
         const response = await new Promise((resolve, reject) => {
-          chrome.runtime.sendMessage(message, (response) => {
-            if (chrome.runtime.lastError) {
-              const error = chrome.runtime.lastError.message;
-              if (
-                error.includes("Receiving end does not exist") ||
-                error.includes("Could not establish connection")
-              ) {
-                reject(new Error(`Service worker connection failed: ${error}`));
+          try {
+            chrome.runtime.sendMessage(message, (response) => {
+              if (chrome.runtime.lastError) {
+                // Silently handle runtime errors to avoid Chrome error list
+                reject(new Error("Background worker unavailable"));
               } else {
-                reject(new Error(error));
+                resolve(response);
               }
-            } else {
-              resolve(response);
-            }
-          });
+            });
+          } catch (error) {
+            reject(error);
+          }
         });
 
         return response;
       } catch (error) {
-        console.warn(`Message attempt ${attempt} failed:`, error.message);
-
+        // Silently handle errors on first attempts, only log on final failure
         if (attempt === maxAttempts) {
-          throw error;
+          // Don't throw error to avoid uncaught exceptions
+          return null;
         }
 
-        // Exponential backoff for retries
-        const delay = initialDelay * Math.pow(2, attempt - 1);
-        await new Promise((resolve) => setTimeout(resolve, delay));
+        // Wait 5 seconds before retry
+        await new Promise((resolve) => setTimeout(resolve, initialDelay));
       }
     }
+    return null;
   }
 
   async loadConfiguration() {
-    try {
-      const response = await this.sendMessageWithRetry({
-        type: "GET_CONFIG",
-      });
+    const response = await this.sendMessageWithRetry({
+      type: "GET_CONFIG",
+    });
 
-      if (response && response.success) {
-        this.config = response.config;
-        this.originalConfig = JSON.parse(JSON.stringify(response.config));
-      } else {
-        console.warn("Failed to load config from background, using defaults");
-        this.config = this.getDefaultConfig();
-        this.originalConfig = JSON.parse(JSON.stringify(this.config));
-      }
-    } catch (error) {
-      console.error("Could not communicate with background script:", error);
-      this.showToast(
-        "Using default settings - background script unavailable",
-        "warning"
-      );
+    if (response && response.success) {
+      this.config = response.config;
+      this.originalConfig = JSON.parse(JSON.stringify(response.config));
+    } else {
+      // Use defaults when background script is unavailable
       this.config = this.getDefaultConfig();
       this.originalConfig = JSON.parse(JSON.stringify(this.config));
+      
+      // Schedule silent retry in 5 seconds
+      setTimeout(() => {
+        this.loadConfiguration();
+      }, 5000);
     }
   }
 
@@ -900,16 +882,26 @@ class CheckOptions {
 
       if (isManaged) {
         // Show policy badge
-        this.elements.policyBadge.style.display = "flex";
+        if (this.elements.policyBadge) {
+          this.elements.policyBadge.style.display = "flex";
+        }
         
         // Disable policy-managed fields
         this.disablePolicyManagedFields(policies);
       } else {
         // Hide policy badge
-        this.elements.policyBadge.style.display = "none";
+        if (this.elements.policyBadge) {
+          this.elements.policyBadge.style.display = "none";
+        }
       }
     } catch (error) {
       console.error("Failed to load policy info:", error);
+      // Retry in 5 seconds
+      setTimeout(() => {
+        this.loadPolicyInfo().catch(() => {
+          console.log("Policy info still unavailable");
+        });
+      }, 5000);
     }
   }
 

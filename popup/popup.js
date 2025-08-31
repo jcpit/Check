@@ -36,7 +36,6 @@ class CheckPopup {
     // Action buttons
     this.elements.viewLogs = document.getElementById("viewLogs");
     this.elements.openSettings = document.getElementById("openSettings");
-    this.elements.reportIssue = document.getElementById("reportIssue");
 
     // Page info
     this.elements.pageInfoSection = document.getElementById("pageInfoSection");
@@ -80,16 +79,6 @@ class CheckPopup {
     this.elements.notificationClose =
       document.getElementById("notificationClose");
 
-    // Testing elements
-    this.elements.testRules = document.getElementById("testRules");
-    this.elements.testingSection = document.getElementById("testingSection");
-    this.elements.runComprehensiveTest = document.getElementById(
-      "runComprehensiveTest"
-    );
-    this.elements.validateEngine = document.getElementById("validateEngine");
-    this.elements.testResults = document.getElementById("testResults");
-    this.elements.testSummary = document.getElementById("testSummary");
-    this.elements.testDetails = document.getElementById("testDetails");
   }
 
   setupEventListeners() {
@@ -97,9 +86,6 @@ class CheckPopup {
     this.elements.viewLogs.addEventListener("click", () => this.viewLogs());
     this.elements.openSettings.addEventListener("click", () =>
       this.openSettings()
-    );
-    this.elements.reportIssue.addEventListener("click", () =>
-      this.reportIssue()
     );
 
     // Footer link listeners
@@ -178,45 +164,48 @@ class CheckPopup {
 
   async loadConfiguration() {
     return new Promise((resolve) => {
-      // Add a timeout and retry mechanism
       const attemptConnection = (retryCount = 0) => {
-        chrome.runtime.sendMessage(
-          {
-            type: "GET_CONFIG",
-          },
-          (response) => {
-            // Check for connection errors
-            if (chrome.runtime.lastError) {
-              console.warn(
-                "Check: Background script connection failed:",
-                chrome.runtime.lastError.message
-              );
-
-              // Retry up to 3 times with increasing delay
-              if (retryCount < 3) {
-                setTimeout(
-                  () => attemptConnection(retryCount + 1),
-                  500 * (retryCount + 1)
-                );
-                return;
-              } else {
+        try {
+          chrome.runtime.sendMessage(
+            { type: "GET_CONFIG" },
+            (response) => {
+              if (chrome.runtime.lastError) {
                 console.warn(
-                  "Check: Using default configuration after connection failures"
+                  "Check: Background script connection failed:",
+                  chrome.runtime.lastError.message
                 );
-                this.config = this.getDefaultConfig();
-                resolve();
-                return;
-              }
-            }
 
-            if (response && response.success) {
-              this.config = response.config;
-            } else {
-              this.config = this.getDefaultConfig();
+                // Retry up to 3 times with 5-second delay
+                if (retryCount < 3) {
+                  console.log(`Retrying configuration load in 5 seconds... (attempt ${retryCount + 1}/3)`);
+                  setTimeout(() => attemptConnection(retryCount + 1), 5000);
+                  return;
+                } else {
+                  console.warn("Check: Using default configuration after all retries failed");
+                  this.config = this.getDefaultConfig();
+                  resolve();
+                  return;
+                }
+              }
+
+              if (response && response.success) {
+                this.config = response.config;
+              } else {
+                this.config = this.getDefaultConfig();
+              }
+              resolve();
             }
+          );
+        } catch (error) {
+          console.error("Check: Error sending message:", error);
+          if (retryCount < 3) {
+            console.log(`Retrying configuration load in 5 seconds... (attempt ${retryCount + 1}/3)`);
+            setTimeout(() => attemptConnection(retryCount + 1), 5000);
+          } else {
+            this.config = this.getDefaultConfig();
             resolve();
           }
-        );
+        }
       };
 
       attemptConnection();
@@ -453,7 +442,7 @@ class CheckPopup {
       const url = new URL(this.currentTab.url);
       this.elements.currentUrl.textContent = url.hostname + url.pathname;
 
-      // Request page analysis from background
+      // Request page analysis from background with retry
       this.showSecurityBadge("analyzing", "Analyzing...");
 
       try {
@@ -468,22 +457,28 @@ class CheckPopup {
           this.showSecurityBadge("safe", "Analysis unavailable");
         }
       } catch (error) {
-        console.warn("Check: Failed to get URL analysis:", error);
+        console.warn("Check: Failed to get URL analysis after retries:", error);
         this.showSecurityBadge("safe", "Analysis unavailable");
       }
 
-      // Get page info from content script
-      chrome.tabs.sendMessage(
-        this.currentTab.id,
-        {
-          type: "GET_PAGE_INFO",
-        },
-        (response) => {
-          if (response && response.success) {
-            this.updatePageInfo(response.info);
+      // Get page info from content script with silent error handling
+      try {
+        chrome.tabs.sendMessage(
+          this.currentTab.id,
+          { type: "GET_PAGE_INFO" },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              // Silently handle connection errors - don't log to avoid Chrome error list
+              // Content script may not be ready yet, which is normal
+              return;
+            } else if (response && response.success) {
+              this.updatePageInfo(response.info);
+            }
           }
-        }
-      );
+        );
+      } catch (error) {
+        // Silently handle errors to avoid Chrome error list
+      }
     } catch (error) {
       console.error("Failed to load page info:", error);
       this.elements.currentUrl.textContent = "Invalid URL";
@@ -666,39 +661,6 @@ class CheckPopup {
     }
   }
 
-  async scanCurrentPage() {
-    if (this.isBlockedRoute || !this.currentTab) return;
-
-    try {
-      this.showLoading("Scanning page...");
-
-      // Request page scan
-      chrome.tabs.sendMessage(
-        this.currentTab.id,
-        {
-          type: "ANALYZE_PAGE",
-        },
-        (response) => {
-          this.hideLoading();
-
-          if (response && response.success) {
-            this.showNotification("Page scan completed", "success");
-            this.updateSecurityStatus(response.analysis);
-
-            // Update statistics
-            this.stats.scannedPages++;
-            this.updateStatistics();
-          } else {
-            this.showNotification("Page scan failed", "error");
-          }
-        }
-      );
-    } catch (error) {
-      this.hideLoading();
-      console.error("Failed to scan page:", error);
-      this.showNotification("Page scan failed", "error");
-    }
-  }
 
   viewLogs() {
     chrome.tabs.create({
@@ -714,25 +676,6 @@ class CheckPopup {
     window.close();
   }
 
-  reportIssue() {
-    const supportEmail = this.brandingConfig.supportEmail || "support@cyberdrain.com";
-    const subject = encodeURIComponent("Microsoft 365 Phishing Protection - Issue Report");
-    const body = encodeURIComponent(`
-Extension Version: ${chrome.runtime.getManifest().version}
-Current URL: ${this.currentTab?.url || "N/A"}
-Browser: ${navigator.userAgent}
-Timestamp: ${new Date().toISOString()}
-
-Issue Description:
-[Please describe the issue you're experiencing]
-
-Additional Information:
-[Any additional details that might help us resolve the issue]
-    `);
-
-    window.open(`mailto:${supportEmail}?subject=${subject}&body=${body}`);
-    window.close();
-  }
 
   handleFooterLink(event, linkType) {
     event.preventDefault();
@@ -869,296 +812,6 @@ Additional Information:
     this.elements.notificationToast.style.display = "none";
   }
 
-  // Testing Methods
-  toggleTestingSection() {
-    const testingSection = this.elements.testingSection;
-    if (testingSection.style.display === "none") {
-      testingSection.style.display = "block";
-      this.elements.testRules.classList.add("active");
-    } else {
-      testingSection.style.display = "none";
-      this.elements.testRules.classList.remove("active");
-    }
-  }
-
-  async runComprehensiveTest() {
-    this.showLoading("Running comprehensive test...");
-    this.elements.testResults.style.display = "none";
-
-    try {
-      const response = await this.sendMessage({
-        type: "RUN_COMPREHENSIVE_TEST",
-      });
-
-      if (response && response.success) {
-        this.displayTestResults(response.tests);
-        this.showNotification("Comprehensive test completed", "success");
-      } else {
-        this.showNotification(
-          "Test failed: " + (response?.error || "Unknown error"),
-          "error"
-        );
-      }
-    } catch (error) {
-      console.error("Failed to run comprehensive test:", error);
-      this.showNotification("Test execution failed", "error");
-    } finally {
-      this.hideLoading();
-    }
-  }
-
-  async validateDetectionEngine() {
-    this.showLoading("Validating detection engine...");
-    this.elements.testResults.style.display = "none";
-
-    try {
-      const response = await this.sendMessage({
-        type: "VALIDATE_DETECTION_ENGINE",
-      });
-
-      if (response && response.success) {
-        this.displayValidationResults(response.validation);
-        this.showNotification("Engine validation completed", "success");
-      } else {
-        this.showNotification(
-          "Validation failed: " + (response?.error || "Unknown error"),
-          "error"
-        );
-      }
-    } catch (error) {
-      console.error("Failed to validate detection engine:", error);
-      this.showNotification("Validation execution failed", "error");
-    } finally {
-      this.hideLoading();
-    }
-  }
-
-  displayTestResults(testSuites) {
-    const summary = this.elements.testSummary;
-    const details = this.elements.testDetails;
-
-    // Clear previous results
-    summary.innerHTML = "";
-    details.innerHTML = "";
-
-    // Calculate overall statistics
-    let totalTests = 0;
-    let passedTests = 0;
-    let failedTests = 0;
-
-    for (const suite of testSuites) {
-      const suiteResults = suite.results;
-      if (Array.isArray(suiteResults)) {
-        totalTests += suiteResults.length;
-        passedTests += suiteResults.filter((test) => test.passed).length;
-        failedTests += suiteResults.filter((test) => !test.passed).length;
-      }
-    }
-
-    // Display summary
-    const passRate =
-      totalTests > 0 ? Math.round((passedTests / totalTests) * 100) : 0;
-    summary.innerHTML = `
-      <div class="test-summary-stats">
-        <div class="test-stat">
-          <span class="test-stat-number">${totalTests}</span>
-          <span class="test-stat-label">Total Tests</span>
-        </div>
-        <div class="test-stat success">
-          <span class="test-stat-number">${passedTests}</span>
-          <span class="test-stat-label">Passed</span>
-        </div>
-        <div class="test-stat error">
-          <span class="test-stat-number">${failedTests}</span>
-          <span class="test-stat-label">Failed</span>
-        </div>
-        <div class="test-stat">
-          <span class="test-stat-number">${passRate}%</span>
-          <span class="test-stat-label">Pass Rate</span>
-        </div>
-      </div>
-    `;
-
-    // Display detailed results
-    let detailsHtml = "";
-    for (const suite of testSuites) {
-      const suitePassed = Array.isArray(suite.results)
-        ? suite.results.filter((test) => test.passed).length
-        : 0;
-      const suiteTotal = Array.isArray(suite.results)
-        ? suite.results.length
-        : 0;
-
-      detailsHtml += `
-        <div class="test-suite">
-          <h4 class="test-suite-title">
-            ${suite.suite}
-            <span class="test-suite-stats">(${suitePassed}/${suiteTotal})</span>
-          </h4>
-          <div class="test-suite-results">
-      `;
-
-      if (Array.isArray(suite.results)) {
-        for (const test of suite.results) {
-          const statusIcon = test.passed ? "✓" : "✗";
-          const statusClass = test.passed ? "success" : "error";
-
-          detailsHtml += `
-            <div class="test-result ${statusClass}">
-              <span class="test-status">${statusIcon}</span>
-              <span class="test-description">${
-                test.url || test.referrer || test.expected || "Test"
-              }</span>
-              ${
-                test.error
-                  ? `<span class="test-error">${test.error}</span>`
-                  : ""
-              }
-            </div>
-          `;
-        }
-      }
-
-      detailsHtml += `
-          </div>
-        </div>
-      `;
-    }
-
-    details.innerHTML = detailsHtml;
-    this.elements.testResults.style.display = "block";
-  }
-
-  displayValidationResults(validation) {
-    const summary = this.elements.testSummary;
-    const details = this.elements.testDetails;
-
-    // Clear previous results
-    summary.innerHTML = "";
-    details.innerHTML = "";
-
-    // Display validation summary
-    const engineStatus = validation.engineInitialized
-      ? "Initialized"
-      : "Not Initialized";
-    const engineClass = validation.engineInitialized ? "success" : "error";
-
-    summary.innerHTML = `
-      <div class="validation-summary">
-        <div class="validation-item ${engineClass}">
-          <span class="validation-label">Detection Engine:</span>
-          <span class="validation-value">${engineStatus}</span>
-        </div>
-        <div class="validation-item">
-          <span class="validation-label">Status:</span>
-          <span class="validation-value">${
-            validation.detectionEngineStatus
-          }</span>
-        </div>
-        <div class="validation-item">
-          <span class="validation-label">Timestamp:</span>
-          <span class="validation-value">${new Date(
-            validation.timestamp
-          ).toLocaleString()}</span>
-        </div>
-      </div>
-    `;
-
-    // Display detailed validation results
-    let detailsHtml = '<div class="validation-details">';
-
-    // Rules validation
-    if (validation.rulesValidation) {
-      const rules = validation.rulesValidation;
-      detailsHtml += `
-        <div class="validation-section">
-          <h4>Rules Validation</h4>
-          <div class="validation-grid">
-            <div class="validation-stat">
-              <span class="validation-number">${rules.rulesCount || 0}</span>
-              <span class="validation-label">Total Rules</span>
-            </div>
-            <div class="validation-stat success">
-              <span class="validation-number">${rules.validRules || 0}</span>
-              <span class="validation-label">Valid Rules</span>
-            </div>
-            <div class="validation-stat error">
-              <span class="validation-number">${rules.invalidRules || 0}</span>
-              <span class="validation-label">Invalid Rules</span>
-            </div>
-          </div>
-          ${
-            rules.issues && rules.issues.length > 0
-              ? `<div class="validation-issues">
-              <h5>Issues:</h5>
-              <ul>${rules.issues
-                .map((issue) => `<li>${issue}</li>`)
-                .join("")}</ul>
-            </div>`
-              : ""
-          }
-        </div>
-      `;
-    }
-
-    // Components validation
-    if (validation.componentsStatus) {
-      const components = validation.componentsStatus;
-      detailsHtml += `
-        <div class="validation-section">
-          <h4>Components Status</h4>
-          <div class="component-status">
-            <div class="component-item">Config Manager: <span class="${
-              components.configManager === "loaded" ? "success" : "error"
-            }">${components.configManager}</span></div>
-            <div class="component-item">Detection Engine: <span class="${
-              components.detectionEngine === "loaded" ? "success" : "error"
-            }">${components.detectionEngine}</span></div>
-            <div class="component-item">Policy Manager: <span class="${
-              components.policyManager === "loaded" ? "success" : "error"
-            }">${components.policyManager}</span></div>
-            <div class="component-item">Engine Initialized: <span class="${
-              components.detectionEngineInitialized ? "success" : "error"
-            }">${
-        components.detectionEngineInitialized ? "Yes" : "No"
-      }</span></div>
-          </div>
-        </div>
-      `;
-    }
-
-    // Configuration validation
-    if (validation.configurationStatus) {
-      const config = validation.configurationStatus;
-      detailsHtml += `
-        <div class="validation-section">
-          <h4>Configuration Status</h4>
-          <div class="config-status">
-            <div class="config-item">Config Loaded: <span class="${
-              config.configLoaded ? "success" : "error"
-            }">${config.configLoaded ? "Yes" : "No"}</span></div>
-            <div class="config-item">Valid Referrers: <span class="${
-              config.hasValidReferrers ? "success" : "warning"
-            }">${
-        config.hasValidReferrers ? "Configured" : "Not Configured"
-      }</span></div>
-            <div class="config-item">Whitelist Domains: <span class="${
-              config.hasWhitelistDomains ? "success" : "warning"
-            }">${
-        config.hasWhitelistDomains ? "Configured" : "Not Configured"
-      }</span></div>
-            <div class="config-item">Detection Enabled: <span class="${
-              config.detectionEnabled ? "success" : "error"
-            }">${config.detectionEnabled ? "Yes" : "No"}</span></div>
-          </div>
-        </div>
-      `;
-    }
-
-    detailsHtml += "</div>";
-    details.innerHTML = detailsHtml;
-    this.elements.testResults.style.display = "block";
-  }
 }
 
 // Initialize popup when DOM is loaded

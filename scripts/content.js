@@ -73,19 +73,20 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
     logger.error("Failed to load logger, using fallback:", err);
   }
 
-  // Improved ping with better error handling
+  // Silent ping with no error logging to avoid Chrome error list
   const pingBackground = () => {
     try {
       chrome.runtime.sendMessage({ type: "ping" }, (response) => {
         if (chrome.runtime.lastError) {
-          // Don't log ping errors as errors since they're expected during service worker restarts
-          logger.debug("Background script not ready:", chrome.runtime.lastError.message);
+          // Silently handle ping errors - they're expected during service worker restarts
+          // Don't log anything to avoid Chrome error list
+          return;
         } else if (response) {
           logger.debug("Background script connected:", response);
         }
       });
     } catch (error) {
-      logger.debug("Failed to ping background script:", error);
+      // Silently handle errors
     }
   };
 
