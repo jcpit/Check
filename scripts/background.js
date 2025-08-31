@@ -20,6 +20,7 @@ class CheckBackground {
     this.detectionEngine = new DetectionEngine();
     this.policyManager = new PolicyManager();
     this.isInitialized = false;
+    this.initializationPromise = null;
 
     // CyberDrain integration
     this.policy = null;
@@ -29,9 +30,14 @@ class CheckBackground {
     this.MAX_HEADER_CACHE_ENTRIES = 100;
 
     // Set up message handlers immediately to handle early connections
-    logger.log("CheckBackground.constructor: registering message handlers");
+    // Reduce logging verbosity for service worker restarts
+    if (!globalThis.checkBackgroundInstance) {
+      logger.log("CheckBackground.constructor: registering message handlers");
+    }
     this.setupMessageHandlers();
-    logger.log("CheckBackground.constructor: message handlers registered");
+    if (!globalThis.checkBackgroundInstance) {
+      logger.log("CheckBackground.constructor: message handlers registered");
+    }
   }
 
   setupMessageHandlers() {
@@ -43,7 +49,27 @@ class CheckBackground {
   }
 
   async initialize() {
-    logger.log("CheckBackground.initialize: start");
+    // Prevent duplicate initialization during service worker restarts
+    if (this.isInitialized) {
+      return;
+    }
+
+    // If initialization is already in progress, wait for it
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+
+    this.initializationPromise = this._doInitialize();
+    return this.initializationPromise;
+  }
+
+  async _doInitialize() {
+    // Only log initialization start if this is the first instance
+    const isFirstInstance = !globalThis.checkBackgroundInstance;
+    if (isFirstInstance) {
+      logger.log("CheckBackground.initialize: start");
+    }
+
     try {
       // Load configuration and initialize logger based on settings
       const config = await this.configManager.loadConfig();
@@ -62,16 +88,25 @@ class CheckBackground {
       this.setupEventListeners();
       this.isInitialized = true;
 
-      logger.log("CheckBackground.initialize: complete");
+      if (isFirstInstance) {
+        logger.log("CheckBackground.initialize: complete");
+      }
     } catch (error) {
       logger.error("CheckBackground.initialize: error", error);
+      this.initializationPromise = null; // Reset promise on error to allow retry
+      throw error;
     }
   }
 
   // CyberDrain integration - Policy management
   async refreshPolicy() {
-    this.policy = await this.detectionEngine.policy || this.getDefaultPolicy();
-    this.extraWhitelist = new Set((this.policy.ExtraWhitelist || []).map(s => this.urlOrigin(s)).filter(Boolean));
+    this.policy =
+      (await this.detectionEngine.policy) || this.getDefaultPolicy();
+    this.extraWhitelist = new Set(
+      (this.policy.ExtraWhitelist || [])
+        .map((s) => this.urlOrigin(s))
+        .filter(Boolean)
+    );
     await this.applyBrandingToAction();
   }
 
@@ -85,7 +120,7 @@ class CheckBackground {
       ValidPageBadgeImage: "",
       StrictResourceAudit: true,
       RequireMicrosoftAction: true,
-      EnableValidPageBadge: false
+      EnableValidPageBadge: false,
     };
   }
 
@@ -108,10 +143,10 @@ class CheckBackground {
   // CyberDrain integration - Badge management
   async setBadge(tabId, verdict) {
     const map = {
-      "trusted":       { text: "MS", color: "#0a5" },
+      trusted: { text: "MS", color: "#0a5" },
       "trusted-extra": { text: "OK", color: "#0a5" },
-      "phishy":        { text: "!",  color: "#d33" },
-      "unknown":       { text: "?",  color: "#777" }
+      phishy: { text: "!", color: "#d33" },
+      unknown: { text: "?", color: "#777" },
     };
     const cfg = map[verdict] || map.unknown;
     try {
@@ -141,8 +176,10 @@ class CheckBackground {
   // CyberDrain integration - Apply branding to extension action
   async applyBrandingToAction() {
     // Title
-    await chrome.action.setTitle({ title: this.policy.BrandingName || this.getDefaultPolicy().BrandingName });
-    
+    await chrome.action.setTitle({
+      title: this.policy.BrandingName || this.getDefaultPolicy().BrandingName,
+    });
+
     // Icon (optional)
     if (this.policy.BrandingImage) {
       try {
@@ -154,7 +191,7 @@ class CheckBackground {
         for (const s of sizes) {
           const canvas = new OffscreenCanvas(s, s);
           const ctx = canvas.getContext("2d");
-          ctx.clearRect(0,0,s,s);
+          ctx.clearRect(0, 0, s, s);
           ctx.drawImage(bmp, 0, 0, s, s);
           images[String(s)] = ctx.getImageData(0, 0, s, s);
         }
@@ -169,15 +206,26 @@ class CheckBackground {
   async sendEvent(evt) {
     if (!this.policy.CIPPReportingServer) return;
     try {
-      await fetch(this.policy.CIPPReportingServer.replace(/\/+$/,"") + "/events/cyberdrain-phish", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(Object.assign({
-          ts: new Date().toISOString(),
-          ua: navigator.userAgent
-        }, evt))
-      });
-    } catch {/* best-effort */}
+      await fetch(
+        this.policy.CIPPReportingServer.replace(/\/+$/, "") +
+          "/events/cyberdrain-phish",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            Object.assign(
+              {
+                ts: new Date().toISOString(),
+                ua: navigator.userAgent,
+              },
+              evt
+            )
+          ),
+        }
+      );
+    } catch {
+      /* best-effort */
+    }
   }
 
   setupEventListeners() {
@@ -197,7 +245,9 @@ class CheckBackground {
 
     // CyberDrain integration - Handle tab activation for badge updates
     chrome.tabs.onActivated.addListener(async ({ tabId }) => {
-      const data = (await chrome.storage.session.get("verdict:" + tabId))["verdict:" + tabId];
+      const data = (await chrome.storage.session.get("verdict:" + tabId))[
+        "verdict:" + tabId
+      ];
       this.setBadge(tabId, data?.verdict || "unknown");
     });
 
@@ -277,7 +327,9 @@ class CheckBackground {
       // CyberDrain integration - Handle URL changes and set badges
       if (changeInfo.status === "complete" && tab?.url) {
         const verdict = this.verdictForUrl(tab.url);
-        await chrome.storage.session.set({ ["verdict:" + tabId]: { verdict, url: tab.url } });
+        await chrome.storage.session.set({
+          ["verdict:" + tabId]: { verdict, url: tab.url },
+        });
         this.setBadge(tabId, verdict);
 
         if (verdict === "trusted") {
@@ -334,25 +386,41 @@ class CheckBackground {
         case "FLAG_PHISHY":
           if (sender.tab?.id) {
             const tabId = sender.tab.id;
-            chrome.storage.session.set({ ["verdict:" + tabId]: { verdict: "phishy", url: sender.tab.url } });
+            chrome.storage.session.set({
+              ["verdict:" + tabId]: { verdict: "phishy", url: sender.tab.url },
+            });
             this.setBadge(tabId, "phishy");
             sendResponse({ ok: true });
-            this.sendEvent({ type: "phishy-detected", url: sender.tab.url, reason: message.reason || "heuristic" });
+            this.sendEvent({
+              type: "phishy-detected",
+              url: sender.tab.url,
+              reason: message.reason || "heuristic",
+            });
           }
           break;
 
-          case "FLAG_TRUSTED_BY_REFERRER":
-            if (sender.tab?.id) {
-              const tabId = sender.tab.id;
-              chrome.storage.session.set({ ["verdict:" + tabId]: { verdict: "trusted", url: sender.tab.url, by: "referrer" } });
-              this.setBadge(tabId, "trusted");
-              this.showValidBadge(tabId);
-              sendResponse({ ok: true });
-              if (this.policy.AlertWhenLogon) {
-                this.sendEvent({ type: "user-logged-on", url: sender.tab.url, by: "referrer" });
-              }
+        case "FLAG_TRUSTED_BY_REFERRER":
+          if (sender.tab?.id) {
+            const tabId = sender.tab.id;
+            chrome.storage.session.set({
+              ["verdict:" + tabId]: {
+                verdict: "trusted",
+                url: sender.tab.url,
+                by: "referrer",
+              },
+            });
+            this.setBadge(tabId, "trusted");
+            this.showValidBadge(tabId);
+            sendResponse({ ok: true });
+            if (this.policy.AlertWhenLogon) {
+              this.sendEvent({
+                type: "user-logged-on",
+                url: sender.tab.url,
+                by: "referrer",
+              });
             }
-            break;
+          }
+          break;
 
         case "REQUEST_POLICY":
           sendResponse({ policy: this.policy });
@@ -575,7 +643,10 @@ class CheckBackground {
       ];
 
       if (disallowed.includes(protocol)) {
-        logger.warn("Check: Skipping content script injection for disallowed URL:", url);
+        logger.warn(
+          "Check: Skipping content script injection for disallowed URL:",
+          url
+        );
         return;
       }
 
@@ -1067,9 +1138,20 @@ class CheckBackground {
   }
 }
 
-// Initialize the background service worker
-const check = new CheckBackground();
-check.initialize();
+// Initialize the background service worker with singleton pattern
+if (!globalThis.checkBackgroundInstance) {
+  globalThis.checkBackgroundInstance = new CheckBackground();
+  globalThis.checkBackgroundInstance.initialize().catch((error) => {
+    console.error("Failed to initialize CheckBackground:", error);
+  });
+} else {
+  // Service worker restarted, ensure existing instance is initialized
+  globalThis.checkBackgroundInstance.initialize().catch((error) => {
+    console.error("Failed to re-initialize CheckBackground:", error);
+  });
+}
+
+const check = globalThis.checkBackgroundInstance;
 
 // Export for testing purposes
 if (typeof module !== "undefined" && module.exports) {
