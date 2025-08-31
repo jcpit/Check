@@ -278,14 +278,58 @@ class CheckOptions {
     });
   }
 
+  async waitForRuntimeReady(maxAttempts = 5, initialDelay = 100) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        // Check if chrome.runtime and extension context are available
+        if (chrome.runtime && chrome.runtime.id) {
+          const testUrl = chrome.runtime.getURL("config/branding.json");
+          // Validate the URL is properly formed (not undefined or invalid)
+          if (
+            testUrl &&
+            testUrl.startsWith("chrome-extension://") &&
+            !testUrl.includes("undefined")
+          ) {
+            return true;
+          }
+        }
+      } catch (error) {
+        console.warn(
+          `Runtime readiness check attempt ${attempt} failed:`,
+          error
+        );
+      }
+
+      if (attempt < maxAttempts) {
+        const delay = initialDelay * Math.pow(2, attempt - 1);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+
+    throw new Error("Chrome runtime not ready after maximum attempts");
+  }
+
   async loadBrandingConfiguration() {
     try {
+      // Wait for runtime to be ready before calling chrome.runtime.getURL
+      await this.waitForRuntimeReady();
+
       const response = await fetch(
         chrome.runtime.getURL("config/branding.json")
       );
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to load branding config: ${response.status} ${response.statusText}`
+        );
+      }
+
       this.brandingConfig = await response.json();
     } catch (error) {
-      console.log("Using default branding configuration");
+      console.warn(
+        "Failed to load branding configuration, using defaults:",
+        error
+      );
       this.brandingConfig = this.getDefaultBrandingConfig();
     }
   }
@@ -365,7 +409,8 @@ class CheckOptions {
     this.elements.notificationDuration.value = this.config.notificationDuration;
     this.elements.notificationDurationValue.textContent =
       this.config.notificationDuration / 1000 + "s";
-    this.elements.enableValidPageBadge.checked = this.config.enableValidPageBadge || false;
+    this.elements.enableValidPageBadge.checked =
+      this.config.enableValidPageBadge || false;
 
     // Security settings
     this.elements.blockMaliciousUrls.checked = this.config.blockMaliciousUrls;
