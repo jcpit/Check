@@ -10,14 +10,56 @@
 
 let logger = console;
 
+// Enhanced fallback logger with content script identification
+const fallbackLogger = {
+  log: (...args) => console.log("[Content Script]", ...args),
+  warn: (...args) => console.warn("[Content Script]", ...args),
+  error: (...args) => console.error("[Content Script]", ...args),
+  debug: (...args) => console.debug("[Content Script]", ...args),
+};
+
+async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      // Check if chrome.runtime and extension context are available
+      if (chrome.runtime && chrome.runtime.id) {
+        const testUrl = chrome.runtime.getURL("scripts/utils/logger.js");
+        // Validate the URL is properly formed (not undefined or invalid)
+        if (testUrl && testUrl.startsWith("chrome-extension://") && !testUrl.includes("undefined")) {
+          return true;
+        }
+      }
+    } catch (error) {
+      fallbackLogger.warn(`Runtime context validation attempt ${attempt} failed:`, error);
+    }
+    
+    if (attempt < maxAttempts) {
+      const delay = initialDelay * Math.pow(2, attempt - 1);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  return false;
+}
+
 (async () => {
   try {
-    const mod = await import(
-      chrome.runtime.getURL("scripts/utils/logger.js")
-    );
-    logger = mod.default;
+    // Validate runtime context before attempting import
+    const runtimeReady = await validateRuntimeContext();
+    
+    if (runtimeReady) {
+      const mod = await import(
+        chrome.runtime.getURL("scripts/utils/logger.js")
+      );
+      logger = mod.default;
+      logger.log("Content script logger successfully initialized");
+    } else {
+      throw new Error("Runtime context not ready for logger import");
+    }
   } catch (err) {
-    logger.error("Failed to load logger:", err);
+    // Use enhanced fallback logger
+    logger = fallbackLogger;
+    logger.error("Failed to load logger, using fallback:", err);
   }
 
   chrome.runtime.sendMessage({ type: "ping" }, (response) => {
