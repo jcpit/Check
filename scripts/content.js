@@ -8,11 +8,14 @@
  * suspicious pages, then the full engine performs deeper analysis.
  */
 
-// Prevent multiple logger declarations
-if (typeof window.checkLogger === 'undefined') {
-  window.checkLogger = console;
+// Prevent multiple logger declarations by checking if already defined
+let logger;
+if (typeof window.checkLogger !== 'undefined') {
+  logger = window.checkLogger;
+} else {
+  logger = console;
+  window.checkLogger = logger;
 }
-let logger = window.checkLogger;
 
 // Enhanced fallback logger with content script identification
 const fallbackLogger = {
@@ -344,31 +347,40 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
         banner.appendChild(closeBtn);
         document.documentElement.appendChild(banner);
 
-        // Log the detection event with rule information
-        chrome.runtime.sendMessage({
-          type: "LOG_EVENT",
-          event: {
-            type: "threat_detected",
-            url: location.href,
-            threatLevel: "high",
-            action: "blocked",
-            reason: "Suspicious Microsoft login page on untrusted domain",
-            score: score,
-            threshold: threshold,
-            triggeredRules: triggeredRules.map((rule) => ({
-              id: rule.id,
-              type: rule.type,
-              description: rule.description,
-              weight: rule.weight,
-            })),
-            ruleDetails:
-              triggeredRules.length > 0
-                ? `Triggered rules: ${triggeredRules
-                    .map((r) => r.id || r.type)
-                    .join(", ")}`
-                : "No specific rules triggered",
-          },
-        });
+        // Log the detection event with silent error handling
+        try {
+          chrome.runtime.sendMessage({
+            type: "LOG_EVENT",
+            event: {
+              type: "threat_detected",
+              url: location.href,
+              threatLevel: "high",
+              action: "blocked",
+              reason: "Suspicious Microsoft login page on untrusted domain",
+              score: score,
+              threshold: threshold,
+              triggeredRules: triggeredRules.map((rule) => ({
+                id: rule.id,
+                type: rule.type,
+                description: rule.description,
+                weight: rule.weight,
+              })),
+              ruleDetails:
+                triggeredRules.length > 0
+                  ? `Triggered rules: ${triggeredRules
+                      .map((r) => r.id || r.type)
+                      .join(", ")}`
+                  : "No specific rules triggered",
+            },
+          }, (response) => {
+            if (chrome.runtime.lastError) {
+              // Silently handle errors to avoid Chrome error list
+              return;
+            }
+          });
+        } catch (error) {
+          // Silently handle errors
+        }
       }
     } catch (e) {
       // ignore rule errors
@@ -480,7 +492,16 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
       // 2) Post-login redirect from real login (no password field) → trusted-by-referrer
       const refOrigin = urlOrigin(document.referrer);
       if ((await isTrustedReferrer(refOrigin)) && !this.hasPassword()) {
-        chrome.runtime.sendMessage({ type: "FLAG_TRUSTED_BY_REFERRER" });
+        try {
+          chrome.runtime.sendMessage({ type: "FLAG_TRUSTED_BY_REFERRER" }, (response) => {
+            if (chrome.runtime.lastError) {
+              // Silently handle errors to avoid Chrome error list
+              return;
+            }
+          });
+        } catch (error) {
+          // Silently handle errors
+        }
         return;
       }
 
@@ -1468,20 +1489,6 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
       return cspMeta ? cspMeta.getAttribute("content") : null;
     }
 
-    analyzeForm(form) {
-      const hasPasswordField = form.querySelector('input[type="password"]');
-      const hasFileField = form.querySelector('input[type="file"]');
-
-      this.logSecurityEvent({
-        type: "form_detected",
-        action: form.action,
-        method: form.method,
-        hasPassword: !!hasPasswordField,
-        hasFileUpload: !!hasFileField,
-        url: window.location.href,
-        timestamp: new Date().toISOString(),
-      });
-    }
 
     handleThreatsDetected(threats) {
       threats.forEach((threat) => {
@@ -1528,10 +1535,19 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
     }
 
     logSecurityEvent(event) {
-      chrome.runtime.sendMessage({
-        type: "LOG_EVENT",
-        event,
-      });
+      try {
+        chrome.runtime.sendMessage({
+          type: "LOG_EVENT",
+          event,
+        }, (response) => {
+          if (chrome.runtime.lastError) {
+            // Silently handle errors to avoid Chrome error list
+            return;
+          }
+        });
+      } catch (error) {
+        // Silently handle errors
+      }
     }
 
     destroy() {
