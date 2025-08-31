@@ -808,22 +808,19 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
             if (response && response.success) {
               resolve(response.config);
             } else {
-              resolve(this.getDefaultConfig());
+              resolve({
+                extensionEnabled: true,
+                enableContentManipulation: true,
+                enableUrlMonitoring: true,
+                showNotifications: true,
+                enableDebugLogging: false,
+              });
             }
           }
         );
       });
     }
 
-    getDefaultConfig() {
-      return {
-        extensionEnabled: true,
-        enableContentManipulation: true,
-        enableUrlMonitoring: true,
-        showNotifications: true,
-        debugMode: false,
-      };
-    }
 
     setupPageMonitoring() {
       // Monitor DOM changes

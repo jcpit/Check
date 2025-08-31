@@ -115,7 +115,6 @@ export class ConfigManager {
         strictMode: false,
       },
 
-
       // UI settings
       showNotifications: true,
       notificationDuration: 5000,

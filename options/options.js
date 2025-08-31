@@ -132,9 +132,7 @@ class CheckOptions {
     );
 
     // Logs actions
-    this.elements.logFilter?.addEventListener("change", () =>
-      this.filterLogs()
-    );
+    this.elements.logFilter?.addEventListener("change", () => this.loadLogs());
     this.elements.clearLogs?.addEventListener("click", () => this.clearLogs());
     this.elements.exportLogs?.addEventListener("click", () =>
       this.exportLogs()
@@ -289,7 +287,18 @@ class CheckOptions {
       this.originalConfig = JSON.parse(JSON.stringify(response.config));
     } else {
       // Use defaults when background script is unavailable
-      this.config = this.getDefaultConfig();
+      this.config = this.configManager?.getDefaultConfig() || {
+        extensionEnabled: true,
+        enableContentManipulation: true,
+        enableUrlMonitoring: true,
+        showNotifications: true,
+        notificationDuration: 5000,
+        enableValidPageBadge: false,
+        enableCustomRules: false,
+        customRulesUrl: "",
+        updateInterval: 24,
+        enableDebugLogging: false,
+      };
       this.originalConfig = JSON.parse(JSON.stringify(this.config));
 
       // Schedule silent retry in 5 seconds
@@ -351,36 +360,17 @@ class CheckOptions {
         "Failed to load branding configuration, using defaults:",
         error
       );
-      this.brandingConfig = this.getDefaultBrandingConfig();
+      this.brandingConfig = {
+        companyName: "CyberDrain",
+        productName: "Microsoft 365 Phishing Protection",
+        supportEmail: "support@cyberdrain.com",
+        primaryColor: "#F77F00",
+        logoUrl: "images/icon48.png",
+        supportUrl: "https://support.cyberdrain.com",
+        privacyPolicyUrl: "https://cyberdrain.com/privacy",
+        termsOfServiceUrl: "https://cyberdrain.com/terms",
+      };
     }
-  }
-
-  getDefaultConfig() {
-    return {
-      extensionEnabled: true,
-      enableContentManipulation: true,
-      enableUrlMonitoring: true,
-      showNotifications: true,
-      notificationDuration: 5000,
-      enableValidPageBadge: false,
-      enableCustomRules: false,
-      customRulesUrl: "",
-      updateInterval: 24,
-      enableDebugLogging: false,
-    };
-  }
-
-  getDefaultBrandingConfig() {
-    return {
-      companyName: "CyberDrain",
-      productName: "Microsoft 365 Phishing Protection",
-      supportEmail: "support@cyberdrain.com",
-      primaryColor: "#F77F00",
-      logoUrl: "images/icon48.png",
-      supportUrl: "https://support.cyberdrain.com",
-      privacyPolicyUrl: "https://cyberdrain.com/privacy",
-      termsOfServiceUrl: "https://cyberdrain.com/terms",
-    };
   }
 
   applyBranding() {
@@ -883,7 +873,7 @@ class CheckOptions {
       if (log.event?.url) {
         const url = new URL(log.event.url);
         return log.event.threatDetected
-          ? this.defangUrl(url.hostname)
+          ? url.hostname.replace(/:/g, "[:]")
           : url.hostname;
       }
       if (log.url) {
@@ -896,7 +886,7 @@ class CheckOptions {
         log.event?.url &&
         (log.event?.threatDetected || log.event?.threatLevel === "high")
       ) {
-        return this.defangUrl(log.event.url);
+        return log.event.url.replace(/:/g, "[:]");
       }
     }
     return "-";
@@ -995,7 +985,7 @@ class CheckOptions {
         case "form_submission":
           let formDetails = `Form submission`;
           if (log.event.action) {
-            formDetails += ` to ${this.defangUrl(log.event.action)}`;
+            formDetails += ` to ${log.event.action.replace(/:/g, "[:]")}`;
           }
           if (log.event.reason) {
             formDetails += ` - ${log.event.reason}`;
@@ -1009,7 +999,7 @@ class CheckOptions {
           let defaultMsg =
             log.event.description || log.event.type.replace(/_/g, " ");
           if (log.event.url) {
-            defaultMsg += ` on ${this.defangUrl(log.event.url)}`;
+            defaultMsg += ` on ${log.event.url.replace(/:/g, "[:]")}`;
           }
           if (log.event.reason) {
             defaultMsg += `: ${log.event.reason}`;
@@ -1018,20 +1008,6 @@ class CheckOptions {
       }
     }
     return log.message || log.type || "Unknown event";
-  }
-
-  defangUrl(url) {
-    try {
-      // Defang URLs by only replacing colons to prevent clickability while keeping readability
-      return url.replace(/:/g, "[:]");
-    } catch (e) {
-      return url; // Return original if defanging fails
-    }
-  }
-
-  filterLogs() {
-    // Implementation for log filtering
-    this.loadLogs();
   }
 
   async clearLogs() {

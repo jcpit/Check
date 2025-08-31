@@ -105,18 +105,22 @@ class CheckPopup {
   async initialize() {
     try {
       this.showLoading("Initializing...");
-
-      // Wait for background script to be ready
-      this.showLoading("Connecting to background script...");
+      console.log("Check: Initializing popup...");
       const backgroundReady = await this.waitForBackgroundScript();
-
+      console.log("Check: Background script ready:", backgroundReady);
       if (!backgroundReady) {
         console.warn(
           "Check: Background script not available, using fallback mode"
         );
-        this.config = this.getDefaultConfig();
+        console.log("Check: Using fallback configuration");
+        this.config = {
+          showNotifications: true,
+          enableDebugLogging: false,
+        };
+        console.log("Still loading");
         this.brandingConfig = { companyName: "Check", productName: "Check" };
         this.applyBranding();
+        console.log("Applying default branding");
         this.showNotification("Extension running in limited mode", "warning");
         this.hideLoading();
         return;
@@ -179,7 +183,11 @@ class CheckPopup {
                 console.warn(
                   "Check: Using default configuration after all retries failed"
                 );
-                this.config = this.getDefaultConfig();
+                this.config = {
+                  extensionEnabled: true,
+                  showNotifications: true,
+                  enableDebugLogging: false,
+                };
                 resolve();
                 return;
               }
@@ -202,7 +210,11 @@ class CheckPopup {
             );
             setTimeout(() => attemptConnection(retryCount + 1), 5000);
           } else {
-            this.config = this.getDefaultConfig();
+            this.config = {
+              extensionEnabled: true,
+              showNotifications: true,
+              enableDebugLogging: false,
+            };
             resolve();
           }
         }
@@ -220,58 +232,14 @@ class CheckPopup {
       this.brandingConfig = await response.json();
     } catch (error) {
       console.log("Using default branding configuration");
-      this.brandingConfig = this.getDefaultBrandingConfig();
+      this.brandingConfig = {
+        companyName: "CyberDrain",
+        productName: "Microsoft 365 Phishing Protection",
+        logoUrl: "images/icon32.png",
+        supportUrl: "https://support.cyberdrain.com",
+        privacyPolicyUrl: "https://cyberdrain.com/privacy",
+      };
     }
-  }
-
-  getDefaultConfig() {
-    return {
-      extensionEnabled: true,
-      enableContentManipulation: true,
-      enableUrlMonitoring: true,
-      showNotifications: true,
-      enterpriseMode: false,
-    };
-  }
-
-  getDefaultBrandingConfig() {
-    return {
-      companyName: "CyberDrain",
-      productName: "Microsoft 365 Phishing Protection",
-      version: "1.0.0",
-      logoUrl: "images/icon32.png",
-      supportUrl: "https://support.cyberdrain.com",
-      privacyPolicyUrl: "https://cyberdrain.com/privacy",
-      supportEmail: "support@cyberdrain.com",
-      branding: {
-        primaryColor: "#F77F00",
-        primaryHover: "#E56F00",
-        primaryLight: "rgba(247, 127, 0, 0.1)",
-        primaryDark: "#D96800",
-
-        secondaryColor: "#003049",
-        secondaryHover: "#004B73",
-        secondaryLight: "rgba(0, 48, 73, 0.1)",
-        secondaryDark: "#002236",
-
-        accentColor: "#005C63",
-        successColor: "#005C63",
-        warningColor: "#F77F00",
-        errorColor: "#DC2626",
-
-        textPrimary: "#FFFFFF",
-        textSecondary: "#9CA3AF",
-        textMuted: "#6B7280",
-        textInverse: "#003049",
-
-        bgPrimary: "#003049",
-        bgSecondary: "rgba(255, 255, 255, 0.05)",
-        bgSurface: "rgba(255, 255, 255, 0.03)",
-
-        border: "rgba(255, 255, 255, 0.1)",
-        borderHover: "rgba(247, 127, 0, 0.3)",
-      },
-    };
   }
 
   applyBranding() {
@@ -728,16 +696,6 @@ class CheckPopup {
         resolve(response);
       });
     });
-  }
-
-  async updateStatistics() {
-    try {
-      await chrome.storage.local.set({ statistics: this.stats });
-      this.elements.scannedPages.textContent =
-        this.stats.scannedPages.toLocaleString();
-    } catch (error) {
-      console.error("Failed to update statistics:", error);
-    }
   }
 
   showLoading(text = "Loading...") {

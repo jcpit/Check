@@ -89,7 +89,6 @@ class CheckBackground {
       await this.policyManager.loadPolicies();
       await this.detectionEngine.initialize();
 
-      // CyberDrain integration - Load policy
       await this.refreshPolicy();
 
       this.setupEventListeners();
@@ -104,23 +103,27 @@ class CheckBackground {
       logger.error("CheckBackground.initialize: error", error);
       this.lastError = error;
       this.initializationRetries++;
-      
+
       // Reset promise to allow retry
       this.initializationPromise = null;
-      
+
       // If we haven't exceeded max retries, schedule a retry
       if (this.initializationRetries < this.maxInitializationRetries) {
-        logger.log(`CheckBackground.initialize: scheduling retry ${this.initializationRetries}/${this.maxInitializationRetries}`);
+        logger.log(
+          `CheckBackground.initialize: scheduling retry ${this.initializationRetries}/${this.maxInitializationRetries}`
+        );
         setTimeout(() => {
-          this.initialize().catch(err => {
+          this.initialize().catch((err) => {
             logger.error("CheckBackground.initialize: retry failed", err);
           });
         }, 1000 * this.initializationRetries); // Exponential backoff
       } else {
-        logger.error("CheckBackground.initialize: max retries exceeded, entering fallback mode");
+        logger.error(
+          "CheckBackground.initialize: max retries exceeded, entering fallback mode"
+        );
         this.enterFallbackMode();
       }
-      
+
       throw error;
     }
   }
@@ -128,25 +131,18 @@ class CheckBackground {
   enterFallbackMode() {
     // Set up minimal functionality when initialization fails
     this.isInitialized = false;
-    this.config = this.getDefaultConfig();
+    this.config = this.configManager.getDefaultConfig();
     this.policy = this.getDefaultPolicy();
-    
-    logger.log("CheckBackground: entering fallback mode with minimal functionality");
+
+    logger.log(
+      "CheckBackground: entering fallback mode with minimal functionality"
+    );
   }
 
-  getDefaultConfig() {
-    return {
-      extensionEnabled: true,
-      enableContentManipulation: true,
-      enableUrlMonitoring: true,
-      showNotifications: true,
-      enableDebugLogging: false
-    };
-  }
 
   getDefaultPolicy() {
     return {
-      BrandingName: "Microsoft 365 Phishing Protection",
+      BrandingName: "CyberDrain Check Phishing Protection",
       BrandingImage: "",
       ExtraWhitelist: [],
       CIPPReportingServer: "",
@@ -170,19 +166,6 @@ class CheckBackground {
     await this.applyBrandingToAction();
   }
 
-  getDefaultPolicy() {
-    return {
-      BrandingName: "Microsoft 365 Phishing Protection",
-      BrandingImage: "",
-      ExtraWhitelist: [],
-      CIPPReportingServer: "",
-      AlertWhenLogon: true,
-      ValidPageBadgeImage: "",
-      StrictResourceAudit: true,
-      RequireMicrosoftAction: true,
-      EnableValidPageBadge: false,
-    };
-  }
 
   urlOrigin(u) {
     try {
@@ -434,7 +417,10 @@ class CheckBackground {
         try {
           await this.initialize();
         } catch (error) {
-          logger.warn("CheckBackground.handleMessage: initialization failed, using fallback", error);
+          logger.warn(
+            "CheckBackground.handleMessage: initialization failed, using fallback",
+            error
+          );
           // Continue with fallback mode
         }
       }
@@ -451,7 +437,7 @@ class CheckBackground {
             initialized: this.isInitialized,
             fallbackMode: !this.isInitialized,
             errorCount: this.errorCount,
-            lastError: this.lastError?.message || null
+            lastError: this.lastError?.message || null,
           });
           break;
 
@@ -664,18 +650,20 @@ class CheckBackground {
     } catch (error) {
       logger.error("Check: Error handling message:", error);
       this.errorCount++;
-      
+
       // If we've had too many errors, try to reinitialize
       if (this.errorCount > this.maxErrors) {
-        logger.warn("CheckBackground: too many errors, attempting reinitialization");
+        logger.warn(
+          "CheckBackground: too many errors, attempting reinitialization"
+        );
         this.errorCount = 0;
         this.isInitialized = false;
         this.initializationPromise = null;
-        this.initialize().catch(err => {
+        this.initialize().catch((err) => {
           logger.error("CheckBackground: reinitialization failed", err);
         });
       }
-      
+
       sendResponse({ success: false, error: error.message });
     }
   }
@@ -748,7 +736,7 @@ class CheckBackground {
 
   async logUrlAccess(url, tabId) {
     const config = await this.configManager.getConfig();
-    
+
     // Only log if debug logging is enabled or if this is a significant event
     if (!config.enableDebugLogging) {
       // Skip logging routine page scans to avoid log bloat
@@ -763,8 +751,8 @@ class CheckBackground {
       event: {
         type: "page_scanned",
         url: url,
-        threatDetected: false
-      }
+        threatDetected: false,
+      },
     };
 
     // Store in local storage for audit
@@ -805,15 +793,19 @@ class CheckBackground {
 
   enhanceEventForLogging(event) {
     const enhancedEvent = { ...event };
-    
+
     // Defang URLs in threat-related events
-    if (event.url && (event.type === "content_threat_detected" || event.type === "threat_detected")) {
+    if (
+      event.url &&
+      (event.type === "content_threat_detected" ||
+        event.type === "threat_detected")
+    ) {
       enhancedEvent.url = this.defangUrl(event.url);
       enhancedEvent.threatDetected = true;
       enhancedEvent.action = event.action || "blocked";
       enhancedEvent.threatLevel = event.threatLevel || "high";
     }
-    
+
     // Add more context for different event types
     switch (event.type) {
       case "url_access":
@@ -848,7 +840,7 @@ class CheckBackground {
         if (!enhancedEvent.action) enhancedEvent.action = "logged";
         if (!enhancedEvent.threatLevel) enhancedEvent.threatLevel = "info";
     }
-    
+
     return enhancedEvent;
   }
 
