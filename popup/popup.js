@@ -34,7 +34,6 @@ class CheckPopup {
     this.elements.statusText = document.getElementById("statusText");
 
     // Action buttons
-    this.elements.viewLogs = document.getElementById("viewLogs");
     this.elements.openSettings = document.getElementById("openSettings");
 
     // Page info
@@ -82,7 +81,6 @@ class CheckPopup {
 
   setupEventListeners() {
     // Action button listeners
-    this.elements.viewLogs.addEventListener("click", () => this.viewLogs());
     this.elements.openSettings.addEventListener("click", () =>
       this.openSettings()
     );
@@ -143,9 +141,6 @@ class CheckPopup {
       await this.loadStatistics();
       await this.loadCurrentPageInfo();
       await this.checkEnterpriseMode();
-
-      // Update UI
-      this.updateStatusIndicator();
 
       this.hideLoading();
     } catch (error) {
@@ -630,23 +625,6 @@ class CheckPopup {
     this.elements.complianceBadge.className = isCompliant
       ? "compliance-badge"
       : "compliance-badge non-compliant";
-  }
-
-  updateStatusIndicator() {
-    if (this.config.extensionEnabled) {
-      this.elements.statusDot.className = "status-dot";
-      this.elements.statusText.textContent = "Active";
-    } else {
-      this.elements.statusDot.className = "status-dot inactive";
-      this.elements.statusText.textContent = "Disabled";
-    }
-  }
-
-  viewLogs() {
-    chrome.tabs.create({
-      url: chrome.runtime.getURL("options/options.html#logs"),
-    });
-    window.close();
   }
 
   openSettings() {
