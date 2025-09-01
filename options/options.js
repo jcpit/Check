@@ -119,7 +119,11 @@ class CheckOptions {
       this.elements.notificationDuration.addEventListener("input", (e) => {
         this.elements.notificationDurationValue.textContent =
           e.target.value / 1000 + "s";
+        this.updateSliderProgress(e.target);
       });
+      
+      // Initialize slider progress
+      this.updateSliderProgress(this.elements.notificationDuration);
     }
 
     // Detection rules actions
@@ -428,6 +432,11 @@ class CheckOptions {
       console.log("No custom logo, using default sidebar logo");
       sidebarLogo.src = chrome.runtime.getURL("images/icon48.png");
     }
+
+    // Apply primary color to the options page
+    if (this.brandingConfig?.primaryColor) {
+      this.applyPrimaryColorToOptionsPage(this.brandingConfig.primaryColor);
+    }
   }
 
   populateFormFields() {
@@ -479,6 +488,11 @@ class CheckOptions {
     this.elements.supportEmail.value = this.brandingConfig?.supportEmail || "";
     this.elements.primaryColor.value = this.brandingConfig?.primaryColor || "#F77F00";
     this.elements.logoUrl.value = this.brandingConfig?.logoUrl || "";
+    
+    // Update slider progress
+    if (this.elements.notificationDuration) {
+      this.updateSliderProgress(this.elements.notificationDuration);
+    }
   }
 
   switchSection(sectionName) {
@@ -1191,6 +1205,93 @@ class CheckOptions {
         ? logoUrl
         : chrome.runtime.getURL(logoUrl);
     }
+
+    // Apply primary color to the options page interface itself
+    this.applyPrimaryColorToOptionsPage(primaryColor);
+    
+    // Update slider progress with new primary color
+    if (this.elements.notificationDuration) {
+      this.updateSliderProgress(this.elements.notificationDuration);
+    }
+  }
+
+  applyPrimaryColorToOptionsPage(primaryColor) {
+    if (!primaryColor) return;
+
+    // Remove existing primary color styles
+    const existingStyle = document.getElementById('options-primary-color');
+    if (existingStyle) {
+      existingStyle.remove();
+    }
+
+    // Create new style element
+    const style = document.createElement('style');
+    style.id = 'options-primary-color';
+    style.textContent = `
+      :root {
+        --primary-color: ${primaryColor} !important;
+        --primary-hover: ${primaryColor}dd !important;
+        --warning-color: ${primaryColor} !important;
+      }
+      
+      /* Apply to buttons and interactive elements */
+      .btn-primary {
+        background-color: ${primaryColor} !important;
+      }
+      
+      .btn-primary:hover {
+        background-color: ${primaryColor}dd !important;
+      }
+      
+      /* Apply to menu active states */
+      .menu-item.active {
+        background-color: ${primaryColor} !important;
+        border-left-color: ${primaryColor} !important;
+      }
+      
+      .menu-item.active .menu-icon,
+      .menu-item.active .menu-text {
+        color: white !important;
+      }
+      
+      /* Apply to checkboxes and form elements */
+      .setting-checkbox:checked + .checkbox-custom {
+        background-color: ${primaryColor} !important;
+        border-color: ${primaryColor} !important;
+      }
+      
+      /* Apply to color inputs */
+      .setting-color {
+        border-color: ${primaryColor} !important;
+      }
+      
+      /* Apply to focus states */
+      .setting-input:focus,
+      .setting-select:focus,
+      .setting-textarea:focus {
+        border-color: ${primaryColor} !important;
+        box-shadow: 0 0 0 2px ${primaryColor}22 !important;
+      }
+      
+      /* Apply to range sliders */
+      .setting-range::-webkit-slider-thumb {
+        background: ${primaryColor} !important;
+      }
+      
+      .setting-range::-moz-range-thumb {
+        background: ${primaryColor} !important;
+      }
+      
+      .setting-range:focus::-webkit-slider-thumb {
+        box-shadow: 0 0 0 3px ${primaryColor}33, 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+      }
+      
+      .setting-range:focus::-moz-range-thumb {
+        box-shadow: 0 0 0 3px ${primaryColor}33, 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+      }
+    `;
+    
+    document.head.appendChild(style);
   }
 
   markUnsavedChanges() {
@@ -1206,6 +1307,24 @@ class CheckOptions {
       this.elements.saveSettings.textContent = "Save Settings";
       this.elements.saveSettings.classList.remove("unsaved");
     }
+  }
+
+  updateSliderProgress(slider) {
+    if (!slider) return;
+    
+    const value = slider.value;
+    const min = slider.min || 0;
+    const max = slider.max || 100;
+    const percentage = ((value - min) / (max - min)) * 100;
+    
+    // Get the current primary color
+    const primaryColor = this.elements.primaryColor?.value || this.brandingConfig?.primaryColor || '#F77F00';
+    
+    // Update the track background with filled progress
+    const trackBackground = `linear-gradient(to right, ${primaryColor} 0%, ${primaryColor} ${percentage}%, var(--border-color) ${percentage}%, var(--border-color) 100%)`;
+    
+    // Apply the style directly to the slider
+    slider.style.background = trackBackground;
   }
 
   async sendMessage(message) {

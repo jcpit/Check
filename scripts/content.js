@@ -962,11 +962,51 @@ async function sendCippReport(reportData) {
 }
 
 /**
+ * Apply primary color from branding configuration
+ */
+async function applyBrandingColors() {
+  try {
+    // Get branding configuration from storage
+    const result = await new Promise((resolve) => {
+      chrome.storage.local.get(['brandingConfig'], (result) => {
+        resolve(result.brandingConfig || {});
+      });
+    });
+    
+    if (result.primaryColor) {
+      // Remove existing branding styles
+      const existingStyle = document.getElementById('content-branding-colors');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+      
+      // Create new style element with primary color
+      const style = document.createElement('style');
+      style.id = 'content-branding-colors';
+      style.textContent = `
+        :root {
+          --check-primary-color: ${result.primaryColor} !important;
+          --check-primary-hover: ${result.primaryColor}dd !important;
+        }
+      `;
+      document.head.appendChild(style);
+      
+      logger.log("Applied branding primary color:", result.primaryColor);
+    }
+  } catch (error) {
+    logger.warn("Failed to apply branding colors:", error.message);
+  }
+}
+
+/**
  * Initialize protection when DOM is ready
  */
 function initializeProtection() {
   try {
     logger.log("Initializing Microsoft 365 phishing protection");
+    
+    // Apply branding colors first
+    applyBrandingColors();
     
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {

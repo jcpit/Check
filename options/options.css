@@ -116,8 +116,13 @@ body {
 }
 
 .menu-item.active {
-  background: var(--primary-color);
-  color: white;
+  background: var(--primary-color) !important;
+  color: white !important;
+}
+
+.menu-item.active .menu-icon,
+.menu-item.active .menu-text {
+  color: white !important;
 }
 
 .menu-icon {
@@ -293,6 +298,95 @@ body {
 .setting-range {
   width: 100%;
   margin: 8px 0;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  background: var(--border-color);
+  border-radius: 4px;
+  outline: none;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.setting-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  margin-top: -6px; /* Center the thumb on the track */
+}
+
+.setting-range::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.setting-range::-webkit-slider-runnable-track {
+  height: 8px;
+  background: transparent;
+  border-radius: 4px;
+  border: none;
+}
+
+/* Firefox */
+.setting-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  -moz-appearance: none;
+}
+
+.setting-range::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.setting-range::-moz-range-track {
+  height: 8px;
+  background: var(--border-color);
+  border-radius: 4px;
+  border: none;
+}
+
+.setting-range::-moz-range-progress {
+  height: 8px;
+  background: var(--primary-color);
+  border-radius: 4px;
+  border: none;
+}
+
+/* Focus states */
+.setting-range:focus {
+  outline: none;
+}
+
+.setting-range:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--primary-color)33, 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.setting-range:focus::-moz-range-thumb {
+  box-shadow: 0 0 0 3px var(--primary-color)33, 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Active/pressed states */
+.setting-range:active::-webkit-slider-thumb {
+  transform: scale(0.95);
+}
+
+.setting-range:active::-moz-range-thumb {
+  transform: scale(0.95);
 }
 
 .setting-value {

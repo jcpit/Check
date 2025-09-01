@@ -27,8 +27,6 @@ class CheckPopup {
     // Header elements
     this.elements.brandingLogo = document.getElementById("brandingLogo");
     this.elements.brandingTitle = document.getElementById("brandingTitle");
-    this.elements.extensionVersion =
-      document.getElementById("extensionVersion");
     this.elements.statusIndicator = document.getElementById("statusIndicator");
     this.elements.statusDot = document.getElementById("statusDot");
     this.elements.statusText = document.getElementById("statusText");
@@ -287,11 +285,8 @@ class CheckPopup {
   applyBranding() {
     console.log("Applying branding:", this.brandingConfig);
     
-    // Update title and version
+    // Update title
     this.elements.brandingTitle.textContent = this.brandingConfig.productName || "Microsoft 365 Phishing Protection";
-    this.elements.extensionVersion.textContent = `v${
-      chrome.runtime.getManifest().version
-    }`;
 
     // Update logo with fallback handling
     if (this.brandingConfig.logoUrl) {
@@ -344,10 +339,6 @@ class CheckPopup {
         }
         .action-btn.primary:hover {
           background-color: ${this.brandingConfig.primaryColor}dd !important;
-        }
-        .security-badge.safe {
-          background-color: ${this.brandingConfig.primaryColor}22 !important;
-          color: ${this.brandingConfig.primaryColor} !important;
         }
       `;
       document.head.appendChild(style);

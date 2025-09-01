@@ -245,6 +245,10 @@ async function loadBranding() {
         console.log("Applying primary color:", storageResult.primaryColor);
         const style = document.createElement('style');
         style.textContent = `
+          :root {
+            --primary-color: ${storageResult.primaryColor} !important;
+            --primary-hover: ${storageResult.primaryColor}dd !important;
+          }
           .icon { background: ${storageResult.primaryColor} !important; }
           h1 { color: ${storageResult.primaryColor} !important; }
           .btn-primary { background: ${storageResult.primaryColor} !important; }

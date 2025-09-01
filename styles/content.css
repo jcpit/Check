@@ -3,6 +3,12 @@
  * Styles for overlays, notifications, and page modifications
  */
 
+/* CSS Variables for theming */
+:root {
+  --check-primary-color: #F77F00;
+  --check-primary-hover: #E56F00;
+}
+
 /* Main notification styles */
 .check-notification {
   position: fixed !important;
@@ -27,7 +33,7 @@
 }
 
 .check-notification.warning {
-  border-left: 4px solid #F77F00 !important;
+  border-left: 4px solid #d97706 !important;
   background: #fffbeb !important;
 }
 
@@ -109,7 +115,7 @@
 }
 
 .check-block-content button {
-  background: #F77F00 !important;
+  background: var(--check-primary-color) !important;
   color: white !important;
   border: none !important;
   padding: 12px 24px !important;
@@ -121,7 +127,7 @@
 }
 
 .check-block-content button:hover {
-  background: #E56F00 !important;
+  background: var(--check-primary-hover) !important;
 }
 
 .check-block-content .secondary-btn {

@@ -119,13 +119,6 @@ body {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-.version {
-  font-size: 11px;
-  color: var(--theme-text-secondary);
-  font-weight: 500;
-  opacity: 0.9;
-}
-
 .status-indicator {
   display: flex;
   align-items: center;
@@ -143,19 +136,19 @@ body {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--theme-success);
+  background: #059669 !important;
   animation: pulse 2s infinite;
-  box-shadow: 0 0 6px rgba(0, 92, 99, 0.4);
+  box-shadow: 0 0 6px rgba(5, 150, 105, 0.4) !important;
 }
 
 .status-dot.warning {
-  background: var(--theme-warning);
-  box-shadow: 0 0 6px rgba(247, 127, 0, 0.4);
+  background: #f59e0b !important;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.4) !important;
 }
 
 .status-dot.error {
-  background: var(--theme-error);
-  box-shadow: 0 0 6px rgba(220, 38, 38, 0.4);
+  background: #dc2626 !important;
+  box-shadow: 0 0 6px rgba(220, 38, 38, 0.4) !important;
 }
 
 .status-dot.inactive {
@@ -345,23 +338,23 @@ body {
 }
 
 .security-badge.safe {
-  background: #dcfce7;
-  color: #166534;
+  background: #dcfce7 !important;
+  color: #166534 !important;
 }
 
 .security-badge.warning {
-  background: #fef3c7;
-  color: #92400e;
+  background: #fef3c7 !important;
+  color: #92400e !important;
 }
 
 .security-badge.danger {
-  background: #fee2e2;
-  color: #991b1b;
+  background: #fee2e2 !important;
+  color: #991b1b !important;
 }
 
 .security-badge.analyzing {
-  background: #e0e7ff;
-  color: #3730a3;
+  background: #e0e7ff !important;
+  color: #3730a3 !important;
 }
 
 /* Threat summary */
@@ -415,7 +408,7 @@ body {
 .stat-number {
   font-size: 20px;
   font-weight: 700;
-  color: #F77F00;
+  color: var(--theme-primary);
 }
 
 .stat-label {
@@ -570,7 +563,7 @@ body {
 }
 
 .footer-link:hover {
-  color: #F77F00;
+  color: var(--theme-primary);
 }
 
 .company-branding {
@@ -605,7 +598,7 @@ body {
   width: 24px;
   height: 24px;
   border: 2px solid #e2e8f0;
-  border-top: 2px solid #F77F00;
+  border-top: 2px solid var(--theme-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -673,15 +666,15 @@ body {
 
 /* Notification variants */
 .notification-toast.success {
-  background: #059669;
+  background: #059669 !important;
 }
 
 .notification-toast.warning {
-  background: #d97706;
+  background: #d97706 !important;
 }
 
 .notification-toast.error {
-  background: #dc2626;
+  background: #dc2626 !important;
 }
 
 /* Responsive adjustments */
