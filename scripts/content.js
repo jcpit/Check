@@ -452,54 +452,21 @@ async function runProtection(isRerun = false) {
               messageError
             );
           }
-
-          // Treat this as a high-severity threat even on legitimate domains
-          if (protectionEnabled) {
-            // Show both banner and blocking page for maximum visibility
-            const appName = clientInfo.appName || "Unknown Application";
-            showWarningBanner(
-              `CRITICAL WARNING: Rogue OAuth Application Detected - ${appName}`,
-              {
-                type: "rogue_app_on_legitimate_domain",
-                severity: "critical",
-                reason: clientInfo.reason,
-                clientId: clientInfo.clientId,
-                appInfo: clientInfo.appInfo,
-              }
-            );
-
-            showBlockingPage(
-              `ROGUE OAUTH APPLICATION DETECTED`,
-              `This legitimate Microsoft login page is being used by a known malicious OAuth application: ${clientInfo.reason}. This is extremely dangerous as it appears to be legitimate Microsoft but the application requesting access is known to be malicious.`,
-              {
-                type: "rogue_app_on_legitimate_domain",
-                severity: "critical",
-                reason: clientInfo.reason,
-                clientId: clientInfo.clientId,
-                appInfo: clientInfo.appInfo,
-                redirectTo: redirectHostname,
-              }
-            );
-          } else {
-            const appName =
-              clientInfo.appInfo?.appName || "Unknown Application";
-            showWarningBanner(
-              `CRITICAL WARNING: Rogue OAuth Application Detected - ${appName}`,
-              {
-                type: "rogue_app_on_legitimate_domain",
-                severity: "critical",
-                reason: clientInfo.reason,
-                clientId: clientInfo.clientId,
-                appInfo: clientInfo.appInfo,
-              }
-            );
-          }
+          const appName = clientInfo.appName || "Unknown Application";
+          showWarningBanner(
+            `CRITICAL WARNING: Rogue OAuth Application Detected - ${appName}`,
+            {
+              type: "rogue_app_on_legitimate_domain",
+              severity: "critical",
+              reason: clientInfo.reason,
+              clientId: clientInfo.clientId,
+              appInfo: clientInfo.appInfo,
+            }
+          );
 
           // Log as a threat event instead of legitimate access
           logProtectionEvent({
-            type: protectionEnabled
-              ? "threat_blocked"
-              : "threat_detected_no_action",
+            type: "threat_detected",
             url: location.href,
             origin: currentOrigin,
             reason: `Rogue OAuth application detected: ${clientInfo.reason}`,

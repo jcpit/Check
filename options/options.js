@@ -1231,6 +1231,25 @@ class CheckOptions {
   getUrlDisplay(log) {
     try {
       if (log.event?.url) {
+        // Define threat events that should have URLs defanged
+        const threatEvents = new Set([
+          "content_threat_detected",
+          "threat_detected",
+          "blocked_page_viewed",
+          "threat_blocked",
+          "threat_detected_no_action",
+        ]);
+
+        // Define legitimate events that should NEVER have URLs defanged
+        const legitimateEvents = new Set([
+          "legitimate_access",
+          "url_access",
+          "page_scanned",
+          "trusted-login-page",
+          "user-logged-on",
+          "ms-login-unknown-domain",
+        ]);
+
         // Check if URL is already defanged (contains [.] or [:])
         const isDefanged =
           log.event.url.includes("[.]") || log.event.url.includes("[:]");
@@ -1245,9 +1264,26 @@ class CheckOptions {
           }
           return urlStr; // Fallback to full defanged URL
         } else {
-          // URL is not defanged, parse normally and show hostname only
-          const url = new URL(log.event.url);
-          return url.hostname;
+          // URL is not defanged - check if it should be defanged
+          const shouldDefangUrl =
+            threatEvents.has(log.event.type) &&
+            !legitimateEvents.has(log.event.type);
+
+          if (shouldDefangUrl) {
+            // Defang the URL and then extract hostname
+            const defangedUrl = log.event.url
+              .replace(/:/g, "[:]")
+              .replace(/\./g, "[.]");
+            const match = defangedUrl.match(/^https?\[:\]\/\/([^\/]+)/);
+            if (match) {
+              return match[1]; // Return the defanged hostname
+            }
+            return defangedUrl; // Fallback to full defanged URL
+          } else {
+            // URL should not be defanged, parse normally and show hostname only
+            const url = new URL(log.event.url);
+            return url.hostname;
+          }
         }
       }
       if (log.url) {
