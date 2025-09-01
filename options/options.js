@@ -28,6 +28,7 @@ class CheckOptions {
     this.elements.saveSettings = document.getElementById("saveSettings");
     this.elements.exportConfig = document.getElementById("exportConfig");
     this.elements.importConfig = document.getElementById("importConfig");
+    this.elements.darkModeToggle = document.getElementById("darkModeToggle");
 
     // General settings
     this.elements.extensionEnabled =
@@ -113,6 +114,9 @@ class CheckOptions {
     this.elements.importConfig.addEventListener("click", () =>
       this.importConfiguration()
     );
+    this.elements.darkModeToggle.addEventListener("click", () =>
+      this.toggleDarkMode()
+    );
 
     // Range slider
     if (this.elements.notificationDuration) {
@@ -197,6 +201,8 @@ class CheckOptions {
       // Load configurations
       await this.loadConfiguration();
       await this.loadBrandingConfiguration();
+      // Initialize dark mode
+      await this.initializeDarkMode();
       // Apply branding
       this.applyBranding();
       // Populate form fields
@@ -1402,6 +1408,52 @@ class CheckOptions {
 
   hideModal() {
     this.elements.modalOverlay.style.display = "none";
+  }
+
+  // Dark Mode Management
+  async initializeDarkMode() {
+    // Get stored theme preference
+    const result = await chrome.storage.local.get(['themeMode']);
+    const stored = result.themeMode;
+    
+    let isDarkMode;
+    
+    if (stored === 'dark') {
+      isDarkMode = true;
+    } else if (stored === 'light') {
+      isDarkMode = false;
+    } else {
+      // Default to system preference
+      isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    
+    this.applyTheme(isDarkMode);
+  }
+
+  async toggleDarkMode() {
+    const html = document.documentElement;
+    const currentlyDark = html.classList.contains('dark-theme');
+    const newDarkMode = !currentlyDark;
+    
+    // Store preference
+    await chrome.storage.local.set({ themeMode: newDarkMode ? 'dark' : 'light' });
+    
+    this.applyTheme(newDarkMode);
+  }
+
+  applyTheme(isDarkMode) {
+    const html = document.documentElement;
+    const toggleIcon = this.elements.darkModeToggle.querySelector('.material-icons');
+    
+    if (isDarkMode) {
+      html.classList.add('dark-theme');
+      html.classList.remove('light-theme');
+      toggleIcon.textContent = 'light_mode';
+    } else {
+      html.classList.remove('dark-theme');
+      html.classList.add('light-theme');
+      toggleIcon.textContent = 'dark_mode';
+    }
   }
 }
 

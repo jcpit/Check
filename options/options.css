@@ -20,18 +20,79 @@
   --success-color: #005C63;
   --warning-color: #F77F00;
   --error-color: #003049;
-  --background-color: #FFFFFF;
-  --surface-color: #FFFFFF;
-  --text-primary: #003049;
-  --text-secondary: #3E5C66;
-  --text-muted: #3E5C66;
-  --border-color: #EBF0DF;
-  --border-hover: #005C63;
   --radius: 8px;
   --radius-lg: 12px;
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Light theme (default) */
+:root {
+  --background-color: #FFFFFF;
+  --surface-color: #FFFFFF;
+  --text-primary: #1F2937;
+  --text-secondary: #4B5563;
+  --text-muted: #6B7280;
+  --border-color: #E5E7EB;
+  --border-hover: #D1D5DB;
+  --sidebar-bg: #F9FAFB;
+  --content-bg: #FFFFFF;
+  --input-bg: #FFFFFF;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Dark theme */
+:root.dark-theme {
+  --background-color: #1F2937;
+  --surface-color: #374151;
+  --text-primary: #F9FAFB;
+  --text-secondary: #D1D5DB;
+  --text-muted: #9CA3AF;
+  --border-color: #4B5563;
+  --border-hover: #6B7280;
+  --sidebar-bg: #111827;
+  --content-bg: #1F2937;
+  --input-bg: #374151;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 2px 0 var(--shadow-color);
+  --shadow: 0 1px 3px 0 var(--shadow-color), 0 1px 2px 0 var(--shadow-color);
+  --shadow-lg: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -2px var(--shadow-color);
+}
+
+/* Respect system preference when no manual override */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light-theme) {
+    --background-color: #1F2937;
+    --surface-color: #374151;
+    --text-primary: #F9FAFB;
+    --text-secondary: #D1D5DB;
+    --text-muted: #9CA3AF;
+    --border-color: #4B5563;
+    --border-hover: #6B7280;
+    --sidebar-bg: #111827;
+    --content-bg: #1F2937;
+    --input-bg: #374151;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 1px 2px 0 var(--shadow-color);
+    --shadow: 0 1px 3px 0 var(--shadow-color), 0 1px 2px 0 var(--shadow-color);
+    --shadow-lg: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -2px var(--shadow-color);
+  }
+}
+
+/* Force light theme when manually selected, even if system prefers dark */
+:root.light-theme {
+  --background-color: #FFFFFF;
+  --surface-color: #FFFFFF;
+  --text-primary: #1F2937;
+  --text-secondary: #4B5563;
+  --text-muted: #6B7280;
+  --border-color: #E5E7EB;
+  --border-hover: #D1D5DB;
+  --sidebar-bg: #F9FAFB;
+  --content-bg: #FFFFFF;
+  --input-bg: #FFFFFF;
+  --shadow-color: rgba(0, 0, 0, 0.1);
 }
 
 body {
@@ -52,7 +113,7 @@ body {
 /* Sidebar */
 .sidebar {
   width: 260px;
-  background: var(--surface-color);
+  background: var(--sidebar-bg);
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
@@ -188,6 +249,30 @@ body {
 .header-actions {
   display: flex;
   gap: 12px;
+}
+
+/* Dark Mode Toggle */
+#darkModeToggle {
+  padding: 8px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+}
+
+#darkModeToggle:hover {
+  background: var(--surface-color);
+  border-color: var(--primary-color);
+}
+
+#darkModeToggle:active {
+  transform: scale(0.95);
 }
 
 /* Settings Sections */
