@@ -195,16 +195,13 @@
       <div class="reason">
         <div class="reason-title">Reason for blocking:</div>
         <div class="reason-text" id="blockReason">
-          This website contains potentially malicious content that could harm
-          your computer or compromise your data.
+          This website looks like it has tried to steal your login credentials,
+          to prevent you from logging in we've blocked access.
         </div>
       </div>
 
       <div class="actions">
         <button class="btn btn-primary" onclick="goBack()">Go Back</button>
-        <button class="btn btn-secondary" onclick="reportIssue()">
-          Report Issue
-        </button>
         <button class="btn btn-secondary" onclick="contactAdmin()">
           Contact Admin
         </button>
@@ -220,14 +217,6 @@
           <li>
             <span>Category:</span>
             <span id="threatCategory">Security Threat</span>
-          </li>
-          <li>
-            <span>Time:</span>
-            <span id="blockTime">--</span>
-          </li>
-          <li>
-            <span>Policy:</span>
-            <span id="policyName">Enterprise Security Policy</span>
           </li>
         </ul>
       </div>
