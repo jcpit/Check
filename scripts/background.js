@@ -701,6 +701,7 @@ class CheckBackground {
                   verdict: "ms-login-unknown",
                   url: sender.tab.url,
                   origin: message.origin,
+                  redirectTo: message.redirectTo,
                 },
               })
             );
@@ -712,6 +713,7 @@ class CheckBackground {
                 type: "ms-login-unknown-domain",
                 url: sender.tab.url,
                 origin: message.origin,
+                redirectTo: message.redirectTo,
                 reason: "Microsoft login page detected on non-trusted domain",
               }).catch(() => {})
             );

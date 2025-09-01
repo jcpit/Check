@@ -1297,13 +1297,33 @@ class CheckOptions {
     if (log.category === "debug") {
       return log.message || "";
     }
+
+    // Helper function to format redirect destination
+    const formatRedirectInfo = (event) => {
+      return event.redirectTo ? ` → ${event.redirectTo}` : "";
+    };
+
     if (log.event) {
       switch (log.event.type) {
         case "url_access":
           try {
-            return `Accessed: ${new URL(log.event.url).hostname}`;
+            return `Accessed: ${
+              new URL(log.event.url).hostname
+            }${formatRedirectInfo(log.event)}`;
           } catch {
-            return `Accessed: ${log.event.url || "unknown"}`;
+            return `Accessed: ${log.event.url || "unknown"}${formatRedirectInfo(
+              log.event
+            )}`;
+          }
+        case "legitimate_access":
+          try {
+            return `Legitimate access: ${
+              new URL(log.event.url).hostname
+            }${formatRedirectInfo(log.event)}`;
+          } catch {
+            return `Legitimate access: ${
+              log.event.url || "unknown"
+            }${formatRedirectInfo(log.event)}`;
           }
         case "content_threat_detected":
           let details = `Malicious content detected`;
@@ -1327,8 +1347,10 @@ class CheckOptions {
               details += ` [${indicators.join(", ")}]`;
             }
           }
-          return details;
+          return details + formatRedirectInfo(log.event);
         case "threat_detected":
+        case "threat_blocked":
+        case "threat_detected_no_action":
           let threatDetails = `Security threat detected`;
           if (log.event.reason) {
             threatDetails += `: ${log.event.reason}`;
@@ -1350,7 +1372,7 @@ class CheckOptions {
           if (log.event.details) {
             threatDetails += `. ${log.event.details}`;
           }
-          return threatDetails;
+          return threatDetails + formatRedirectInfo(log.event);
         case "form_submission":
           let formDetails = `Form submission`;
           if (log.event.action) {
@@ -1359,11 +1381,11 @@ class CheckOptions {
           if (log.event.reason) {
             formDetails += ` - ${log.event.reason}`;
           }
-          return formDetails;
+          return formDetails + formatRedirectInfo(log.event);
         case "script_injection":
           return `Security script injected to protect user`;
         case "page_scanned":
-          return `Page security scan completed`;
+          return `Page security scan completed` + formatRedirectInfo(log.event);
         default:
           let defaultMsg =
             log.event.description || log.event.type.replace(/_/g, " ");
@@ -1373,7 +1395,7 @@ class CheckOptions {
           if (log.event.reason) {
             defaultMsg += `: ${log.event.reason}`;
           }
-          return defaultMsg;
+          return defaultMsg + formatRedirectInfo(log.event);
       }
     }
     return log.message || log.type || "Unknown event";

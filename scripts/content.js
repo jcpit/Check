@@ -429,11 +429,13 @@ async function runProtection(isRerun = false) {
         if (protectionEnabled) {
           showValidBadge();
         }
+        const redirectHostname = extractRedirectHostname(location.href);
         logProtectionEvent({
           type: "legitimate_access",
           url: location.href,
           origin: currentOrigin,
           reason: "Trusted Microsoft domain",
+          redirectTo: redirectHostname,
         });
 
         // Send CIPP reporting if enabled
@@ -477,10 +479,12 @@ async function runProtection(isRerun = false) {
 
     // Notify background script that this is a Microsoft login page on unknown domain
     try {
+      const redirectHostname = extractRedirectHostname(location.href);
       chrome.runtime.sendMessage({
         type: "FLAG_MS_LOGIN_ON_UNKNOWN_DOMAIN",
         url: location.href,
         origin: location.origin,
+        redirectTo: redirectHostname,
       });
     } catch (messageError) {
       logger.warn(
@@ -535,6 +539,7 @@ async function runProtection(isRerun = false) {
         }
       }
 
+      const redirectHostname = extractRedirectHostname(location.href);
       logProtectionEvent({
         type: protectionEnabled
           ? "threat_blocked"
@@ -544,6 +549,7 @@ async function runProtection(isRerun = false) {
         rule: blockingResult.rule?.id,
         severity: blockingResult.severity,
         protectionEnabled: protectionEnabled,
+        redirectTo: redirectHostname,
       });
 
       // Send CIPP reporting if enabled
@@ -629,6 +635,7 @@ async function runProtection(isRerun = false) {
         }
       }
 
+      const redirectHostname = extractRedirectHostname(location.href);
       logProtectionEvent({
         type: protectionEnabled
           ? "threat_detected"
@@ -640,6 +647,7 @@ async function runProtection(isRerun = false) {
         threshold: detectionResult.threshold,
         triggeredRules: detectionResult.triggeredRules,
         protectionEnabled: protectionEnabled,
+        redirectTo: redirectHostname,
       });
 
       // Send CIPP reporting if enabled
@@ -1094,6 +1102,32 @@ function disableCredentialInputs() {
     logger.log(`Disabled ${inputs.length} credential inputs`);
   } catch (error) {
     logger.error("Failed to disable credential inputs:", error.message);
+  }
+}
+
+/**
+ * Extract hostname from redirect_uri parameter for cleaner logging
+ */
+function extractRedirectHostname(url) {
+  try {
+    const urlObj = new URL(url);
+    const redirectUri = urlObj.searchParams.get("redirect_uri");
+
+    if (redirectUri) {
+      try {
+        const redirectUrl = new URL(decodeURIComponent(redirectUri));
+        return redirectUrl.hostname;
+      } catch (e) {
+        // If redirect_uri isn't a valid URL, return it as-is (truncated)
+        return (
+          redirectUri.substring(0, 100) +
+          (redirectUri.length > 100 ? "..." : "")
+        );
+      }
+    }
+    return null;
+  } catch (e) {
+    return null;
   }
 }
 
