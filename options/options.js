@@ -399,10 +399,36 @@ class CheckOptions {
   applyBranding() {
     // Update sidebar branding
     document.getElementById("sidebarTitle").textContent =
-      this.brandingConfig.productName;
+      this.brandingConfig?.productName || "Microsoft 365 Phishing Protection";
     document.getElementById("sidebarVersion").textContent = `v${
       chrome.runtime.getManifest().version
     }`;
+    
+    // Update sidebar logo
+    const sidebarLogo = document.getElementById("sidebarLogo");
+    if (sidebarLogo && this.brandingConfig?.logoUrl) {
+      console.log("Setting sidebar logo:", this.brandingConfig.logoUrl);
+      
+      // Handle both relative and absolute URLs
+      const logoSrc = this.brandingConfig.logoUrl.startsWith("http") ?
+        this.brandingConfig.logoUrl :
+        chrome.runtime.getURL(this.brandingConfig.logoUrl);
+      
+      // Test if logo loads, fallback to default if it fails
+      const testImg = new Image();
+      testImg.onload = () => {
+        console.log("Sidebar logo loaded successfully");
+        sidebarLogo.src = logoSrc;
+      };
+      testImg.onerror = () => {
+        console.warn("Failed to load sidebar logo, using default");
+        sidebarLogo.src = chrome.runtime.getURL("images/icon48.png");
+      };
+      testImg.src = logoSrc;
+    } else if (sidebarLogo) {
+      console.log("No custom logo, using default sidebar logo");
+      sidebarLogo.src = chrome.runtime.getURL("images/icon48.png");
+    }
   }
 
   populateFormFields() {

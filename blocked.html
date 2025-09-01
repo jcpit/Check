@@ -155,9 +155,21 @@
       }
 
       .company-logo {
-        max-width: 120px;
+        max-width: 80px;
+        max-height: 80px;
+        width: auto;
         height: auto;
-        margin-bottom: 20px;
+        border-radius: 50%;
+        object-fit: contain;
+      }
+
+      .icon-container {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       @media (max-width: 480px) {
@@ -185,7 +197,10 @@
   </head>
   <body>
     <div class="container">
-      <div class="icon material-icons">security</div>
+      <div class="icon-container">
+        <img id="customLogo" class="company-logo" style="display: none; max-width: 80px; max-height: 80px; border-radius: 50%; object-fit: contain;" alt="Company Logo">
+        <div id="defaultIcon" class="icon material-icons">security</div>
+      </div>
 
       <h1>Access Blocked</h1>
       <p class="subtitle">
@@ -231,291 +246,6 @@
       </div>
     </div>
 
-    <script>
-      // Parse URL parameters to get block details
-      function parseUrlParams() {
-        console.log("parseUrlParams called");
-        console.log("Current URL:", window.location.href);
-        
-        const urlParams = new URLSearchParams(window.location.search);
-        console.log("URL params:", urlParams.toString());
-        console.log("All URL params:");
-        for (const [key, value] of urlParams.entries()) {
-          console.log(`  ${key}: ${value}`);
-        }
-
-        // Parse details from the new format
-        const detailsParam = urlParams.get("details");
-        console.log("Details param:", detailsParam);
-        
-        if (detailsParam) {
-          try {
-            const details = JSON.parse(decodeURIComponent(detailsParam));
-            console.log("Parsed details:", details);
-            
-            // Update blocked URL with defanging
-            if (details.url) {
-              console.log("Setting blocked URL to:", details.url);
-              const defangedUrl = defangUrl(details.url);
-              console.log("Defanged URL:", defangedUrl);
-              document.getElementById("blockedUrl").textContent = defangedUrl;
-            } else {
-              console.log("No URL in details, checking for original URL");
-              // Try to get the original URL from the referrer or other sources
-              const fallbackUrl = document.referrer || "Unknown URL";
-              console.log("Using fallback URL:", fallbackUrl);
-              document.getElementById("blockedUrl").textContent = defangUrl(fallbackUrl);
-            }
-            
-            // Update block reason
-            if (details.reason) {
-              console.log("Setting block reason to:", details.reason);
-              document.getElementById("blockReason").textContent = details.reason;
-            }
-            
-            // Update threat category based on rule or score
-            if (details.rule) {
-              document.getElementById("threatCategory").textContent = `Rule: ${details.rule}`;
-            } else if (details.score !== undefined) {
-              document.getElementById("threatCategory").textContent = `Score: ${details.score}/${details.threshold}`;
-            }
-            
-          } catch (error) {
-            console.warn("Failed to parse block details:", error);
-            console.log("Error details:", error.message);
-            // Fallback to legacy URL parsing
-            const blockedUrl = urlParams.get("url") || document.referrer || "Unknown URL";
-            console.log("Using fallback URL:", blockedUrl);
-            document.getElementById("blockedUrl").textContent = defangUrl(blockedUrl);
-          }
-        } else {
-          console.log("No details param, using legacy parsing");
-          // Legacy URL parsing for backward compatibility
-          const blockedUrl = urlParams.get("url") || document.referrer || "Unknown URL";
-          console.log("Legacy blocked URL:", blockedUrl);
-          document.getElementById("blockedUrl").textContent = defangUrl(blockedUrl);
-          
-          const reason = urlParams.get("reason");
-          if (reason) {
-            console.log("Legacy reason:", reason);
-            document.getElementById("blockReason").textContent = decodeURIComponent(reason);
-          }
-        }
-        
-        console.log("Final blocked URL element text:", document.getElementById("blockedUrl").textContent);
-      }
-
-      function defangUrl(url) {
-        if (!url || url === "about:blank" || url.includes("chrome-extension://")) {
-          return "Unknown URL";
-        }
-        
-        // Defang the URL by replacing dangerous characters
-        let defanged = url
-          .replace(/\./g, "[.]")  // Replace dots
-          .replace(/:/g, "[:]")   // Replace colons
-          .replace(/\//g, "[/]"); // Replace slashes
-        
-        // Truncate if too long
-        if (defanged.length > 60) {
-          defanged = defanged.substring(0, 57) + "...";
-        }
-        
-        return defanged;
-      }
-
-      function truncateUrl(url) {
-        if (url.length > 50) {
-          return url.substring(0, 47) + "...";
-        }
-        return url;
-      }
-
-      function goBack() {
-        if (window.history.length > 1) {
-          window.history.back();
-        } else {
-          window.location.href = "about:blank";
-        }
-      }
-
-      function reportIssue() {
-        const subject = encodeURIComponent("Check - False Positive Report");
-        const body = encodeURIComponent(`
-Blocked URL: ${document.getElementById("blockedUrl").textContent}
-Block Reason: ${document.getElementById("blockReason").textContent}
-Time: ${document.getElementById("blockTime").textContent}
-
-I believe this website was incorrectly blocked. Please review.
-
-Additional details:
-[Please provide any additional context about why you believe this is a false positive]
-            `);
-
-        window.location.href = `mailto:support@check.com?subject=${subject}&body=${body}`;
-      }
-
-      function contactAdmin() {
-        console.log("contactAdmin function called");
-        
-        // Try to get support email from storage, with fallback
-        try {
-          if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-            chrome.storage.local.get(['brandingConfig'], (result) => {
-              console.log("Storage result:", result);
-              const supportEmail = result.brandingConfig?.supportEmail || 'support@cyberdrain.com';
-              console.log("Using support email:", supportEmail);
-              openMailto(supportEmail);
-            });
-          } else {
-            console.log("Chrome storage not available, using default email");
-            openMailto('support@cyberdrain.com');
-          }
-        } catch (error) {
-          console.error("Error accessing storage:", error);
-          openMailto('support@cyberdrain.com');
-        }
-      }
-      
-      function openMailto(supportEmail) {
-        const blockedUrl = document.getElementById("blockedUrl").textContent;
-        const reason = document.getElementById("blockReason").textContent;
-        
-        // Create subject with defanged URL
-        const subject = encodeURIComponent(`Blocked page: ${blockedUrl}`);
-        
-        const body = encodeURIComponent(`I am requesting access to a website that was blocked by Microsoft 365 Protection.
-
-Blocked URL: ${blockedUrl}
-Block Reason: ${reason}
-Time: ${new Date().toLocaleString()}
-
-I believe this website should be accessible for business purposes. Please review and whitelist if appropriate.
-
-Additional context:
-[Please provide any additional business justification]`);
-        
-        const mailtoUrl = `mailto:${supportEmail}?subject=${subject}&body=${body}`;
-        console.log("Opening mailto URL:", mailtoUrl);
-        
-        try {
-          window.location.href = mailtoUrl;
-        } catch (error) {
-          console.error("Error opening mailto:", error);
-          // Fallback: try using window.open
-          try {
-            window.open(mailtoUrl);
-          } catch (openError) {
-            console.error("Error with window.open:", openError);
-            alert(`Please contact your IT administrator at: ${supportEmail}`);
-          }
-        }
-      }
-
-      // Load branding configuration
-      async function loadBranding() {
-        try {
-          // Load branding from extension storage
-          chrome.storage.local.get(['brandingConfig'], (result) => {
-            const branding = result.brandingConfig || {};
-            
-            // Update company name with fallback to "Check"
-            const companyName = branding.companyName || "Check";
-            document.getElementById("companyName").textContent = companyName;
-            document.title = `Access Blocked - ${companyName}`;
-            
-            // Update product name if available
-            if (branding.productName) {
-              document.querySelector('h1').textContent = `Access Blocked by ${branding.productName}`;
-            }
-            
-            // Update primary color if available
-            if (branding.primaryColor) {
-              document.documentElement.style.setProperty('--primary-color', branding.primaryColor);
-              // Update CSS custom property
-              const style = document.createElement('style');
-              style.textContent = `
-                .icon { background: ${branding.primaryColor} !important; }
-                h1 { color: ${branding.primaryColor} !important; }
-                .btn-primary { background: ${branding.primaryColor} !important; }
-                .btn-primary:hover { background: ${branding.primaryColor}dd !important; }
-              `;
-              document.head.appendChild(style);
-            }
-          });
-          
-          // Also try to load from branding.json as fallback
-          try {
-            const response = await fetch(chrome.runtime.getURL("config/branding.json"));
-            if (response.ok) {
-              const brandingConfig = await response.json();
-              
-              // Only update if not already set from storage
-              if (!document.getElementById("companyName").textContent ||
-                  document.getElementById("companyName").textContent === "Check") {
-                document.getElementById("companyName").textContent = brandingConfig.companyName || "Check";
-                document.title = `Access Blocked - ${brandingConfig.companyName || "Check"}`;
-              }
-            }
-          } catch (fetchError) {
-            console.warn("Could not load branding.json:", fetchError);
-          }
-          
-        } catch (error) {
-          console.warn("Could not load branding configuration:", error);
-          // Use defaults
-          document.getElementById("companyName").textContent = "Check";
-          document.title = "Access Blocked - Check";
-        }
-      }
-
-      // Initialize page
-      document.addEventListener("DOMContentLoaded", () => {
-        console.log("DOM loaded, initializing page");
-        
-        // Add event listeners for buttons (CSP compliant)
-        document.getElementById("goBackBtn").addEventListener("click", goBack);
-        document.getElementById("contactAdminBtn").addEventListener("click", contactAdmin);
-        
-        // Parse URL parameters and load branding
-        parseUrlParams();
-        loadBranding();
-        
-        // Debug: Check if URL was set properly
-        setTimeout(() => {
-          console.log("After 1 second - URL element:", document.getElementById("blockedUrl").textContent);
-        }, 1000);
-      });
-
-      // Handle keyboard shortcuts
-      document.addEventListener("keydown", (e) => {
-        // ESC key to go back
-        if (e.key === "Escape") {
-          goBack();
-        }
-        // Ctrl+R or F5 to go back (prevent refresh on blocked page)
-        if ((e.ctrlKey && e.key === "r") || e.key === "F5") {
-          e.preventDefault();
-          goBack();
-        }
-      });
-
-      // Prevent right-click context menu on blocked page
-      document.addEventListener("contextmenu", (e) => {
-        e.preventDefault();
-      });
-
-      // Log page view for analytics
-      if (typeof chrome !== "undefined" && chrome.runtime) {
-        chrome.runtime.sendMessage({
-          type: "LOG_EVENT",
-          event: {
-            type: "blocked_page_viewed",
-            url: new URLSearchParams(window.location.search).get("url"),
-            timestamp: new Date().toISOString(),
-          },
-        });
-      }
-    </script>
+    <script src="scripts/blocked.js"></script>
   </body>
 </html>
