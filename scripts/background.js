@@ -16,14 +16,19 @@ logger.init({ level: "info", enabled: true });
 // Top-level utility for "respond once" guard
 const once = (fn) => {
   let called = false;
-  return (...args) => { if (!called) { called = true; fn(...args); } };
+  return (...args) => {
+    if (!called) {
+      called = true;
+      fn(...args);
+    }
+  };
 };
 
 // Safe wrapper for chrome.* and fetch operations
 async function safe(promise) {
   try {
     return await promise;
-  } catch(_) {
+  } catch (_) {
     return undefined;
   }
 }
@@ -70,6 +75,9 @@ class CheckBackground {
     this.pendingLocal = { accessLogs: [], securityEvents: [] };
     this.flushScheduled = false;
 
+    // Profile information
+    this.profileInfo = null;
+
     // Register core listeners that must work even if init fails
     this.setupCoreListeners();
 
@@ -103,10 +111,9 @@ class CheckBackground {
       const sendResponse = once(sendResponseRaw);
       (async () => {
         await this.handleMessage(msg, sender, sendResponse);
-      })()
-      .catch((e) => {
+      })().catch((e) => {
         try {
-          sendResponse({success: false, error: e?.message || String(e)});
+          sendResponse({ success: false, error: e?.message || String(e) });
         } catch {}
       });
       return true; // Keep message channel open for async responses
@@ -148,6 +155,9 @@ class CheckBackground {
 
       await this.refreshPolicy();
 
+      // Load profile information
+      await this.loadProfileInformation();
+
       this.setupEventListeners();
       this.isInitialized = true;
       this.initializationRetries = 0; // Reset retry count on success
@@ -172,7 +182,7 @@ class CheckBackground {
         // Replace setTimeout with chrome.alarms for service worker safety
         this._retryScheduled = true;
         chrome.alarms.create("check:init-retry", {
-          when: Date.now() + 1000 * this.initializationRetries
+          when: Date.now() + 1000 * this.initializationRetries,
         });
       } else {
         logger.error(
@@ -195,7 +205,6 @@ class CheckBackground {
       "CheckBackground: entering fallback mode with minimal functionality"
     );
   }
-
 
   getDefaultPolicy() {
     return {
@@ -224,12 +233,14 @@ class CheckBackground {
       );
       await this.applyBrandingToAction();
     } catch (error) {
-      logger.error("CheckBackground.refreshPolicy: failed, using defaults", error);
+      logger.error(
+        "CheckBackground.refreshPolicy: failed, using defaults",
+        error
+      );
       this.policy = this.getDefaultPolicy();
       this.extraWhitelist = new Set();
     }
   }
-
 
   urlOrigin(u) {
     try {
@@ -243,11 +254,13 @@ class CheckBackground {
   verdictForUrl(raw) {
     const origin = this.urlOrigin(raw);
     // Load trusted origins from policy or use defaults
-    const trustedOrigins = this.policy?.trustedOrigins || new Set([
-      'https://login.microsoftonline.com',
-      'https://login.microsoft.com',
-      'https://account.microsoft.com'
-    ]);
+    const trustedOrigins =
+      this.policy?.trustedOrigins ||
+      new Set([
+        "https://login.microsoftonline.com",
+        "https://login.microsoft.com",
+        "https://account.microsoft.com",
+      ]);
     if (trustedOrigins.has && trustedOrigins.has(origin)) return "trusted";
     if (this.extraWhitelist.has(origin)) return "trusted-extra";
     return "unknown";
@@ -263,22 +276,26 @@ class CheckBackground {
     };
     const cfg = map[verdict] || map.unknown;
     await safe(chrome.action.setBadgeText({ tabId, text: cfg.text }));
-    await safe(chrome.action.setBadgeBackgroundColor({ tabId, color: cfg.color }));
+    await safe(
+      chrome.action.setBadgeBackgroundColor({ tabId, color: cfg.color })
+    );
   }
 
   // CyberDrain integration - Notify tab to show valid badge with safe wrappers
   async showValidBadge(tabId) {
-    const config = await safe(this.configManager.getConfig()) || {};
+    const config = (await safe(this.configManager.getConfig())) || {};
     const enabled =
       this.policy?.EnableValidPageBadge ||
       config?.showValidPageBadge ||
       config?.enableValidPageBadge;
     if (enabled) {
-      await safe(chrome.tabs.sendMessage(tabId, {
-        type: "SHOW_VALID_BADGE",
-        image: this.policy?.ValidPageBadgeImage,
-        branding: this.policy?.BrandingName,
-      }));
+      await safe(
+        chrome.tabs.sendMessage(tabId, {
+          type: "SHOW_VALID_BADGE",
+          image: this.policy?.ValidPageBadgeImage,
+          branding: this.policy?.BrandingName,
+        })
+      );
     }
   }
 
@@ -286,14 +303,17 @@ class CheckBackground {
   async applyBrandingToAction() {
     try {
       // Load branding from storage first, then fallback to policy
-      const storageResult = await safe(chrome.storage.local.get(['brandingConfig']));
+      const storageResult = await safe(
+        chrome.storage.local.get(["brandingConfig"])
+      );
       const brandingConfig = storageResult?.brandingConfig || {};
-      
+
       // Determine title from storage or policy
-      const title = brandingConfig.productName ||
-                   this.policy?.BrandingName ||
-                   this.getDefaultPolicy().BrandingName;
-      
+      const title =
+        brandingConfig.productName ||
+        this.policy?.BrandingName ||
+        this.getDefaultPolicy().BrandingName;
+
       // Title with safe wrapper
       await safe(chrome.action.setTitle({ title }));
       console.log("Extension title set to:", title);
@@ -302,27 +322,31 @@ class CheckBackground {
       const logoUrl = brandingConfig.logoUrl || this.policy?.BrandingImage;
 
       // Icon (optional) with platform feature guards and size limits
-      if (logoUrl && globalThis.OffscreenCanvas && globalThis.createImageBitmap) {
+      if (
+        logoUrl &&
+        globalThis.OffscreenCanvas &&
+        globalThis.createImageBitmap
+      ) {
         try {
           console.log("Loading custom extension icon from:", logoUrl);
-          
+
           // Handle both relative and absolute URLs
-          const iconUrl = logoUrl.startsWith("http") ?
-            logoUrl :
-            chrome.runtime.getURL(logoUrl);
-          
+          const iconUrl = logoUrl.startsWith("http")
+            ? logoUrl
+            : chrome.runtime.getURL(logoUrl);
+
           const img = await fetchWithTimeout(iconUrl);
           if (!img.ok) {
             console.warn("Failed to fetch custom icon:", img.status);
             return;
           }
-          
+
           const blob = await img.blob();
           if (blob.size > 1_000_000) {
             console.warn("Custom icon too large, skipping");
             return; // Skip huge icons
           }
-          
+
           const bmp = await createImageBitmap(blob);
           const sizes = [16, 32, 48, 128];
           const images = {};
@@ -340,7 +364,9 @@ class CheckBackground {
           // ignore icon errors, just set title
         }
       } else {
-        console.log("No custom logo configured or OffscreenCanvas not available");
+        console.log(
+          "No custom logo configured or OffscreenCanvas not available"
+        );
       }
     } catch (error) {
       console.error("Failed to apply branding to action:", error);
@@ -354,11 +380,16 @@ class CheckBackground {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), 5000);
       const res = await fetch(
-        this.policy.CIPPReportingServer.replace(/\/+$/, "") + "/events/cyberdrain-phish",
+        this.policy.CIPPReportingServer.replace(/\/+$/, "") +
+          "/events/cyberdrain-phish",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ts: new Date().toISOString(), ua: navigator.userAgent, ...evt }),
+          body: JSON.stringify({
+            ts: new Date().toISOString(),
+            ua: navigator.userAgent,
+            ...evt,
+          }),
           signal: ctrl.signal,
         }
       );
@@ -408,7 +439,9 @@ class CheckBackground {
     chrome.webNavigation?.onCompleted?.addListener((details) => {
       if (details.frameId === 0) {
         // Log navigation for audit purposes
-        queueMicrotask(() => this.logUrlAccess(details.url, details.tabId).catch(() => {}));
+        queueMicrotask(() =>
+          this.logUrlAccess(details.url, details.tabId).catch(() => {})
+        );
       }
     });
 
@@ -416,7 +449,7 @@ class CheckBackground {
     chrome.webRequest.onHeadersReceived.addListener(
       (details) => {
         if (details.tabId < 0 || !details.responseHeaders) return;
-        
+
         try {
           // Prune before insert to prevent unbounded growth
           if (this.tabHeaders.size >= this.MAX_HEADER_CACHE_ENTRIES) {
@@ -473,9 +506,16 @@ class CheckBackground {
   }
 
   async _doFlush() {
-    const cur = (await safe(chrome.storage.local.get(["accessLogs", "securityEvents"]))) || {};
-    const access = (cur.accessLogs || []).concat(this.pendingLocal.accessLogs).slice(-1000);
-    const sec = (cur.securityEvents || []).concat(this.pendingLocal.securityEvents).slice(-500);
+    const cur =
+      (await safe(
+        chrome.storage.local.get(["accessLogs", "securityEvents"])
+      )) || {};
+    const access = (cur.accessLogs || [])
+      .concat(this.pendingLocal.accessLogs)
+      .slice(-1000);
+    const sec = (cur.securityEvents || [])
+      .concat(this.pendingLocal.securityEvents)
+      .slice(-500);
     this.pendingLocal.accessLogs.length = 0;
     this.pendingLocal.securityEvents.length = 0;
     const payload = { accessLogs: access, securityEvents: sec };
@@ -486,7 +526,7 @@ class CheckBackground {
 
   async handleStartup() {
     logger.log("Check: Extension startup detected");
-    const config = await safe(this.configManager.refreshConfig()) || {};
+    const config = (await safe(this.configManager.refreshConfig())) || {};
     logger.init({
       level: "info",
       enabled: true,
@@ -501,9 +541,11 @@ class CheckBackground {
       await safe(this.configManager.setDefaultConfig());
 
       // Open options page for initial setup
-      await safe(chrome.tabs.create({
-        url: chrome.runtime.getURL("options/options.html"),
-      }));
+      await safe(
+        chrome.tabs.create({
+          url: chrome.runtime.getURL("options/options.html"),
+        })
+      );
     } else if (details.reason === "update") {
       // Handle extension updates
       await safe(this.configManager.migrateConfig(details.previousVersion));
@@ -521,14 +563,20 @@ class CheckBackground {
       // CyberDrain integration - Handle URL changes and set badges
       if (changeInfo.status === "complete" && tab?.url) {
         const verdict = this.verdictForUrl(tab.url);
-        await safe(chrome.storage.session.set({
-          ["verdict:" + tabId]: { verdict, url: tab.url },
-        }));
+        await safe(
+          chrome.storage.session.set({
+            ["verdict:" + tabId]: { verdict, url: tab.url },
+          })
+        );
         this.setBadge(tabId, verdict);
 
         if (verdict === "trusted") {
           // "Valid page" sighting - fire-and-log pattern for non-critical work
-          queueMicrotask(() => this.sendEvent({ type: "trusted-login-page", url: tab.url }).catch(() => {}));
+          queueMicrotask(() =>
+            this.sendEvent({ type: "trusted-login-page", url: tab.url }).catch(
+              () => {}
+            )
+          );
           queueMicrotask(() => this.showValidBadge(tabId).catch(() => {}));
         }
       }
@@ -536,8 +584,10 @@ class CheckBackground {
       if (!changeInfo.url) return;
 
       // Simple URL analysis without DetectionEngine
-      const shouldInjectContentScript = this.shouldInjectContentScript(changeInfo.url);
-      
+      const shouldInjectContentScript = this.shouldInjectContentScript(
+        changeInfo.url
+      );
+
       if (shouldInjectContentScript) {
         await this.injectContentScript(tabId);
       }
@@ -582,45 +632,55 @@ class CheckBackground {
       }
 
       switch (messageType) {
-
         // CyberDrain integration - Handle phishing detection
         case "FLAG_PHISHY":
           if (sender.tab?.id) {
             const tabId = sender.tab.id;
-            await safe(chrome.storage.session.set({
-              ["verdict:" + tabId]: { verdict: "phishy", url: sender.tab.url },
-            }));
+            await safe(
+              chrome.storage.session.set({
+                ["verdict:" + tabId]: {
+                  verdict: "phishy",
+                  url: sender.tab.url,
+                },
+              })
+            );
             this.setBadge(tabId, "phishy");
             sendResponse({ ok: true });
             // Fire-and-log pattern for non-critical work
-            queueMicrotask(() => this.sendEvent({
-              type: "phishy-detected",
-              url: sender.tab.url,
-              reason: message.reason || "heuristic",
-            }).catch(() => {}));
+            queueMicrotask(() =>
+              this.sendEvent({
+                type: "phishy-detected",
+                url: sender.tab.url,
+                reason: message.reason || "heuristic",
+              }).catch(() => {})
+            );
           }
           break;
 
         case "FLAG_TRUSTED_BY_REFERRER":
           if (sender.tab?.id) {
             const tabId = sender.tab.id;
-            await safe(chrome.storage.session.set({
-              ["verdict:" + tabId]: {
-                verdict: "trusted",
-                url: sender.tab.url,
-                by: "referrer",
-              },
-            }));
+            await safe(
+              chrome.storage.session.set({
+                ["verdict:" + tabId]: {
+                  verdict: "trusted",
+                  url: sender.tab.url,
+                  by: "referrer",
+                },
+              })
+            );
             this.setBadge(tabId, "trusted");
             sendResponse({ ok: true });
             // Fire-and-log pattern for non-critical work
             queueMicrotask(() => this.showValidBadge(tabId).catch(() => {}));
             if (this.policy?.AlertWhenLogon) {
-              queueMicrotask(() => this.sendEvent({
-                type: "user-logged-on",
-                url: sender.tab.url,
-                by: "referrer",
-              }).catch(() => {}));
+              queueMicrotask(() =>
+                this.sendEvent({
+                  type: "user-logged-on",
+                  url: sender.tab.url,
+                  by: "referrer",
+                }).catch(() => {})
+              );
             }
           }
           break;
@@ -633,7 +693,7 @@ class CheckBackground {
           // DetectionEngine removed - content analysis now handled by content script
           sendResponse({
             success: false,
-            error: "Content analysis moved to content script"
+            error: "Content analysis moved to content script",
           });
           break;
 
@@ -642,6 +702,22 @@ class CheckBackground {
             await storeLog(message.level, message.message);
           }
           sendResponse({ success: true });
+          break;
+
+        case "protection_event":
+          // Handle protection events from content script
+          try {
+            if (message.data) {
+              // Use existing logEvent method to ensure proper storage
+              await this.logEvent(message.data, sender.tab?.id);
+              sendResponse({ success: true });
+            } else {
+              sendResponse({ success: false, error: "No event data provided" });
+            }
+          } catch (error) {
+            logger.error("Failed to handle protection event:", error);
+            sendResponse({ success: false, error: error.message });
+          }
           break;
 
         case "GET_PAGE_HEADERS":
@@ -698,23 +774,69 @@ class CheckBackground {
           break;
 
         case "URL_ANALYSIS_REQUEST":
-          // Simple URL analysis without DetectionEngine
+          // Get detection results from content script
           try {
             if (typeof message.url !== "string") {
-              sendResponse({success: false, error: "Invalid url"});
+              sendResponse({ success: false, error: "Invalid url" });
               return;
             }
-            
+
+            // Check if protection is enabled
+            const config = await this.configManager.getConfig();
+            const isProtectionEnabled = config?.enablePageBlocking !== false;
+
+            // Try to get detection results from content script
+            try {
+              const tabs = await chrome.tabs.query({
+                active: true,
+                currentWindow: true,
+              });
+              if (tabs.length > 0) {
+                const tabId = tabs[0].id;
+
+                // Ask content script for its detection results
+                const contentResponse = await chrome.tabs.sendMessage(tabId, {
+                  type: "GET_DETECTION_RESULTS",
+                });
+
+                if (contentResponse && contentResponse.success) {
+                  // Use content script's detection results
+                  const analysis = {
+                    url: message.url,
+                    verdict:
+                      contentResponse.verdict ||
+                      this.verdictForUrl(message.url),
+                    isBlocked: contentResponse.isBlocked || false,
+                    isSuspicious: contentResponse.isSuspicious || false,
+                    threats: contentResponse.threats || [],
+                    reason:
+                      contentResponse.reason || "Analysis from content script",
+                    protectionEnabled: isProtectionEnabled,
+                    timestamp: new Date().toISOString(),
+                  };
+
+                  sendResponse({ success: true, analysis });
+                  return;
+                }
+              }
+            } catch (contentError) {
+              console.log(
+                "Check: Content script not available, using basic analysis"
+              );
+            }
+
+            // Fallback to basic analysis if content script not available
             const analysis = {
               url: message.url,
               verdict: this.verdictForUrl(message.url),
               isBlocked: false,
               isSuspicious: false,
               threats: [],
-              reason: "Basic analysis - detailed detection in content script",
-              timestamp: new Date().toISOString()
+              reason: "Basic analysis - content script not available",
+              protectionEnabled: isProtectionEnabled,
+              timestamp: new Date().toISOString(),
             };
-            
+
             sendResponse({ success: true, analysis });
           } catch (error) {
             sendResponse({ success: false, error: error.message });
@@ -742,7 +864,7 @@ class CheckBackground {
         case "LOG_EVENT":
           // Validate event input
           if (!message.event || typeof message.event !== "object") {
-            sendResponse({success: false, error: "Invalid event"});
+            sendResponse({ success: false, error: "Invalid event" });
             return;
           }
           await this.logEvent(message.event, sender.tab?.id);
@@ -792,9 +914,29 @@ class CheckBackground {
             validation: {
               message: "Detection engine functionality moved to content script",
               engineInitialized: false,
-              detectionEngineStatus: "removed"
-            }
+              detectionEngineStatus: "removed",
+            },
           });
+          break;
+
+        case "GET_PROFILE_INFO":
+          try {
+            const profileInfo = await this.getCurrentProfile();
+            sendResponse({ success: true, profile: profileInfo });
+          } catch (error) {
+            logger.error("Check: Failed to get profile info:", error);
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
+        case "REFRESH_PROFILE_INFO":
+          try {
+            const profileInfo = await this.refreshProfileInformation();
+            sendResponse({ success: true, profile: profileInfo });
+          } catch (error) {
+            logger.error("Check: Failed to refresh profile info:", error);
+            sendResponse({ success: false, error: error.message });
+          }
           break;
 
         case "RUN_COMPREHENSIVE_TEST":
@@ -831,7 +973,7 @@ class CheckBackground {
       // Enterprise policy changes
       logger.log("Check: Enterprise policy updated");
       await safe(this.policyManager.loadPolicies());
-      const config = await safe(this.configManager.refreshConfig()) || {};
+      const config = (await safe(this.configManager.refreshConfig())) || {};
       logger.init({
         level: "info",
         enabled: true,
@@ -878,23 +1020,28 @@ class CheckBackground {
         return;
       }
 
-      await safe(chrome.scripting.executeScript({
-        target: { tabId },
-        files: ["scripts/content.js"],
-      }));
+      await safe(
+        chrome.scripting.executeScript({
+          target: { tabId },
+          files: ["scripts/content.js"],
+        })
+      );
     } catch (error) {
       logger.error("Check: Failed to inject content script:", error);
     }
   }
 
   async logUrlAccess(url, tabId) {
-    const config = await safe(this.configManager.getConfig()) || {};
+    const config = (await safe(this.configManager.getConfig())) || {};
 
     // Only log if debug logging is enabled or if this is a significant event
     if (!config.enableDebugLogging) {
       // Skip logging routine page scans to avoid log bloat
       return;
     }
+
+    // Get current profile information for logging context
+    const profileInfo = await this.getCurrentProfile();
 
     const logEntry = {
       timestamp: new Date().toISOString(),
@@ -906,6 +1053,7 @@ class CheckBackground {
         url: url,
         threatDetected: false,
       },
+      profile: this.sanitizeProfileForLogging(profileInfo),
     };
 
     // Use batched storage writes
@@ -914,11 +1062,15 @@ class CheckBackground {
   }
 
   async logEvent(event, tabId) {
+    // Get current profile information for logging context
+    const profileInfo = await this.getCurrentProfile();
+
     const logEntry = {
       timestamp: new Date().toISOString(),
       event: this.enhanceEventForLogging(event),
       tabId,
       type: "security_event",
+      profile: this.sanitizeProfileForLogging(profileInfo),
     };
 
     // Gate noisy logs behind debug config
@@ -930,6 +1082,9 @@ class CheckBackground {
     // Use batched storage writes
     this.pendingLocal.securityEvents.push(logEntry);
     this.scheduleFlush();
+
+    // Send to CIPP if enabled
+    await this.sendToCipp(logEntry, config);
   }
 
   enhanceEventForLogging(event) {
@@ -975,6 +1130,24 @@ class CheckBackground {
         break;
       case "page_scanned":
         enhancedEvent.action = event.action || "scanned";
+        enhancedEvent.threatLevel = event.threatLevel || "none";
+        break;
+      case "blocked_page_viewed":
+        enhancedEvent.action = event.action || "viewed";
+        enhancedEvent.threatLevel = event.threatLevel || "high";
+        enhancedEvent.url = this.defangUrl(event.url);
+        enhancedEvent.threatDetected = true;
+        break;
+      case "threat_blocked":
+      case "threat_detected_no_action":
+        enhancedEvent.action =
+          event.type === "threat_blocked" ? "blocked" : "detected";
+        enhancedEvent.threatLevel = event.severity || "high";
+        enhancedEvent.url = this.defangUrl(event.url);
+        enhancedEvent.threatDetected = true;
+        break;
+      case "legitimate_access":
+        enhancedEvent.action = event.action || "allowed";
         enhancedEvent.threatLevel = event.threatLevel || "none";
         break;
       default:
@@ -1029,7 +1202,7 @@ class CheckBackground {
     try {
       const urlObj = new URL(url);
       const protocol = urlObj.protocol;
-      
+
       // Skip disallowed protocols
       const disallowed = [
         "chrome:",
@@ -1039,11 +1212,11 @@ class CheckBackground {
         "moz-extension:",
         "devtools:",
       ];
-      
+
       if (disallowed.includes(protocol)) {
         return false;
       }
-      
+
       // Inject content script for all other URLs
       return true;
     } catch (error) {
@@ -1058,6 +1231,323 @@ class CheckBackground {
       policyManager: this.policyManager ? "loaded" : "not_loaded",
       // DetectionEngine removed
     };
+  }
+
+  // Profile Information Management
+  async loadProfileInformation() {
+    try {
+      this.profileInfo = {
+        profileId: await this.getOrCreateProfileId(),
+        isManaged: await this.checkManagedEnvironment(),
+        userInfo: await this.getUserInfo(),
+        browserInfo: await this.getBrowserInfo(),
+        timestamp: new Date().toISOString(),
+      };
+
+      logger.log("Profile information loaded:", this.profileInfo);
+
+      // Store profile info for access by other parts of the extension
+      await chrome.storage.local.set({
+        currentProfile: this.profileInfo,
+      });
+    } catch (error) {
+      logger.error("Failed to load profile information:", error);
+      this.profileInfo = {
+        profileId: "unknown",
+        isManaged: false,
+        userInfo: null,
+        browserInfo: null,
+        timestamp: new Date().toISOString(),
+        error: error.message,
+      };
+    }
+  }
+
+  async getOrCreateProfileId() {
+    try {
+      const result = await chrome.storage.local.get(["profileId"]);
+
+      if (!result.profileId) {
+        // Generate a unique identifier for this profile
+        const profileId = crypto.randomUUID();
+        await chrome.storage.local.set({ profileId });
+        logger.log("Generated new profile ID:", profileId);
+        return profileId;
+      }
+
+      logger.log("Using existing profile ID:", result.profileId);
+      return result.profileId;
+    } catch (error) {
+      logger.error("Failed to get/create profile ID:", error);
+      return "fallback-" + Date.now();
+    }
+  }
+
+  async checkManagedEnvironment() {
+    return new Promise((resolve) => {
+      try {
+        chrome.storage.managed.get(null, (policies) => {
+          if (chrome.runtime.lastError) {
+            resolve(false);
+          } else {
+            const isManaged = policies && Object.keys(policies).length > 0;
+            if (isManaged) {
+              logger.log(
+                "Detected managed environment with policies:",
+                policies
+              );
+            }
+            resolve(isManaged);
+          }
+        });
+      } catch (error) {
+        logger.error("Error checking managed environment:", error);
+        resolve(false);
+      }
+    });
+  }
+
+  async getUserInfo() {
+    // Note: This requires "identity" and "identity.email" permissions
+    // Works with Google accounts in Chrome and Microsoft accounts in Edge
+    return new Promise((resolve) => {
+      try {
+        if (chrome.identity && chrome.identity.getProfileUserInfo) {
+          chrome.identity.getProfileUserInfo(
+            { accountStatus: "ANY" },
+            (userInfo) => {
+              if (chrome.runtime.lastError) {
+                logger.log("Chrome identity error:", chrome.runtime.lastError);
+                resolve(null);
+              } else if (!userInfo) {
+                logger.log("No user info returned from chrome.identity");
+                resolve(null);
+              } else if (!userInfo.email) {
+                logger.log("User info available but no email:", userInfo);
+                // Return what we have even without email
+                resolve({
+                  email: null,
+                  id: userInfo.id || null,
+                  emailNotAvailable: true,
+                  reason: "User not signed in or email permission not granted",
+                });
+              } else {
+                // Detect account type based on email domain
+                const email = userInfo.email;
+                let accountType = "personal";
+                let provider = "unknown";
+
+                if (email.includes("@")) {
+                  const domain = email.split("@")[1].toLowerCase();
+                  if (
+                    domain.includes("outlook.com") ||
+                    domain.includes("hotmail.com") ||
+                    domain.includes("live.com")
+                  ) {
+                    accountType = "microsoft-personal";
+                    provider = "microsoft";
+                  } else if (
+                    domain.includes("gmail.com") ||
+                    domain.includes("googlemail.com")
+                  ) {
+                    accountType = "google-personal";
+                    provider = "google";
+                  } else {
+                    accountType = "work-school";
+                    provider = domain.includes(".onmicrosoft.com")
+                      ? "microsoft"
+                      : "unknown";
+                  }
+                }
+
+                logger.log("User info retrieved successfully:", {
+                  email: userInfo.email,
+                  id: userInfo.id,
+                  accountType: accountType,
+                  provider: provider,
+                });
+
+                resolve({
+                  email: userInfo.email,
+                  id: userInfo.id,
+                  accountType: accountType,
+                  provider: provider,
+                });
+              }
+            }
+          );
+        } else {
+          logger.log("chrome.identity API not available");
+          resolve(null);
+        }
+      } catch (error) {
+        logger.error("Error getting user info:", error);
+        resolve(null);
+      }
+    });
+  }
+
+  async getBrowserInfo() {
+    try {
+      const userAgent = navigator.userAgent;
+
+      // Detect specific Chromium variant
+      let browserType = "chrome"; // default
+      let browserVersion = "unknown";
+
+      if (userAgent.includes("Edg/")) {
+        browserType = "edge";
+        const edgeMatch = userAgent.match(/Edg\/([\d.]+)/);
+        browserVersion = edgeMatch ? edgeMatch[1] : "unknown";
+      } else if (userAgent.includes("Chrome/")) {
+        browserType = "chrome";
+        const chromeMatch = userAgent.match(/Chrome\/([\d.]+)/);
+        browserVersion = chromeMatch ? chromeMatch[1] : "unknown";
+      } else if (userAgent.includes("Chromium/")) {
+        browserType = "chromium";
+        const chromiumMatch = userAgent.match(/Chromium\/([\d.]+)/);
+        browserVersion = chromiumMatch ? chromiumMatch[1] : "unknown";
+      }
+
+      const info = {
+        userAgent: userAgent,
+        browserType: browserType,
+        browserVersion: browserVersion,
+        platform: navigator.platform,
+        language: navigator.language,
+        cookieEnabled: navigator.cookieEnabled,
+        extensionId: chrome.runtime.id,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Get extension installation info if management permission available
+      if (chrome.management && chrome.management.getSelf) {
+        const extensionInfo = await new Promise((resolve) => {
+          chrome.management.getSelf((info) => {
+            if (chrome.runtime.lastError) {
+              resolve(null);
+            } else {
+              resolve(info);
+            }
+          });
+        });
+
+        if (extensionInfo) {
+          info.installType = extensionInfo.installType; // "normal", "development", "sideload", etc.
+          info.enabled = extensionInfo.enabled;
+          info.version = extensionInfo.version;
+        }
+      }
+
+      return info;
+    } catch (error) {
+      logger.error("Error getting browser info:", error);
+      return {
+        extensionId: chrome.runtime.id,
+        timestamp: new Date().toISOString(),
+        error: error.message,
+      };
+    }
+  }
+
+  // Get current profile info for other parts of the extension
+  async getCurrentProfile() {
+    if (!this.profileInfo) {
+      await this.loadProfileInformation();
+    }
+    return this.profileInfo;
+  }
+
+  // Refresh profile information (useful for periodic updates)
+  async refreshProfileInformation() {
+    logger.log("Refreshing profile information");
+    await this.loadProfileInformation();
+    return this.profileInfo;
+  }
+
+  // Prepare profile information for logging (keep email for CIPP actionability)
+  sanitizeProfileForLogging(profileInfo) {
+    if (!profileInfo) return null;
+
+    const userInfo = profileInfo.userInfo
+      ? {
+          // Keep actual email for CIPP reporting - needed for actionable intelligence
+          email: profileInfo.userInfo.email,
+          id: profileInfo.userInfo.id,
+          // Include account type and provider info for better analytics
+          accountType: profileInfo.userInfo.accountType || "unknown",
+          provider: profileInfo.userInfo.provider || "unknown",
+          // Include additional info if available
+          emailNotAvailable: profileInfo.userInfo.emailNotAvailable || false,
+          reason: profileInfo.userInfo.reason || null,
+        }
+      : null;
+
+    return {
+      profileId: profileInfo.profileId,
+      isManaged: profileInfo.isManaged,
+      userInfo: userInfo,
+      browserInfo: {
+        browserType: profileInfo.browserInfo?.browserType,
+        browserVersion: profileInfo.browserInfo?.browserVersion,
+        platform: profileInfo.browserInfo?.platform,
+        language: profileInfo.browserInfo?.language,
+        installType: profileInfo.browserInfo?.installType,
+        version: profileInfo.browserInfo?.version,
+        extensionId: profileInfo.browserInfo?.extensionId,
+        // Exclude userAgent as it's too detailed for logging
+      },
+      timestamp: profileInfo.timestamp,
+    };
+  }
+
+  // Send telemetry data to CIPP
+  async sendToCipp(logEntry, config) {
+    if (!config?.enableCippReporting || !config?.cippServerUrl) {
+      return; // CIPP reporting not enabled
+    }
+
+    try {
+      const cippPayload = {
+        timestamp: logEntry.timestamp,
+        source: "microsoft-365-phishing-protection",
+        version: chrome.runtime.getManifest().version,
+        event: logEntry.event,
+        profile: logEntry.profile,
+        tabId: logEntry.tabId,
+        type: logEntry.type,
+      };
+
+      // Add tenant/organization context if available
+      if (logEntry.profile?.isManaged) {
+        cippPayload.context = "managed";
+      }
+
+      const response = await fetch(
+        `${config.cippServerUrl}/api/telemetry/extension`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "User-Agent": `Microsoft365PhishingProtection/${
+              chrome.runtime.getManifest().version
+            }`,
+          },
+          body: JSON.stringify(cippPayload),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `CIPP server responded with ${response.status}: ${response.statusText}`
+        );
+      }
+
+      logger.log("Successfully sent telemetry to CIPP");
+    } catch (error) {
+      logger.error("Failed to send telemetry to CIPP:", error);
+      // Don't fail the entire logging operation if CIPP is unavailable
+    }
   }
 
   async validateConfiguration() {

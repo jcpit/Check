@@ -234,7 +234,7 @@ class CheckPopup {
     try {
       // First try to load from storage (user settings)
       const storageResult = await new Promise((resolve) => {
-        chrome.storage.local.get(['brandingConfig'], (result) => {
+        chrome.storage.local.get(["brandingConfig"], (result) => {
           resolve(result.brandingConfig);
         });
       });
@@ -242,11 +242,14 @@ class CheckPopup {
       if (storageResult) {
         this.brandingConfig = {
           companyName: storageResult.companyName || "CyberDrain",
-          productName: storageResult.productName || "Microsoft 365 Phishing Protection",
+          productName:
+            storageResult.productName || "Microsoft 365 Phishing Protection",
           logoUrl: storageResult.logoUrl || "images/icon32.png",
-          supportUrl: storageResult.supportUrl || "https://support.cyberdrain.com",
-          privacyPolicyUrl: storageResult.privacyPolicyUrl || "https://cyberdrain.com/privacy",
-          primaryColor: storageResult.primaryColor || "#F77F00"
+          supportUrl:
+            storageResult.supportUrl || "https://support.cyberdrain.com",
+          privacyPolicyUrl:
+            storageResult.privacyPolicyUrl || "https://cyberdrain.com/privacy",
+          primaryColor: storageResult.primaryColor || "#F77F00",
         };
         console.log("Loaded branding from storage:", this.brandingConfig);
         return;
@@ -277,26 +280,27 @@ class CheckPopup {
         logoUrl: "images/icon32.png",
         supportUrl: "https://support.cyberdrain.com",
         privacyPolicyUrl: "https://cyberdrain.com/privacy",
-        primaryColor: "#F77F00"
+        primaryColor: "#F77F00",
       };
     }
   }
 
   applyBranding() {
     console.log("Applying branding:", this.brandingConfig);
-    
+
     // Update title
-    this.elements.brandingTitle.textContent = this.brandingConfig.productName || "Microsoft 365 Phishing Protection";
+    this.elements.brandingTitle.textContent =
+      this.brandingConfig.productName || "Microsoft 365 Phishing Protection";
 
     // Update logo with fallback handling
     if (this.brandingConfig.logoUrl) {
       console.log("Setting custom logo:", this.brandingConfig.logoUrl);
-      
+
       // Handle both relative and absolute URLs
-      const logoSrc = this.brandingConfig.logoUrl.startsWith("http") ?
-        this.brandingConfig.logoUrl :
-        chrome.runtime.getURL(this.brandingConfig.logoUrl);
-      
+      const logoSrc = this.brandingConfig.logoUrl.startsWith("http")
+        ? this.brandingConfig.logoUrl
+        : chrome.runtime.getURL(this.brandingConfig.logoUrl);
+
       // Test if logo loads, fallback to default if it fails
       const testImg = new Image();
       testImg.onload = () => {
@@ -305,16 +309,19 @@ class CheckPopup {
       };
       testImg.onerror = () => {
         console.warn("Failed to load custom logo, using default");
-        this.elements.brandingLogo.src = chrome.runtime.getURL("images/icon32.png");
+        this.elements.brandingLogo.src =
+          chrome.runtime.getURL("images/icon32.png");
       };
       testImg.src = logoSrc;
     } else {
       console.log("No custom logo, using default");
-      this.elements.brandingLogo.src = chrome.runtime.getURL("images/icon32.png");
+      this.elements.brandingLogo.src =
+        chrome.runtime.getURL("images/icon32.png");
     }
 
     // Update company name
-    this.elements.companyName.textContent = this.brandingConfig.companyName || "CyberDrain";
+    this.elements.companyName.textContent =
+      this.brandingConfig.companyName || "CyberDrain";
 
     // Update link URLs with fallbacks
     if (this.brandingConfig.supportUrl) {
@@ -327,8 +334,8 @@ class CheckPopup {
     // Apply primary color if available
     if (this.brandingConfig.primaryColor) {
       console.log("Applying primary color:", this.brandingConfig.primaryColor);
-      const style = document.createElement('style');
-      style.id = 'custom-branding-css';
+      const style = document.createElement("style");
+      style.id = "custom-branding-css";
       style.textContent = `
         :root {
           --theme-primary: ${this.brandingConfig.primaryColor} !important;
@@ -546,7 +553,9 @@ class CheckPopup {
     const isBlocked = analysis.isBlocked;
     const isSuspicious =
       analysis.isSuspicious !== undefined ? analysis.isSuspicious : hasThreats;
+    const isProtectionEnabled = analysis.protectionEnabled !== false;
 
+    // Always show the actual security analysis of the URL
     if (isBlocked) {
       this.showSecurityBadge("danger", "Blocked");
       this.showThreats(analysis.threats);
@@ -556,6 +565,34 @@ class CheckPopup {
     } else {
       this.showSecurityBadge("safe", "Safe");
       this.hideThreats();
+    }
+
+    // Show protection status separately if disabled
+    this.updateProtectionStatus(isProtectionEnabled);
+  }
+
+  updateProtectionStatus(isEnabled) {
+    // Find or create protection status indicator
+    let protectionStatus = document.getElementById("protectionStatus");
+    if (!protectionStatus) {
+      protectionStatus = document.createElement("div");
+      protectionStatus.id = "protectionStatus";
+      protectionStatus.className = "protection-status";
+
+      // Insert after security status
+      const securityStatusDiv = document.getElementById("securityStatus");
+      securityStatusDiv.parentNode.insertBefore(
+        protectionStatus,
+        securityStatusDiv.nextSibling
+      );
+    }
+
+    if (!isEnabled) {
+      protectionStatus.innerHTML =
+        '<span class="protection-badge disabled">⚠️ Protection Disabled</span>';
+      protectionStatus.style.display = "block";
+    } else {
+      protectionStatus.style.display = "none";
     }
   }
 
@@ -571,12 +608,66 @@ class CheckPopup {
 
       threats.forEach((threat) => {
         const li = document.createElement("li");
-        li.textContent = `${threat.type}: ${threat.description}`;
+        const displayName = this.getThreatDisplayName(threat.type);
+        li.textContent = `${displayName}: ${threat.description}`;
         this.elements.threatList.appendChild(li);
       });
     } else {
       this.hideThreats();
     }
+  }
+
+  getThreatDisplayName(threatType) {
+    const threatDisplayNames = {
+      // Phishing threats
+      phishing_page: "Phishing Page",
+      fake_login: "Fake Login Page",
+      credential_harvesting: "Credential Harvesting",
+      microsoft_impersonation: "Microsoft Impersonation",
+      o365_phishing: "Office 365 Phishing",
+      login_spoofing: "Login Page Spoofing",
+
+      // Malicious content
+      malicious_script: "Malicious Script",
+      suspicious_redirect: "Suspicious Redirect",
+      unsafe_download: "Unsafe Download",
+      malware_detected: "Malware Detected",
+      suspicious_form: "Suspicious Form",
+
+      // Domain threats
+      typosquatting: "Typosquatting Domain",
+      suspicious_domain: "Suspicious Domain",
+      homograph_attack: "Homograph Attack",
+      punycode_abuse: "Punycode Abuse",
+
+      // Content threats
+      suspicious_keywords: "Suspicious Keywords",
+      social_engineering: "Social Engineering",
+      urgency_tactics: "Urgency Tactics",
+      trust_indicators: "Fake Trust Indicators",
+
+      // Technical threats
+      dom_manipulation: "DOM Manipulation",
+      script_injection: "Script Injection",
+      form_tampering: "Form Tampering",
+      content_injection: "Content Injection",
+
+      // Behavioral threats
+      unusual_behavior: "Unusual Behavior",
+      rapid_redirects: "Rapid Redirects",
+      clipboard_access: "Clipboard Access",
+
+      // Generic categories
+      content_threat_detected: "Content Threat",
+      threat_detected: "Security Threat",
+      suspicious_activity: "Suspicious Activity",
+      policy_violation: "Policy Violation",
+    };
+
+    return (
+      threatDisplayNames[threatType] ||
+      threatType.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
+    );
   }
 
   hideThreats() {
@@ -633,14 +724,61 @@ class CheckPopup {
       case "url_access":
         return `Scanned ${new URL(event.url).hostname}`;
       case "content_threat_detected":
-        return `Threat detected on ${new URL(event.url).hostname}`;
+        return `Content threat detected on ${new URL(event.url).hostname}`;
+      case "threat_detected":
+        return `Security threat detected on ${new URL(event.url).hostname}`;
+      case "phishing_page":
+        return `Phishing page blocked on ${new URL(event.url).hostname}`;
+      case "fake_login":
+        return `Fake login page blocked on ${new URL(event.url).hostname}`;
+      case "malicious_script":
+        return `Malicious script blocked on ${new URL(event.url).hostname}`;
+      case "suspicious_redirect":
+        return `Suspicious redirect blocked on ${new URL(event.url).hostname}`;
       case "form_submission":
         return "Form submission monitored";
       case "script_injection":
-        return "Script injection executed";
+        return "Security script injected";
+      case "page_scanned":
+        return `Page scanned for threats`;
+      case "blocked_page_viewed":
+        return `Attempted to view blocked content`;
+      case "threat_blocked":
+        return `Security threat blocked`;
+      case "legitimate_access":
+        return `Legitimate page accessed`;
       default:
-        return event.type.replace(/_/g, " ");
+        // Convert snake_case to Title Case for unknown event types
+        return this.getEventDisplayName(event.type);
     }
+  }
+
+  getEventDisplayName(eventType) {
+    const eventDisplayNames = {
+      url_access: "Page Scanned",
+      content_threat_detected: "Content Threat Detected",
+      threat_detected: "Security Threat Detected",
+      form_submission: "Form Monitored",
+      script_injection: "Security Script Injected",
+      page_scanned: "Page Scanned",
+      blocked_page_viewed: "Blocked Content Viewed",
+      threat_blocked: "Threat Blocked",
+      threat_detected_no_action: "Threat Detected",
+      legitimate_access: "Legitimate Access",
+      phishing_page: "Phishing Page Blocked",
+      fake_login: "Fake Login Blocked",
+      credential_harvesting: "Credential Harvesting Blocked",
+      microsoft_impersonation: "Microsoft Impersonation Blocked",
+      malicious_script: "Malicious Script Blocked",
+      suspicious_redirect: "Suspicious Redirect Blocked",
+      typosquatting: "Typosquatting Domain Blocked",
+      social_engineering: "Social Engineering Blocked",
+    };
+
+    return (
+      eventDisplayNames[eventType] ||
+      eventType.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
+    );
   }
 
   formatTime(date) {

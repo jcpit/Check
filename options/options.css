@@ -725,7 +725,7 @@ body {
 /* Logs Header */
 .logs-header {
   display: grid;
-  grid-template-columns: 140px 120px 200px 100px 120px 1fr;
+  grid-template-columns: 140px 120px 200px 100px 120px 1fr 20px;
   gap: 12px;
   padding: 12px 20px;
   background: var(--background-color);
@@ -743,13 +743,11 @@ body {
 
 /* Log Entries */
 .log-entry {
-  display: grid;
-  grid-template-columns: 140px 120px 200px 100px 120px 1fr;
-  gap: 12px;
   padding: 12px 20px;
   border-bottom: 1px solid var(--border-color);
   font-size: 13px;
-  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
 .log-entry:last-child {
@@ -757,7 +755,18 @@ body {
 }
 
 .log-entry:hover {
-  background: var(--background-color);
+  background: var(--sidebar-bg);
+}
+
+.log-entry.expanded {
+  background: var(--sidebar-bg);
+}
+
+.log-entry-main {
+  display: grid;
+  grid-template-columns: 140px 120px 200px 100px 120px 1fr 20px;
+  gap: 12px;
+  align-items: center;
 }
 
 .log-column {
@@ -822,6 +831,104 @@ body {
 .log-column.details {
   color: var(--text-primary);
   font-size: 12px;
+}
+
+.log-expand-icon {
+  color: var(--text-muted);
+  font-size: 16px;
+  transition: transform 0.2s ease;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.log-entry.expanded .log-expand-icon {
+  transform: rotate(90deg);
+}
+
+.log-entry-details {
+  grid-column: 1 / -1;
+  margin-top: 12px;
+  padding: 16px;
+  background: var(--input-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  display: none;
+}
+
+.log-entry.expanded .log-entry-details {
+  display: block;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.log-details-section {
+  margin-bottom: 16px;
+}
+
+.log-details-section:last-child {
+  margin-bottom: 0;
+}
+
+.log-details-title {
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+
+.log-details-content {
+  background: var(--background-color);
+  border-radius: 4px;
+  padding: 12px;
+  font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+  font-size: 11px;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+}
+
+.log-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.log-details-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.log-details-field-label {
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+}
+
+.log-details-field-value {
+  font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+  font-size: 12px;
+  color: var(--text-primary);
+  word-break: break-word;
 }
 
 /* Legacy log styles for backward compatibility */
@@ -1170,11 +1277,11 @@ body {
   .sidebar {
     width: 220px;
   }
-  
+
   .main-content {
     margin-left: 220px;
   }
-  
+
   .settings-grid {
     grid-template-columns: 1fr;
   }
@@ -1185,36 +1292,36 @@ body {
     transform: translateX(-100%);
     transition: transform 0.3s ease;
   }
-  
+
   .sidebar.mobile-open {
     transform: translateX(0);
   }
-  
+
   .main-content {
     margin-left: 0;
   }
-  
+
   .content-header {
     padding: 16px 20px;
   }
-  
+
   .content-header h1 {
     font-size: 20px;
   }
-  
+
   .header-actions {
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .settings-section {
     padding: 20px;
   }
-  
+
   .settings-grid {
     gap: 20px;
   }
-  
+
   .setting-group {
     padding: 20px;
   }
@@ -1227,7 +1334,7 @@ body {
     --text-primary: #000000;
     --text-secondary: #333333;
   }
-  
+
   .setting-input,
   .setting-select,
   .setting-textarea,
@@ -1259,22 +1366,22 @@ body {
     --border-color: #374151;
     --border-hover: #4b5563;
   }
-  
+
   .sidebar {
     background: var(--surface-color);
   }
-  
+
   .content-header {
     background: var(--surface-color);
   }
-  
+
   .setting-input,
   .setting-select,
   .setting-textarea {
     background: var(--surface-color);
     color: var(--text-primary);
   }
-  
+
   .btn-secondary {
     background: var(--surface-color);
     color: var(--text-primary);

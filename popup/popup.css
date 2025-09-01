@@ -357,6 +357,31 @@ body {
   color: #3730a3 !important;
 }
 
+.security-badge.disabled {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+}
+
+/* Protection status indicator */
+.protection-status {
+  margin-top: 8px;
+}
+
+.protection-badge {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+  border: 1px solid;
+}
+
+.protection-badge.disabled {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+  border-color: #fbbf24 !important;
+}
+
 /* Threat summary */
 .threat-summary {
   margin-top: 12px;

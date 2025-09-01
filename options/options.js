@@ -125,7 +125,7 @@ class CheckOptions {
           e.target.value / 1000 + "s";
         this.updateSliderProgress(e.target);
       });
-      
+
       // Initialize slider progress
       this.updateSliderProgress(this.elements.notificationDuration);
     }
@@ -352,7 +352,7 @@ class CheckOptions {
     try {
       // First try to load from storage (user settings)
       const storageResult = await new Promise((resolve) => {
-        chrome.storage.local.get(['brandingConfig'], (result) => {
+        chrome.storage.local.get(["brandingConfig"], (result) => {
           resolve(result.brandingConfig);
         });
       });
@@ -368,7 +368,7 @@ class CheckOptions {
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
+
       try {
         const response = await fetch(
           chrome.runtime.getURL("config/branding.json"),
@@ -412,17 +412,17 @@ class CheckOptions {
     document.getElementById("sidebarVersion").textContent = `v${
       chrome.runtime.getManifest().version
     }`;
-    
+
     // Update sidebar logo
     const sidebarLogo = document.getElementById("sidebarLogo");
     if (sidebarLogo && this.brandingConfig?.logoUrl) {
       console.log("Setting sidebar logo:", this.brandingConfig.logoUrl);
-      
+
       // Handle both relative and absolute URLs
-      const logoSrc = this.brandingConfig.logoUrl.startsWith("http") ?
-        this.brandingConfig.logoUrl :
-        chrome.runtime.getURL(this.brandingConfig.logoUrl);
-      
+      const logoSrc = this.brandingConfig.logoUrl.startsWith("http")
+        ? this.brandingConfig.logoUrl
+        : chrome.runtime.getURL(this.brandingConfig.logoUrl);
+
       // Test if logo loads, fallback to default if it fails
       const testImg = new Image();
       testImg.onload = () => {
@@ -447,20 +447,25 @@ class CheckOptions {
 
   populateFormFields() {
     // Extension settings
-    this.elements.enablePageBlocking = document.getElementById("enablePageBlocking");
-    this.elements.enableCippReporting = document.getElementById("enableCippReporting");
+    this.elements.enablePageBlocking =
+      document.getElementById("enablePageBlocking");
+    this.elements.enableCippReporting = document.getElementById(
+      "enableCippReporting"
+    );
     this.elements.cippServerUrl = document.getElementById("cippServerUrl");
-    
+
     if (this.elements.enablePageBlocking) {
-      this.elements.enablePageBlocking.checked = this.config?.enablePageBlocking !== false;
+      this.elements.enablePageBlocking.checked =
+        this.config?.enablePageBlocking !== false;
     }
     if (this.elements.enableCippReporting) {
-      this.elements.enableCippReporting.checked = this.config?.enableCippReporting || false;
+      this.elements.enableCippReporting.checked =
+        this.config?.enableCippReporting || false;
     }
     if (this.elements.cippServerUrl) {
       this.elements.cippServerUrl.value = this.config?.cippServerUrl || "";
     }
-    
+
     // UI settings
     this.elements.showNotifications.checked = this.config?.showNotifications;
     this.elements.notificationDuration.value =
@@ -492,9 +497,10 @@ class CheckOptions {
     this.elements.companyName.value = this.brandingConfig?.companyName || "";
     this.elements.productName.value = this.brandingConfig?.productName || "";
     this.elements.supportEmail.value = this.brandingConfig?.supportEmail || "";
-    this.elements.primaryColor.value = this.brandingConfig?.primaryColor || "#F77F00";
+    this.elements.primaryColor.value =
+      this.brandingConfig?.primaryColor || "#F77F00";
     this.elements.logoUrl.value = this.brandingConfig?.logoUrl || "";
-    
+
     // Update slider progress
     if (this.elements.notificationDuration) {
       this.updateSliderProgress(this.elements.notificationDuration);
@@ -573,7 +579,7 @@ class CheckOptions {
             }
           });
         });
-        
+
         this.brandingConfig = newBranding;
         console.log("Branding config saved:", newBranding);
       } catch (brandingError) {
@@ -602,7 +608,7 @@ class CheckOptions {
       enablePageBlocking: this.elements.enablePageBlocking?.checked !== false,
       enableCippReporting: this.elements.enableCippReporting?.checked || false,
       cippServerUrl: this.elements.cippServerUrl?.value || "",
-      
+
       // UI settings
       showNotifications: this.elements.showNotifications?.checked || false,
       notificationDuration: parseInt(
@@ -777,14 +783,14 @@ class CheckOptions {
       // Add timeout to fetch operations
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
+
       try {
         const response = await fetch(
           chrome.runtime.getURL("rules/detection-rules.json"),
           { signal: controller.signal }
         );
         clearTimeout(timeoutId);
-        
+
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const defaultRules = await response.json();
         this.elements.customRulesEditor.value = JSON.stringify(
@@ -806,14 +812,16 @@ class CheckOptions {
     try {
       // Safe wrapper for chrome.* operations
       const safe = async (promise) => {
-        try { return await promise; } catch(_) { return {}; }
+        try {
+          return await promise;
+        } catch (_) {
+          return {};
+        }
       };
-      
-      const result = await safe(chrome.storage.local.get([
-        "securityEvents",
-        "accessLogs",
-        "debugLogs",
-      ]));
+
+      const result = await safe(
+        chrome.storage.local.get(["securityEvents", "accessLogs", "debugLogs"])
+      );
       const securityEvents = result?.securityEvents || [];
       const accessLogs = result?.accessLogs || [];
       const debugLogs = result?.debugLogs || [];
@@ -847,9 +855,14 @@ class CheckOptions {
     // Filter logs based on debug logging setting
     const filteredLogs = this.filterLogsForDisplay(logs);
 
-    filteredLogs.slice(0, 100).forEach((log) => {
+    filteredLogs.slice(0, 100).forEach((log, index) => {
       const item = document.createElement("div");
       item.className = "log-entry";
+      item.dataset.logIndex = index;
+
+      // Main row container
+      const mainRow = document.createElement("div");
+      mainRow.className = "log-entry-main";
 
       // Timestamp column
       const timestamp = document.createElement("div");
@@ -881,14 +894,177 @@ class CheckOptions {
       details.className = "log-column details";
       details.textContent = this.formatLogMessage(log);
 
-      item.appendChild(timestamp);
-      item.appendChild(eventType);
-      item.appendChild(url);
-      item.appendChild(threatLevel);
-      item.appendChild(action);
-      item.appendChild(details);
+      // Expand icon
+      const expandIcon = document.createElement("div");
+      expandIcon.className = "log-expand-icon";
+      expandIcon.innerHTML = "▶";
+
+      // Append all columns to main row
+      mainRow.appendChild(timestamp);
+      mainRow.appendChild(eventType);
+      mainRow.appendChild(url);
+      mainRow.appendChild(threatLevel);
+      mainRow.appendChild(action);
+      mainRow.appendChild(details);
+      mainRow.appendChild(expandIcon);
+
+      // Details section (initially hidden)
+      const detailsSection = document.createElement("div");
+      detailsSection.className = "log-entry-details";
+      detailsSection.innerHTML = this.createLogDetailsHTML(log);
+
+      // Append both main row and details to the item
+      item.appendChild(mainRow);
+      item.appendChild(detailsSection);
+
+      // Add click event to toggle expansion
+      item.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.toggleLogEntry(item);
+      });
 
       this.elements.logsList.appendChild(item);
+    });
+  }
+
+  toggleLogEntry(item) {
+    const isExpanded = item.classList.contains("expanded");
+
+    // Close all other expanded entries
+    document.querySelectorAll(".log-entry.expanded").forEach((entry) => {
+      if (entry !== item) {
+        entry.classList.remove("expanded");
+      }
+    });
+
+    // Toggle current entry
+    item.classList.toggle("expanded", !isExpanded);
+  }
+
+  createLogDetailsHTML(log) {
+    let html = "";
+
+    // Basic Information Section
+    html += `<div class="log-details-section">
+      <div class="log-details-title">Basic Information</div>
+      <div class="log-details-grid">`;
+
+    if (log.timestamp) {
+      html += `<div class="log-details-field">
+        <div class="log-details-field-label">Timestamp</div>
+        <div class="log-details-field-value">${new Date(
+          log.timestamp
+        ).toISOString()}</div>
+      </div>`;
+    }
+
+    if (log.category) {
+      html += `<div class="log-details-field">
+        <div class="log-details-field-label">Category</div>
+        <div class="log-details-field-value">${log.category}</div>
+      </div>`;
+    }
+
+    if (log.level) {
+      html += `<div class="log-details-field">
+        <div class="log-details-field-label">Level</div>
+        <div class="log-details-field-value">${log.level}</div>
+      </div>`;
+    }
+
+    if (log.source) {
+      html += `<div class="log-details-field">
+        <div class="log-details-field-label">Source</div>
+        <div class="log-details-field-value">${log.source}</div>
+      </div>`;
+    }
+
+    html += "</div></div>";
+
+    // Event Information Section
+    if (log.event) {
+      html += `<div class="log-details-section">
+        <div class="log-details-title">Event Details</div>
+        <div class="log-details-grid">`;
+
+      Object.entries(log.event).forEach(([key, value]) => {
+        if (typeof value === "object" && value !== null) {
+          html += `<div class="log-details-field" style="grid-column: 1 / -1;">
+            <div class="log-details-field-label">${key}</div>
+            <div class="log-details-content">${JSON.stringify(
+              value,
+              null,
+              2
+            )}</div>
+          </div>`;
+        } else {
+          html += `<div class="log-details-field">
+            <div class="log-details-field-label">${key}</div>
+            <div class="log-details-field-value">${this.escapeHtml(
+              String(value)
+            )}</div>
+          </div>`;
+        }
+      });
+
+      html += "</div></div>";
+    }
+
+    // Additional Properties Section
+    const additionalProps = { ...log };
+    delete additionalProps.timestamp;
+    delete additionalProps.category;
+    delete additionalProps.level;
+    delete additionalProps.source;
+    delete additionalProps.event;
+
+    if (Object.keys(additionalProps).length > 0) {
+      html += `<div class="log-details-section">
+        <div class="log-details-title">Additional Properties</div>
+        <div class="log-details-grid">`;
+
+      Object.entries(additionalProps).forEach(([key, value]) => {
+        if (typeof value === "object" && value !== null) {
+          html += `<div class="log-details-field" style="grid-column: 1 / -1;">
+            <div class="log-details-field-label">${key}</div>
+            <div class="log-details-content">${JSON.stringify(
+              value,
+              null,
+              2
+            )}</div>
+          </div>`;
+        } else {
+          html += `<div class="log-details-field">
+            <div class="log-details-field-label">${key}</div>
+            <div class="log-details-field-value">${this.escapeHtml(
+              String(value)
+            )}</div>
+          </div>`;
+        }
+      });
+
+      html += "</div></div>";
+    }
+
+    // Raw Data Section
+    html += `<div class="log-details-section">
+      <div class="log-details-title">Raw Data</div>
+      <div class="log-details-content">${JSON.stringify(log, null, 2)}</div>
+    </div>`;
+
+    return html;
+  }
+
+  escapeHtml(text) {
+    const map = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;",
+    };
+    return text.replace(/[&<>"']/g, function (m) {
+      return map[m];
     });
   }
 
@@ -915,9 +1091,13 @@ class CheckOptions {
     try {
       // Safe wrapper for chrome.* operations
       const safe = async (promise) => {
-        try { return await promise; } catch(_) { return {}; }
+        try {
+          return await promise;
+        } catch (_) {
+          return {};
+        }
       };
-      
+
       // Check if extension is managed
       const policies = await safe(chrome.storage.managed.get(null));
       const isManaged = policies && Object.keys(policies).length > 0;
@@ -981,9 +1161,71 @@ class CheckOptions {
       return log.level.toUpperCase();
     }
     if (log.event?.type) {
-      return log.event.type.replace(/_/g, " ").toUpperCase();
+      return this.getEventDisplayName(log.event.type);
     }
     return (log.type || "UNKNOWN").toUpperCase();
+  }
+
+  getEventDisplayName(eventType) {
+    const eventDisplayNames = {
+      // Core security events
+      url_access: "Page Scanned",
+      content_threat_detected: "Content Threat Detected",
+      threat_detected: "Security Threat Detected",
+      form_submission: "Form Monitored",
+      script_injection: "Security Script Injected",
+      page_scanned: "Page Scanned",
+      blocked_page_viewed: "Blocked Content Viewed",
+      threat_blocked: "Threat Blocked",
+      threat_detected_no_action: "Threat Detected",
+      legitimate_access: "Legitimate Access",
+
+      // Phishing threats
+      phishing_page: "Phishing Page Blocked",
+      fake_login: "Fake Login Blocked",
+      credential_harvesting: "Credential Harvesting Blocked",
+      microsoft_impersonation: "Microsoft Impersonation Blocked",
+      o365_phishing: "Office 365 Phishing Blocked",
+      login_spoofing: "Login Page Spoofing Blocked",
+
+      // Malicious content
+      malicious_script: "Malicious Script Blocked",
+      suspicious_redirect: "Suspicious Redirect Blocked",
+      unsafe_download: "Unsafe Download Blocked",
+      malware_detected: "Malware Detected",
+      suspicious_form: "Suspicious Form Blocked",
+
+      // Domain threats
+      typosquatting: "Typosquatting Domain Blocked",
+      suspicious_domain: "Suspicious Domain Blocked",
+      homograph_attack: "Homograph Attack Blocked",
+      punycode_abuse: "Punycode Abuse Blocked",
+
+      // Content threats
+      suspicious_keywords: "Suspicious Keywords Detected",
+      social_engineering: "Social Engineering Blocked",
+      urgency_tactics: "Urgency Tactics Detected",
+      trust_indicators: "Fake Trust Indicators Detected",
+
+      // Technical threats
+      dom_manipulation: "DOM Manipulation Blocked",
+      form_tampering: "Form Tampering Blocked",
+      content_injection: "Content Injection Blocked",
+
+      // Behavioral threats
+      unusual_behavior: "Unusual Behavior Detected",
+      rapid_redirects: "Rapid Redirects Blocked",
+      clipboard_access: "Clipboard Access Detected",
+
+      // Policy events
+      policy_violation: "Policy Violation",
+      suspicious_activity: "Suspicious Activity Detected",
+    };
+
+    return (
+      eventDisplayNames[eventType] ||
+      eventType.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
+    );
   }
 
   getUrlDisplay(log) {
@@ -1138,14 +1380,20 @@ class CheckOptions {
       try {
         // Safe wrapper for chrome.* operations
         const safe = async (promise) => {
-          try { return await promise; } catch(_) { return undefined; }
+          try {
+            return await promise;
+          } catch (_) {
+            return undefined;
+          }
         };
-        
-        await safe(chrome.storage.local.remove([
-          "securityEvents",
-          "accessLogs",
-          "debugLogs",
-        ]));
+
+        await safe(
+          chrome.storage.local.remove([
+            "securityEvents",
+            "accessLogs",
+            "debugLogs",
+          ])
+        );
         this.loadLogs();
         this.showToast("Logs cleared successfully", "success");
       } catch (error) {
@@ -1159,14 +1407,16 @@ class CheckOptions {
     try {
       // Safe wrapper for chrome.* operations
       const safe = async (promise) => {
-        try { return await promise; } catch(_) { return {}; }
+        try {
+          return await promise;
+        } catch (_) {
+          return {};
+        }
       };
-      
-      const result = await safe(chrome.storage.local.get([
-        "securityEvents",
-        "accessLogs",
-        "debugLogs",
-      ]));
+
+      const result = await safe(
+        chrome.storage.local.get(["securityEvents", "accessLogs", "debugLogs"])
+      );
       const exportData = {
         securityEvents: result?.securityEvents || [],
         accessLogs: result?.accessLogs || [],
@@ -1214,7 +1464,7 @@ class CheckOptions {
 
     // Apply primary color to the options page interface itself
     this.applyPrimaryColorToOptionsPage(primaryColor);
-    
+
     // Update slider progress with new primary color
     if (this.elements.notificationDuration) {
       this.updateSliderProgress(this.elements.notificationDuration);
@@ -1225,52 +1475,52 @@ class CheckOptions {
     if (!primaryColor) return;
 
     // Remove existing primary color styles
-    const existingStyle = document.getElementById('options-primary-color');
+    const existingStyle = document.getElementById("options-primary-color");
     if (existingStyle) {
       existingStyle.remove();
     }
 
     // Create new style element
-    const style = document.createElement('style');
-    style.id = 'options-primary-color';
+    const style = document.createElement("style");
+    style.id = "options-primary-color";
     style.textContent = `
       :root {
         --primary-color: ${primaryColor} !important;
         --primary-hover: ${primaryColor}dd !important;
         --warning-color: ${primaryColor} !important;
       }
-      
+
       /* Apply to buttons and interactive elements */
       .btn-primary {
         background-color: ${primaryColor} !important;
       }
-      
+
       .btn-primary:hover {
         background-color: ${primaryColor}dd !important;
       }
-      
+
       /* Apply to menu active states */
       .menu-item.active {
         background-color: ${primaryColor} !important;
         border-left-color: ${primaryColor} !important;
       }
-      
+
       .menu-item.active .menu-icon,
       .menu-item.active .menu-text {
         color: white !important;
       }
-      
+
       /* Apply to checkboxes and form elements */
       .setting-checkbox:checked + .checkbox-custom {
         background-color: ${primaryColor} !important;
         border-color: ${primaryColor} !important;
       }
-      
+
       /* Apply to color inputs */
       .setting-color {
         border-color: ${primaryColor} !important;
       }
-      
+
       /* Apply to focus states */
       .setting-input:focus,
       .setting-select:focus,
@@ -1278,25 +1528,25 @@ class CheckOptions {
         border-color: ${primaryColor} !important;
         box-shadow: 0 0 0 2px ${primaryColor}22 !important;
       }
-      
+
       /* Apply to range sliders */
       .setting-range::-webkit-slider-thumb {
         background: ${primaryColor} !important;
       }
-      
+
       .setting-range::-moz-range-thumb {
         background: ${primaryColor} !important;
       }
-      
+
       .setting-range:focus::-webkit-slider-thumb {
         box-shadow: 0 0 0 3px ${primaryColor}33, 0 2px 4px rgba(0, 0, 0, 0.2) !important;
       }
-      
+
       .setting-range:focus::-moz-range-thumb {
         box-shadow: 0 0 0 3px ${primaryColor}33, 0 2px 4px rgba(0, 0, 0, 0.2) !important;
       }
     `;
-    
+
     document.head.appendChild(style);
   }
 
@@ -1317,18 +1567,21 @@ class CheckOptions {
 
   updateSliderProgress(slider) {
     if (!slider) return;
-    
+
     const value = slider.value;
     const min = slider.min || 0;
     const max = slider.max || 100;
     const percentage = ((value - min) / (max - min)) * 100;
-    
+
     // Get the current primary color
-    const primaryColor = this.elements.primaryColor?.value || this.brandingConfig?.primaryColor || '#F77F00';
-    
+    const primaryColor =
+      this.elements.primaryColor?.value ||
+      this.brandingConfig?.primaryColor ||
+      "#F77F00";
+
     // Update the track background with filled progress
     const trackBackground = `linear-gradient(to right, ${primaryColor} 0%, ${primaryColor} ${percentage}%, var(--border-color) ${percentage}%, var(--border-color) 100%)`;
-    
+
     // Apply the style directly to the slider
     slider.style.background = trackBackground;
   }
@@ -1345,7 +1598,12 @@ class CheckOptions {
   // Add "respond once" guard for options page
   createOnceGuard(fn) {
     let called = false;
-    return (...args) => { if (!called) { called = true; fn(...args); } };
+    return (...args) => {
+      if (!called) {
+        called = true;
+        fn(...args);
+      }
+    };
   }
 
   showToast(message, type = "info") {
@@ -1413,46 +1671,49 @@ class CheckOptions {
   // Dark Mode Management
   async initializeDarkMode() {
     // Get stored theme preference
-    const result = await chrome.storage.local.get(['themeMode']);
+    const result = await chrome.storage.local.get(["themeMode"]);
     const stored = result.themeMode;
-    
+
     let isDarkMode;
-    
-    if (stored === 'dark') {
+
+    if (stored === "dark") {
       isDarkMode = true;
-    } else if (stored === 'light') {
+    } else if (stored === "light") {
       isDarkMode = false;
     } else {
       // Default to system preference
-      isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      isDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
     }
-    
+
     this.applyTheme(isDarkMode);
   }
 
   async toggleDarkMode() {
     const html = document.documentElement;
-    const currentlyDark = html.classList.contains('dark-theme');
+    const currentlyDark = html.classList.contains("dark-theme");
     const newDarkMode = !currentlyDark;
-    
+
     // Store preference
-    await chrome.storage.local.set({ themeMode: newDarkMode ? 'dark' : 'light' });
-    
+    await chrome.storage.local.set({
+      themeMode: newDarkMode ? "dark" : "light",
+    });
+
     this.applyTheme(newDarkMode);
   }
 
   applyTheme(isDarkMode) {
     const html = document.documentElement;
-    const toggleIcon = this.elements.darkModeToggle.querySelector('.material-icons');
-    
+    const toggleIcon =
+      this.elements.darkModeToggle.querySelector(".material-icons");
+
     if (isDarkMode) {
-      html.classList.add('dark-theme');
-      html.classList.remove('light-theme');
-      toggleIcon.textContent = 'light_mode';
+      html.classList.add("dark-theme");
+      html.classList.remove("light-theme");
+      toggleIcon.textContent = "light_mode";
     } else {
-      html.classList.remove('dark-theme');
-      html.classList.add('light-theme');
-      toggleIcon.textContent = 'dark_mode';
+      html.classList.remove("dark-theme");
+      html.classList.add("light-theme");
+      toggleIcon.textContent = "dark_mode";
     }
   }
 }

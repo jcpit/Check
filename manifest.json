@@ -10,7 +10,10 @@
     "scripting",
     "webRequest",
     "declarativeNetRequest",
-    "alarms"
+    "alarms",
+    "management",
+    "identity",
+    "identity.email"
   ],
   "host_permissions": [
     "<all_urls>"

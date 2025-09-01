@@ -1,7 +1,7 @@
 /**
  * Microsoft 365 Phishing Protection - Final Rule-Driven Content Script
  * 100% rule-driven architecture - NO hardcoded detections
- * 
+ *
  * Logic Flow (CORRECTED):
  * 1. Load rules and check trusted origins FIRST - immediate exit if trusted
  * 2. Check if page is MS logon page (using rule file requirements)
@@ -13,7 +13,7 @@ const logger = {
   log: (...args) => console.log("[M365-Protection]", ...args),
   warn: (...args) => console.warn("[M365-Protection]", ...args),
   error: (...args) => console.error("[M365-Protection]", ...args),
-  debug: (...args) => console.debug("[M365-Protection]", ...args)
+  debug: (...args) => console.debug("[M365-Protection]", ...args),
 };
 
 // Global state
@@ -23,6 +23,7 @@ let trustedOrigins = new Set();
 let domObserver = null;
 let lastScanTime = 0;
 let scanCount = 0;
+let lastDetectionResult = null; // Store last detection analysis
 const MAX_SCANS = 10; // Prevent infinite scanning
 const SCAN_COOLDOWN = 1000; // 1 second between scans
 
@@ -31,24 +32,32 @@ const SCAN_COOLDOWN = 1000; // 1 second between scans
  */
 async function loadDetectionRules() {
   try {
-    const response = await fetch(chrome.runtime.getURL("rules/detection-rules.json"), {
-      cache: "no-cache"
-    });
-    
+    const response = await fetch(
+      chrome.runtime.getURL("rules/detection-rules.json"),
+      {
+        cache: "no-cache",
+      }
+    );
+
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
-    
+
     const rules = await response.json();
-    
+
     // Set up trusted origins from rules ONLY
     if (rules.trusted_origins && Array.isArray(rules.trusted_origins)) {
-      trustedOrigins = new Set(rules.trusted_origins.map(origin => origin.toLowerCase()));
+      trustedOrigins = new Set(
+        rules.trusted_origins.map((origin) => origin.toLowerCase())
+      );
     }
-    
-    logger.log(`Loaded detection rules: ${trustedOrigins.size} trusted origins, ${rules.rules?.length || 0} detection rules`);
+
+    logger.log(
+      `Loaded detection rules: ${trustedOrigins.size} trusted origins, ${
+        rules.rules?.length || 0
+      } detection rules`
+    );
     return rules;
-    
   } catch (error) {
     logger.error("CRITICAL: Failed to load detection rules:", error.message);
     throw error; // Don't continue without rules
@@ -78,7 +87,7 @@ function isMicrosoftLogonPage() {
         let found = false;
 
         if (element.type === "source_content") {
-          const regex = new RegExp(element.pattern, 'i');
+          const regex = new RegExp(element.pattern, "i");
           found = regex.test(pageSource);
         }
 
@@ -91,24 +100,30 @@ function isMicrosoftLogonPage() {
           logger.debug(`✗ Missing required element: ${element.id}`);
         }
       } catch (elementError) {
-        logger.warn(`Error checking element ${element.id}:`, elementError.message);
+        logger.warn(
+          `Error checking element ${element.id}:`,
+          elementError.message
+        );
         missingElementsList.push(element.id);
       }
     }
 
-    const isM365Page = requirements.all_must_be_present ? 
-      foundElements === requirements.required_elements.length :
-      foundElements >= (requirements.minimum_required || 2); // Changed to 2 of 5 elements
+    const isM365Page = requirements.all_must_be_present
+      ? foundElements === requirements.required_elements.length
+      : foundElements >= (requirements.minimum_required || 2); // Changed to 2 of 5 elements
 
-    logger.log(`M365 logon detection: ${foundElements}/${requirements.required_elements.length} elements found (need ${requirements.minimum_required || 2})`);
-    logger.log(`Found: [${foundElementsList.join(', ')}]`);
+    logger.log(
+      `M365 logon detection: ${foundElements}/${
+        requirements.required_elements.length
+      } elements found (need ${requirements.minimum_required || 2})`
+    );
+    logger.log(`Found: [${foundElementsList.join(", ")}]`);
     if (missingElementsList.length > 0) {
-      logger.log(`Missing: [${missingElementsList.join(', ')}]`);
+      logger.log(`Missing: [${missingElementsList.join(", ")}]`);
     }
-    logger.log(`Result: ${isM365Page ? 'IS' : 'NOT'} Microsoft 365 logon page`);
-    
-    return isM365Page;
+    logger.log(`Result: ${isM365Page ? "IS" : "NOT"} Microsoft 365 logon page`);
 
+    return isM365Page;
   } catch (error) {
     logger.error("M365 logon page detection failed:", error.message);
     return false; // Fail closed - don't assume it's MS page if detection fails
@@ -122,27 +137,34 @@ function runBlockingRules() {
   try {
     if (!detectionRules?.blocking_rules) {
       logger.warn("No blocking rules in detection rules");
-      return { shouldBlock: false, reason: 'No blocking rules available' };
+      return { shouldBlock: false, reason: "No blocking rules available" };
     }
 
     for (const rule of detectionRules.blocking_rules) {
       try {
         let ruleTriggered = false;
-        let reason = '';
+        let reason = "";
 
         switch (rule.type) {
           case "form_action_validation":
             // Check: form post url is not login.microsoftonline.com -> Block
-            const forms = document.querySelectorAll(rule.condition?.form_selector || "form");
+            const forms = document.querySelectorAll(
+              rule.condition?.form_selector || "form"
+            );
             for (const form of forms) {
               // Check if form has password field (as specified in condition)
-              if (rule.condition?.has_password_field && !form.querySelector('input[type="password"]')) {
+              if (
+                rule.condition?.has_password_field &&
+                !form.querySelector('input[type="password"]')
+              ) {
                 continue;
               }
-              
+
               const action = form.action || location.href;
-              const actionContainsMicrosoft = action.includes(rule.condition?.action_must_not_contain || "");
-              
+              const actionContainsMicrosoft = action.includes(
+                rule.condition?.action_must_not_contain || ""
+              );
+
               if (!actionContainsMicrosoft) {
                 ruleTriggered = true;
                 reason = `Form action "${action}" does not contain ${rule.condition?.action_must_not_contain}`;
@@ -154,17 +176,21 @@ function runBlockingRules() {
 
           case "resource_validation":
             // Check: If "*customcss" is loaded, it must come from https://aadcdn.msftauthimages.net/
-            const resourceNodes = document.querySelectorAll("[src], link[rel='stylesheet'][href]");
+            const resourceNodes = document.querySelectorAll(
+              "[src], link[rel='stylesheet'][href]"
+            );
             for (const node of resourceNodes) {
               const url = node.src || node.href;
               if (!url) continue;
-              
+
               if (url.includes(rule.condition?.resource_pattern || "")) {
                 const requiredOrigin = rule.condition?.required_origin || "";
                 if (!url.startsWith(requiredOrigin)) {
                   ruleTriggered = true;
                   reason = `Resource "${url}" does not come from required origin "${requiredOrigin}"`;
-                  logger.warn(`BLOCKING RULE TRIGGERED: ${rule.id} - ${reason}`);
+                  logger.warn(
+                    `BLOCKING RULE TRIGGERED: ${rule.id} - ${reason}`
+                  );
                   break;
                 }
               }
@@ -180,25 +206,26 @@ function runBlockingRules() {
             shouldBlock: true,
             reason: reason,
             rule: rule,
-            severity: rule.severity
+            severity: rule.severity,
           };
         }
-
       } catch (ruleError) {
-        logger.warn(`Error processing blocking rule ${rule.id}:`, ruleError.message);
+        logger.warn(
+          `Error processing blocking rule ${rule.id}:`,
+          ruleError.message
+        );
         // Continue with other rules - don't let one bad rule break everything
       }
     }
 
-    return { shouldBlock: false, reason: 'No blocking rules triggered' };
-
+    return { shouldBlock: false, reason: "No blocking rules triggered" };
   } catch (error) {
     logger.error("Blocking rules check failed:", error.message);
     // Fail-safe: if we can't check blocking rules, assume we should block
-    return { 
-      shouldBlock: true, 
-      reason: 'Blocking rules check failed - blocking for safety',
-      error: error.message 
+    return {
+      shouldBlock: true,
+      reason: "Blocking rules check failed - blocking for safety",
+      error: error.message,
     };
   }
 }
@@ -225,14 +252,16 @@ function runDetectionRules() {
         switch (rule.type) {
           case "url":
             if (rule.condition?.domains) {
-              ruleTriggered = rule.condition.domains.some(domain => 
-                location.hostname === domain
+              ruleTriggered = rule.condition.domains.some(
+                (domain) => location.hostname === domain
               );
             }
             break;
 
           case "form_action":
-            const forms = document.querySelectorAll(rule.condition?.form_selector || "form");
+            const forms = document.querySelectorAll(
+              rule.condition?.form_selector || "form"
+            );
             for (const form of forms) {
               const action = form.action || "";
               if (action.includes(rule.condition?.contains || "")) {
@@ -244,7 +273,7 @@ function runDetectionRules() {
 
           case "dom":
             if (rule.condition?.selectors) {
-              ruleTriggered = rule.condition.selectors.some(selector => {
+              ruleTriggered = rule.condition.selectors.some((selector) => {
                 try {
                   return document.querySelector(selector);
                 } catch {
@@ -261,11 +290,13 @@ function runDetectionRules() {
             break;
 
           case "network":
-            const resourceNodes = document.querySelectorAll("[src], link[rel='stylesheet'][href]");
+            const resourceNodes = document.querySelectorAll(
+              "[src], link[rel='stylesheet'][href]"
+            );
             for (const node of resourceNodes) {
               const url = node.src || node.href;
               if (!url) continue;
-              
+
               if (url.includes(rule.condition?.network_pattern || "")) {
                 if (url.startsWith(rule.condition?.required_domain || "")) {
                   ruleTriggered = true;
@@ -285,11 +316,10 @@ function runDetectionRules() {
             id: rule.id,
             type: rule.type,
             description: rule.description,
-            weight: rule.weight
+            weight: rule.weight,
           });
           logger.debug(`Rule triggered: ${rule.id} (weight: ${rule.weight})`);
         }
-
       } catch (ruleError) {
         logger.warn(`Error processing rule ${rule.id}:`, ruleError.message);
         // Continue with other rules - don't let one bad rule break everything
@@ -297,15 +327,16 @@ function runDetectionRules() {
     }
 
     const threshold = detectionRules.thresholds?.legitimate || 85;
-    
-    logger.log(`Detection rules: score=${score}, threshold=${threshold}, triggered=${triggeredRules.length} rules`);
-    
+
+    logger.log(
+      `Detection rules: score=${score}, threshold=${threshold}, triggered=${triggeredRules.length} rules`
+    );
+
     return {
       score: score,
       triggeredRules: triggeredRules,
-      threshold: threshold
+      threshold: threshold,
     };
-
   } catch (error) {
     logger.error("Detection rules processing failed:", error.message);
     // Fail-safe: return low score (suspicious)
@@ -313,7 +344,7 @@ function runDetectionRules() {
       score: 0,
       triggeredRules: [],
       threshold: 85,
-      error: error.message
+      error: error.message,
     };
   }
 }
@@ -325,23 +356,27 @@ async function runProtection(isRerun = false) {
   try {
     // Load configuration to check protection settings
     const config = await new Promise((resolve) => {
-      chrome.storage.local.get(['config'], (result) => {
+      chrome.storage.local.get(["config"], (result) => {
         resolve(result.config || {});
       });
     });
-    
+
     // Check if page blocking is disabled
-    if (config.enablePageBlocking === false) {
-      logger.log("Page blocking disabled in settings - skipping protection");
-      return;
+    const protectionEnabled = config.enablePageBlocking !== false;
+    if (!protectionEnabled) {
+      logger.log(
+        "Page blocking disabled in settings - running analysis only (no protective action)"
+      );
+    } else {
+      logger.log("Page blocking enabled - full protection active");
     }
-    
+
     // Prevent excessive runs but allow re-runs for DOM changes
     if (protectionActive && !isRerun) {
       logger.debug("Protection already active");
       return;
     }
-    
+
     // Rate limiting for DOM change re-runs
     if (isRerun) {
       const now = Date.now();
@@ -355,8 +390,17 @@ async function runProtection(isRerun = false) {
       protectionActive = true;
       scanCount = 1;
     }
-    
-    logger.log(`Starting rule-driven Microsoft 365 protection (scan #${scanCount})`);
+
+    logger.log(
+      `Starting rule-driven Microsoft 365 protection (scan #${scanCount}), protection ${
+        protectionEnabled ? "ENABLED" : "DISABLED"
+      }`
+    );
+
+    // Clear existing security UI when re-running protection due to DOM changes
+    if (isRerun) {
+      clearSecurityUI();
+    }
 
     // Step 1: Load detection rules (everything comes from here)
     if (!detectionRules) {
@@ -366,34 +410,49 @@ async function runProtection(isRerun = false) {
     // Step 2: FIRST CHECK - trusted origins (immediate exit if trusted)
     const currentOrigin = location.origin.toLowerCase();
     if (trustedOrigins.has(currentOrigin)) {
-      logger.log("✅ TRUSTED ORIGIN - No phishing possible, exiting immediately");
-      
+      logger.log(
+        "✅ TRUSTED ORIGIN - No phishing possible, exiting immediately"
+      );
+
+      // Store detection result
+      lastDetectionResult = {
+        verdict: "trusted",
+        isSuspicious: false,
+        isBlocked: false,
+        threats: [],
+        reason: "Trusted Microsoft domain",
+        score: 100,
+        threshold: 85,
+      };
+
       try {
-        showValidBadge();
+        if (protectionEnabled) {
+          showValidBadge();
+        }
         logProtectionEvent({
-          type: 'legitimate_access',
+          type: "legitimate_access",
           url: location.href,
           origin: currentOrigin,
-          reason: 'Trusted Microsoft domain'
+          reason: "Trusted Microsoft domain",
         });
-        
+
         // Send CIPP reporting if enabled
         sendCippReport({
-          type: 'microsoft_logon_detected',
+          type: "microsoft_logon_detected",
           url: location.href,
           origin: currentOrigin,
           legitimate: true,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       } catch (badgeError) {
         logger.warn("Failed to show valid badge:", badgeError.message);
       }
-      
+
       // Set up minimal monitoring even on trusted domains
       if (!isRerun) {
         setupDOMMonitoring();
       }
-      
+
       return; // EXIT IMMEDIATELY - can't be phishing on trusted domain
     }
 
@@ -403,45 +462,87 @@ async function runProtection(isRerun = false) {
     const isMSLogon = isMicrosoftLogonPage();
     if (!isMSLogon) {
       logger.debug("Not a Microsoft logon page - no protection needed");
-      
+
       // Set up monitoring in case content loads later
       if (!isRerun) {
         setupDOMMonitoring();
       }
-      
+
       return;
     }
 
-    logger.warn("🚨 MICROSOFT LOGON PAGE ON NON-TRUSTED DOMAIN - ANALYZING THREAT");
+    logger.warn(
+      "🚨 MICROSOFT LOGON PAGE ON NON-TRUSTED DOMAIN - ANALYZING THREAT"
+    );
 
     // Step 4: Check blocking rules first (immediate blocking conditions)
     const blockingResult = runBlockingRules();
     if (blockingResult.shouldBlock) {
-      logger.error(`🛡️ BLOCKING PAGE: ${blockingResult.reason}`);
-      
-      showBlockingOverlay(blockingResult.reason, blockingResult);
-      disableFormSubmissions();
-      disableCredentialInputs();
-      
+      logger.error(
+        `🛡️ ANALYSIS: Page should be BLOCKED - ${blockingResult.reason}`
+      );
+
+      // Store detection result
+      lastDetectionResult = {
+        verdict: "blocked",
+        isSuspicious: true,
+        isBlocked: protectionEnabled,
+        threats: [
+          {
+            type: "phishing-detected",
+            description: blockingResult.reason,
+          },
+        ],
+        reason: blockingResult.reason,
+        score: 0,
+        threshold: blockingResult.threshold || 85,
+        rule: blockingResult.rule,
+      };
+
+      if (protectionEnabled) {
+        logger.error(
+          "🛡️ PROTECTION ACTIVE: Blocking page and disabling inputs"
+        );
+        showBlockingOverlay(blockingResult.reason, blockingResult);
+        disableFormSubmissions();
+        disableCredentialInputs();
+        stopDOMMonitoring(); // Stop monitoring once we've blocked
+      } else {
+        logger.warn(
+          "⚠️ PROTECTION DISABLED: Would block but showing warning banner instead"
+        );
+        showWarningBanner(
+          `THREAT DETECTED: ${blockingResult.reason}`,
+          blockingResult
+        );
+        // Continue monitoring even when protection disabled to track changes
+        if (!isRerun) {
+          setupDOMMonitoring();
+        }
+      }
+
       logProtectionEvent({
-        type: 'threat_blocked',
+        type: protectionEnabled
+          ? "threat_blocked"
+          : "threat_detected_no_action",
         url: location.href,
         reason: blockingResult.reason,
         rule: blockingResult.rule?.id,
-        severity: blockingResult.severity
+        severity: blockingResult.severity,
+        protectionEnabled: protectionEnabled,
       });
-      
+
       // Send CIPP reporting if enabled
       sendCippReport({
-        type: 'phishing_blocked',
+        type: "phishing_blocked",
         url: location.href,
         reason: blockingResult.reason,
         rule: blockingResult.rule?.id,
         severity: blockingResult.severity,
         legitimate: false,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
-      
+
       // Stop monitoring once we've blocked
       stopDOMMonitoring();
       return;
@@ -449,66 +550,126 @@ async function runProtection(isRerun = false) {
 
     // Step 5: No immediate blocking - run detection rules for legitimacy scoring
     const detectionResult = runDetectionRules();
-    
+
     // Determine action based on legitimacy score from rules
     if (detectionResult.score < detectionResult.threshold) {
-      const severity = detectionResult.score < (detectionResult.threshold * 0.3) ? 'high' : 'medium';
+      const severity =
+        detectionResult.score < detectionResult.threshold * 0.3
+          ? "high"
+          : "medium";
       const reason = `Low legitimacy score: ${detectionResult.score}/${detectionResult.threshold}`;
-      
-      if (severity === 'high') {
-        logger.warn("🚨 HIGH THREAT: Very low legitimacy score - blocking");
-        showBlockingOverlay(reason, detectionResult);
-        disableFormSubmissions();
-        disableCredentialInputs();
-        stopDOMMonitoring(); // Stop monitoring once blocked
+
+      // Store detection result
+      lastDetectionResult = {
+        verdict: severity === "high" ? "blocked" : "suspicious",
+        isSuspicious: true,
+        isBlocked: protectionEnabled && severity === "high",
+        threats: [
+          {
+            type: severity === "high" ? "high-threat" : "medium-threat",
+            description: reason,
+          },
+        ],
+        reason: reason,
+        score: detectionResult.score,
+        threshold: detectionResult.threshold,
+        triggeredRules: detectionResult.triggeredRules,
+      };
+
+      if (severity === "high") {
+        logger.warn(`🚨 ANALYSIS: HIGH THREAT detected - ${reason}`);
+        if (protectionEnabled) {
+          logger.error(
+            "🛡️ PROTECTION ACTIVE: Blocking page due to high threat"
+          );
+          showBlockingOverlay(reason, detectionResult);
+          disableFormSubmissions();
+          disableCredentialInputs();
+          stopDOMMonitoring(); // Stop monitoring once blocked
+        } else {
+          logger.warn(
+            "⚠️ PROTECTION DISABLED: Would block high threat but showing warning banner instead"
+          );
+          showWarningBanner(`HIGH THREAT DETECTED: ${reason}`, detectionResult);
+          if (!isRerun) {
+            setupDOMMonitoring();
+          }
+        }
       } else {
-        logger.warn("⚠️ MEDIUM THREAT: Low legitimacy score - warning");
-        showWarningBanner(reason, detectionResult);
-        // Continue monitoring for medium threats
+        logger.warn(`⚠️ ANALYSIS: MEDIUM THREAT detected - ${reason}`);
+        if (protectionEnabled) {
+          logger.warn("🛡️ PROTECTION ACTIVE: Showing warning banner");
+          showWarningBanner(reason, detectionResult);
+        } else {
+          logger.warn(
+            "⚠️ PROTECTION DISABLED: Showing warning banner for medium threat"
+          );
+          showWarningBanner(
+            `MEDIUM THREAT DETECTED: ${reason}`,
+            detectionResult
+          );
+        }
+        // Continue monitoring for medium threats regardless of protection status
         if (!isRerun) {
           setupDOMMonitoring();
         }
       }
-      
+
       logProtectionEvent({
-        type: 'threat_detected',
+        type: protectionEnabled
+          ? "threat_detected"
+          : "threat_detected_no_action",
         url: location.href,
         threatLevel: severity,
         reason: reason,
         score: detectionResult.score,
         threshold: detectionResult.threshold,
-        triggeredRules: detectionResult.triggeredRules
+        triggeredRules: detectionResult.triggeredRules,
+        protectionEnabled: protectionEnabled,
       });
-      
+
       // Send CIPP reporting if enabled
       sendCippReport({
-        type: 'suspicious_logon_detected',
+        type: "suspicious_logon_detected",
         url: location.href,
         threatLevel: severity,
         reason: reason,
         score: detectionResult.score,
         threshold: detectionResult.threshold,
         legitimate: false,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } else {
-      logger.log("✅ Legitimacy score acceptable - no action needed");
-      
+      logger.log(
+        `✅ ANALYSIS: Legitimacy score acceptable (${detectionResult.score}/${detectionResult.threshold}) - no threats detected`
+      );
+
+      // Store detection result
+      lastDetectionResult = {
+        verdict: "safe",
+        isSuspicious: false,
+        isBlocked: false,
+        threats: [],
+        reason: "Legitimacy score acceptable",
+        score: detectionResult.score,
+        threshold: detectionResult.threshold,
+      };
+
       // Continue monitoring in case content changes
       if (!isRerun) {
         setupDOMMonitoring();
       }
     }
-
   } catch (error) {
     logger.error("Protection failed:", error.message);
-    
+
     // Emergency fallback - if we can't load rules but detect MS elements, warn user
     try {
-      const hasBasicMSElements = document.querySelector('input[name="loginfmt"]') ||
-                                document.querySelector('#i0116');
-      const isNotMSDomain = !location.hostname.includes('microsoftonline.com');
-      
+      const hasBasicMSElements =
+        document.querySelector('input[name="loginfmt"]') ||
+        document.querySelector("#i0116");
+      const isNotMSDomain = !location.hostname.includes("microsoftonline.com");
+
       if (hasBasicMSElements && isNotMSDomain) {
         showFallbackWarning();
       }
@@ -536,43 +697,51 @@ function setupDOMMonitoring() {
 
         // Check if any significant changes occurred
         for (const mutation of mutations) {
-          if (mutation.type === 'childList') {
+          if (mutation.type === "childList") {
             // Check for added forms, inputs, or scripts
             for (const node of mutation.addedNodes) {
               if (node.nodeType === Node.ELEMENT_NODE) {
                 const tagName = node.tagName?.toLowerCase();
-                if (tagName === 'form' || tagName === 'input' || tagName === 'script') {
+                if (
+                  tagName === "form" ||
+                  tagName === "input" ||
+                  tagName === "script"
+                ) {
                   shouldRerun = true;
                   logger.debug(`DOM change detected: ${tagName} element added`);
                   break;
                 }
-                
+
                 // Check for Microsoft-related content being added
-                if (node.textContent && (
-                  node.textContent.includes('loginfmt') ||
-                  node.textContent.includes('idPartnerPL') ||
-                  node.textContent.includes('Microsoft') ||
-                  node.textContent.includes('Office 365')
-                )) {
+                if (
+                  node.textContent &&
+                  (node.textContent.includes("loginfmt") ||
+                    node.textContent.includes("idPartnerPL") ||
+                    node.textContent.includes("Microsoft") ||
+                    node.textContent.includes("Office 365"))
+                ) {
                   shouldRerun = true;
-                  logger.debug("DOM change detected: Microsoft-related content added");
+                  logger.debug(
+                    "DOM change detected: Microsoft-related content added"
+                  );
                   break;
                 }
               }
             }
           }
-          
+
           if (shouldRerun) break;
         }
 
         if (shouldRerun) {
-          logger.log("Significant DOM changes detected - re-running protection");
+          logger.log(
+            "Significant DOM changes detected - re-running protection"
+          );
           // Debounce re-runs
           setTimeout(() => {
             runProtection(true);
           }, 500);
         }
-
       } catch (observerError) {
         logger.warn("DOM observer error:", observerError.message);
       }
@@ -582,14 +751,13 @@ function setupDOMMonitoring() {
     domObserver.observe(document.documentElement, {
       childList: true,
       subtree: true,
-      attributes: false // Don't monitor attributes to reduce noise
+      attributes: false, // Don't monitor attributes to reduce noise
     });
 
     // Stop monitoring after 30 seconds to prevent resource drain
     setTimeout(() => {
       stopDOMMonitoring();
     }, 30000);
-
   } catch (error) {
     logger.error("Failed to set up DOM monitoring:", error.message);
   }
@@ -615,31 +783,34 @@ function stopDOMMonitoring() {
  */
 function showBlockingOverlay(reason, analysisData) {
   try {
-    logger.log("Redirecting to Chrome blocking page for security - no user override allowed");
-    
+    logger.log(
+      "Redirecting to Chrome blocking page for security - no user override allowed"
+    );
+
     // Create blocking URL with details
     const blockingDetails = {
       reason: reason,
       url: location.href,
       timestamp: new Date().toISOString(),
-      rule: analysisData?.rule?.id || 'unknown',
+      rule: analysisData?.rule?.id || "unknown",
       ruleDescription: analysisData?.rule?.description || reason,
       score: analysisData?.score || 0,
-      threshold: analysisData?.threshold || 85
+      threshold: analysisData?.threshold || 85,
     };
-    
+
     // Encode the details for the blocking page
     const encodedDetails = encodeURIComponent(JSON.stringify(blockingDetails));
-    const blockingPageUrl = chrome.runtime.getURL(`blocked.html?details=${encodedDetails}`);
-    
+    const blockingPageUrl = chrome.runtime.getURL(
+      `blocked.html?details=${encodedDetails}`
+    );
+
     // Immediately redirect to blocking page - no user override option
     location.replace(blockingPageUrl);
-    
-    logger.log("Redirected to Chrome blocking page");
 
+    logger.log("Redirected to Chrome blocking page");
   } catch (error) {
     logger.error("Failed to redirect to blocking page:", error.message);
-    
+
     // Fallback: Replace page content entirely if redirect fails
     try {
       document.documentElement.innerHTML = `
@@ -682,12 +853,43 @@ function showBlockingOverlay(reason, analysisData) {
         </body>
         </html>
       `;
-      
+
       logger.log("Fallback page content replacement completed");
-      
     } catch (fallbackError) {
       logger.error("Fallback page replacement failed:", fallbackError.message);
     }
+  }
+}
+
+/**
+ * Clear existing security UI elements
+ */
+function clearSecurityUI() {
+  try {
+    // Remove warning banner
+    const warningBanner = document.getElementById("ms365-warning-banner");
+    if (warningBanner) {
+      warningBanner.remove();
+      logger.log("Cleared existing warning banner");
+    }
+
+    // Remove valid badge
+    const validBadge = document.getElementById("ms365-valid-badge");
+    if (validBadge) {
+      validBadge.remove();
+      logger.log("Cleared existing valid badge");
+    }
+
+    // Remove blocking overlay (if any)
+    const blockingOverlay = document.getElementById(
+      "phishing-blocking-overlay"
+    );
+    if (blockingOverlay) {
+      blockingOverlay.remove();
+      logger.log("Cleared existing blocking overlay");
+    }
+  } catch (error) {
+    logger.error("Failed to clear security UI:", error.message);
   }
 }
 
@@ -696,10 +898,37 @@ function showBlockingOverlay(reason, analysisData) {
  */
 function showWarningBanner(reason, analysisData) {
   try {
-    if (document.getElementById('ms365-warning-banner')) return;
+    const detailsText = analysisData?.score
+      ? ` (Score: ${analysisData.score}/${analysisData.threshold})`
+      : "";
 
-    const banner = document.createElement('div');
-    banner.id = 'ms365-warning-banner';
+    const bannerContent = `
+      <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
+        <span style="font-size: 24px;">⚠️</span>
+        <div>
+          <strong>Suspicious Microsoft 365 Login Page</strong><br>
+          <small>${reason}${detailsText}</small>
+        </div>
+        <button onclick="this.parentElement.parentElement.remove();" style="
+          background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+          color: white; padding: 8px 16px; border-radius: 4px; cursor: pointer;
+        ">Dismiss</button>
+      </div>
+    `;
+
+    // Check if banner already exists
+    let banner = document.getElementById("ms365-warning-banner");
+
+    if (banner) {
+      // Update existing banner content
+      banner.innerHTML = bannerContent;
+      logger.log("Warning banner updated with new analysis");
+      return;
+    }
+
+    // Create new banner
+    banner = document.createElement("div");
+    banner.id = "ms365-warning-banner";
     banner.style.cssText = `
       position: fixed !important;
       top: 0 !important;
@@ -714,34 +943,10 @@ function showWarningBanner(reason, analysisData) {
       text-align: center !important;
     `;
 
-    const detailsText = analysisData?.score ? 
-      ` (Score: ${analysisData.score}/${analysisData.threshold})` : '';
-
-    banner.innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
-        <span style="font-size: 24px;">⚠️</span>
-        <div>
-          <strong>Suspicious Microsoft 365 Login Page</strong><br>
-          <small>${reason}${detailsText}</small>
-        </div>
-        <button onclick="this.parentElement.parentElement.remove();" style="
-          background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
-          color: white; padding: 8px 16px; border-radius: 4px; cursor: pointer;
-        ">Dismiss</button>
-      </div>
-    `;
-
+    banner.innerHTML = bannerContent;
     document.body.appendChild(banner);
-    
-    // Auto-dismiss after 10 seconds
-    setTimeout(() => {
-      if (banner.parentNode) {
-        banner.remove();
-      }
-    }, 10000);
 
     logger.log("Warning banner displayed");
-
   } catch (error) {
     logger.error("Failed to show warning banner:", error.message);
   }
@@ -752,10 +957,15 @@ function showWarningBanner(reason, analysisData) {
  */
 function showValidBadge() {
   try {
-    if (document.getElementById('ms365-valid-badge')) return;
+    // Check if badge already exists - for valid badge, we don't need to update content
+    // since it's always the same, but we ensure it's still visible
+    if (document.getElementById("ms365-valid-badge")) {
+      logger.log("Valid badge already displayed");
+      return;
+    }
 
-    const badge = document.createElement('div');
-    badge.id = 'ms365-valid-badge';
+    const badge = document.createElement("div");
+    badge.id = "ms365-valid-badge";
     badge.style.cssText = `
       position: fixed !important;
       top: 20px !important;
@@ -779,16 +989,8 @@ function showValidBadge() {
     `;
 
     document.body.appendChild(badge);
-    
-    // Auto-dismiss after 5 seconds
-    setTimeout(() => {
-      if (badge.parentNode) {
-        badge.remove();
-      }
-    }, 5000);
 
     logger.log("Valid badge displayed");
-
   } catch (error) {
     logger.error("Failed to show valid badge:", error.message);
   }
@@ -799,10 +1001,10 @@ function showValidBadge() {
  */
 function showFallbackWarning() {
   try {
-    if (document.getElementById('ms365-fallback-warning')) return;
+    if (document.getElementById("ms365-fallback-warning")) return;
 
-    const warning = document.createElement('div');
-    warning.id = 'ms365-fallback-warning';
+    const warning = document.createElement("div");
+    warning.id = "ms365-fallback-warning";
     warning.style.cssText = `
       position: fixed !important;
       top: 0 !important;
@@ -826,7 +1028,6 @@ function showFallbackWarning() {
     document.body.appendChild(warning);
 
     logger.log("Fallback warning displayed");
-
   } catch (error) {
     logger.error("Failed to show fallback warning:", error.message);
   }
@@ -837,21 +1038,24 @@ function showFallbackWarning() {
  */
 function disableFormSubmissions() {
   try {
-    const forms = document.querySelectorAll('form');
+    const forms = document.querySelectorAll("form");
     for (const form of forms) {
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        logger.warn("Form submission blocked");
-        return false;
-      }, true);
-      
-      // Also disable the form element
-      form.setAttribute('disabled', 'true');
-    }
-    
-    logger.log(`Disabled ${forms.length} forms`);
+      form.addEventListener(
+        "submit",
+        (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          logger.warn("Form submission blocked");
+          return false;
+        },
+        true
+      );
 
+      // Also disable the form element
+      form.setAttribute("disabled", "true");
+    }
+
+    logger.log(`Disabled ${forms.length} forms`);
   } catch (error) {
     logger.error("Failed to disable form submissions:", error.message);
   }
@@ -862,15 +1066,16 @@ function disableFormSubmissions() {
  */
 function disableCredentialInputs() {
   try {
-    const inputs = document.querySelectorAll('input[type="password"], input[type="email"], input[name*="user"], input[name*="login"], input[name*="email"]');
+    const inputs = document.querySelectorAll(
+      'input[type="password"], input[type="email"], input[name*="user"], input[name*="login"], input[name*="email"]'
+    );
     for (const input of inputs) {
       input.disabled = true;
-      input.style.backgroundColor = '#ffebee';
-      input.placeholder = 'Input disabled for security';
+      input.style.backgroundColor = "#ffebee";
+      input.placeholder = "Input disabled for security";
     }
-    
-    logger.log(`Disabled ${inputs.length} credential inputs`);
 
+    logger.log(`Disabled ${inputs.length} credential inputs`);
   } catch (error) {
     logger.error("Failed to disable credential inputs:", error.message);
   }
@@ -881,18 +1086,19 @@ function disableCredentialInputs() {
  */
 function logProtectionEvent(eventData) {
   try {
-    chrome.runtime.sendMessage({
-      type: 'protection_event',
-      data: {
-        timestamp: new Date().toISOString(),
-        url: location.href,
-        userAgent: navigator.userAgent,
-        ...eventData
-      }
-    }).catch(error => {
-      logger.warn("Failed to log protection event:", error.message);
-    });
-
+    chrome.runtime
+      .sendMessage({
+        type: "protection_event",
+        data: {
+          timestamp: new Date().toISOString(),
+          url: location.href,
+          userAgent: navigator.userAgent,
+          ...eventData,
+        },
+      })
+      .catch((error) => {
+        logger.warn("Failed to log protection event:", error.message);
+      });
   } catch (error) {
     logger.warn("Failed to send protection event:", error.message);
   }
@@ -905,57 +1111,58 @@ async function sendCippReport(reportData) {
   try {
     // Get CIPP configuration from storage
     const result = await new Promise((resolve) => {
-      chrome.storage.local.get(['config'], (result) => {
+      chrome.storage.local.get(["config"], (result) => {
         resolve(result.config || {});
       });
     });
-    
+
     const config = result;
-    
+
     // Check if CIPP reporting is enabled and URL is configured
     if (!config.enableCippReporting || !config.cippServerUrl) {
       logger.debug("CIPP reporting disabled or no server URL configured");
       return;
     }
-    
+
     // Prepare CIPP report payload
     const cippPayload = {
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
       extensionVersion: chrome.runtime.getManifest().version,
-      ...reportData
+      ...reportData,
     };
-    
+
     // Send POST request to CIPP server
-    const cippUrl = config.cippServerUrl.replace(/\/+$/, '') + '/api/PublicExecCheck';
-    
+    const cippUrl =
+      config.cippServerUrl.replace(/\/+$/, "") + "/api/PublicExecCheck";
+
     logger.log(`Sending CIPP report to: ${cippUrl}`);
-    
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-    
+
     try {
       const response = await fetch(cippUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(cippPayload),
-        signal: controller.signal
+        signal: controller.signal,
       });
-      
+
       clearTimeout(timeoutId);
-      
+
       if (response.ok) {
         logger.log("CIPP report sent successfully");
       } else {
-        logger.warn(`CIPP report failed: ${response.status} ${response.statusText}`);
+        logger.warn(
+          `CIPP report failed: ${response.status} ${response.statusText}`
+        );
       }
-      
     } finally {
       clearTimeout(timeoutId);
     }
-    
   } catch (error) {
     logger.warn("Failed to send CIPP report:", error.message);
   }
@@ -968,21 +1175,21 @@ async function applyBrandingColors() {
   try {
     // Get branding configuration from storage
     const result = await new Promise((resolve) => {
-      chrome.storage.local.get(['brandingConfig'], (result) => {
+      chrome.storage.local.get(["brandingConfig"], (result) => {
         resolve(result.brandingConfig || {});
       });
     });
-    
+
     if (result.primaryColor) {
       // Remove existing branding styles
-      const existingStyle = document.getElementById('content-branding-colors');
+      const existingStyle = document.getElementById("content-branding-colors");
       if (existingStyle) {
         existingStyle.remove();
       }
-      
+
       // Create new style element with primary color
-      const style = document.createElement('style');
-      style.id = 'content-branding-colors';
+      const style = document.createElement("style");
+      style.id = "content-branding-colors";
       style.textContent = `
         :root {
           --check-primary-color: ${result.primaryColor} !important;
@@ -990,7 +1197,7 @@ async function applyBrandingColors() {
         }
       `;
       document.head.appendChild(style);
-      
+
       logger.log("Applied branding primary color:", result.primaryColor);
     }
   } catch (error) {
@@ -1004,19 +1211,18 @@ async function applyBrandingColors() {
 function initializeProtection() {
   try {
     logger.log("Initializing Microsoft 365 phishing protection");
-    
+
     // Apply branding colors first
     applyBrandingColors();
-    
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => {
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => {
         setTimeout(runProtection, 100); // Small delay to ensure DOM is stable
       });
     } else {
       // DOM already ready
       setTimeout(runProtection, 100);
     }
-
   } catch (error) {
     logger.error("Failed to initialize protection:", error.message);
   }
@@ -1025,8 +1231,83 @@ function initializeProtection() {
 // Start protection
 initializeProtection();
 
+/**
+ * Message listener for popup communication
+ */
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "GET_DETECTION_RESULTS") {
+    try {
+      // Use stored detection results if available
+      if (lastDetectionResult) {
+        logger.log(
+          `📊 POPUP REQUEST: Returning stored detection results - ${lastDetectionResult.verdict}`
+        );
+        sendResponse({
+          success: true,
+          verdict: lastDetectionResult.verdict,
+          isBlocked: lastDetectionResult.isBlocked,
+          isSuspicious: lastDetectionResult.isSuspicious,
+          threats: lastDetectionResult.threats,
+          reason: lastDetectionResult.reason,
+          score: lastDetectionResult.score,
+          threshold: lastDetectionResult.threshold,
+          url: window.location.href,
+        });
+      } else {
+        // Fallback to basic detection if no stored results
+        const currentUrl = window.location.href;
+        const isBlocked =
+          document.getElementById("phishing-blocking-overlay") !== null;
+        const hasWarning =
+          document.getElementById("phishing-warning-banner") !== null;
+
+        let verdict = "unknown";
+        let isSuspicious = false;
+        let threats = [];
+        let reason = "No analysis performed yet";
+
+        if (isBlocked) {
+          verdict = "blocked";
+          isSuspicious = true;
+          threats = [
+            { type: "phishing-detected", description: "Page blocked" },
+          ];
+          reason = "Page blocked by protection";
+        } else if (hasWarning) {
+          verdict = "suspicious";
+          isSuspicious = true;
+          threats = [
+            { type: "suspicious-content", description: "Warning displayed" },
+          ];
+          reason = "Suspicious content detected";
+        } else if (isTrustedOrigin(currentUrl)) {
+          verdict = "trusted";
+          reason = "Trusted Microsoft domain";
+        }
+
+        logger.log(`📊 POPUP REQUEST: Using fallback detection - ${verdict}`);
+        sendResponse({
+          success: true,
+          verdict: verdict,
+          isBlocked: isBlocked,
+          isSuspicious: isSuspicious,
+          threats: threats,
+          reason: reason,
+          url: currentUrl,
+        });
+      }
+    } catch (error) {
+      sendResponse({
+        success: false,
+        error: error.message,
+      });
+    }
+    return true; // Keep message channel open for async response
+  }
+});
+
 // Cleanup on page unload
-window.addEventListener('beforeunload', () => {
+window.addEventListener("beforeunload", () => {
   try {
     stopDOMMonitoring();
     protectionActive = false;
