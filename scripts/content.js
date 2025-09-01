@@ -1297,7 +1297,6 @@ async function checkRogueApp(clientId) {
     });
 
     if (response && response.isRogue) {
-      console.log(response);
       return {
         isMalicious: true,
         appName: response.appName,
