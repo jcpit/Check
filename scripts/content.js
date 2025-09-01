@@ -323,7 +323,7 @@ function runDetectionRules() {
  */
 async function runProtection(isRerun = false) {
   try {
-    // Load configuration to check if protection is enabled
+    // Load configuration to check protection settings
     const config = await new Promise((resolve) => {
       chrome.storage.local.get(['config'], (result) => {
         resolve(result.config || {});
@@ -463,12 +463,7 @@ async function runProtection(isRerun = false) {
         stopDOMMonitoring(); // Stop monitoring once blocked
       } else {
         logger.warn("⚠️ MEDIUM THREAT: Low legitimacy score - warning");
-        
-        // Check if warnings are enabled
-        if (config.enablePhishingWarnings !== false) {
-          showWarningBanner(reason, detectionResult);
-        }
-        
+        showWarningBanner(reason, detectionResult);
         // Continue monitoring for medium threats
         if (!isRerun) {
           setupDOMMonitoring();

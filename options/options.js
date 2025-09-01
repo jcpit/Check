@@ -434,15 +434,11 @@ class CheckOptions {
   populateFormFields() {
     // Extension settings
     this.elements.enablePageBlocking = document.getElementById("enablePageBlocking");
-    this.elements.enablePhishingWarnings = document.getElementById("enablePhishingWarnings");
     this.elements.enableCippReporting = document.getElementById("enableCippReporting");
     this.elements.cippServerUrl = document.getElementById("cippServerUrl");
     
     if (this.elements.enablePageBlocking) {
       this.elements.enablePageBlocking.checked = this.config?.enablePageBlocking !== false;
-    }
-    if (this.elements.enablePhishingWarnings) {
-      this.elements.enablePhishingWarnings.checked = this.config?.enablePhishingWarnings !== false;
     }
     if (this.elements.enableCippReporting) {
       this.elements.enableCippReporting.checked = this.config?.enableCippReporting || false;
@@ -586,7 +582,6 @@ class CheckOptions {
     return {
       // Extension settings
       enablePageBlocking: this.elements.enablePageBlocking?.checked !== false,
-      enablePhishingWarnings: this.elements.enablePhishingWarnings?.checked !== false,
       enableCippReporting: this.elements.enableCippReporting?.checked || false,
       cippServerUrl: this.elements.cippServerUrl?.value || "",
       
@@ -938,7 +933,6 @@ class CheckOptions {
   disablePolicyManagedFields(policies) {
     const policyFieldMap = {
       enablePageBlocking: this.elements.enablePageBlocking,
-      enablePhishingWarnings: this.elements.enablePhishingWarnings,
       enableCippReporting: this.elements.enableCippReporting,
       enableDebugLogging: this.elements.enableDebugLogging,
     };
