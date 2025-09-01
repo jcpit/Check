@@ -432,6 +432,102 @@ async function runProtection(isRerun = false) {
         const redirectHostname = extractRedirectHostname(location.href);
         const clientInfo = await extractClientInfo(location.href);
 
+        // Check for rogue apps even on legitimate Microsoft domains
+        if (clientInfo.isMalicious) {
+          logger.warn(
+            `🚨 ROGUE OAUTH APP DETECTED ON LEGITIMATE MICROSOFT DOMAIN: ${clientInfo.reason}`
+          );
+
+          // Notify background script about rogue app detection
+          try {
+            chrome.runtime.sendMessage({
+              type: "FLAG_ROGUE_APP",
+              clientId: clientInfo.clientId,
+              appName: clientInfo.appInfo?.appName || "Unknown",
+              reason: clientInfo.reason,
+            });
+          } catch (messageError) {
+            logger.warn(
+              "Failed to notify background about rogue app:",
+              messageError
+            );
+          }
+
+          // Treat this as a high-severity threat even on legitimate domains
+          if (protectionEnabled) {
+            // Show both banner and blocking page for maximum visibility
+            const appName =
+              clientInfo.appInfo?.appName || "Unknown Application";
+            showWarningBanner(
+              `⚠️ CRITICAL WARNING: Rogue OAuth Application Detected - ${appName}`,
+              {
+                type: "rogue_app_on_legitimate_domain",
+                severity: "critical",
+                reason: clientInfo.reason,
+                clientId: clientInfo.clientId,
+                appInfo: clientInfo.appInfo,
+              }
+            );
+
+            showBlockingPage(
+              `ROGUE OAUTH APPLICATION DETECTED`,
+              `This legitimate Microsoft login page is being used by a known malicious OAuth application: ${clientInfo.reason}. This is extremely dangerous as it appears to be legitimate Microsoft but the application requesting access is known to be malicious.`,
+              {
+                type: "rogue_app_on_legitimate_domain",
+                severity: "critical",
+                reason: clientInfo.reason,
+                clientId: clientInfo.clientId,
+                appInfo: clientInfo.appInfo,
+                redirectTo: redirectHostname,
+              }
+            );
+          } else {
+            const appName =
+              clientInfo.appInfo?.appName || "Unknown Application";
+            showWarningBanner(
+              `⚠️ CRITICAL WARNING: Rogue OAuth Application Detected - ${appName}`,
+              {
+                type: "rogue_app_on_legitimate_domain",
+                severity: "critical",
+                reason: clientInfo.reason,
+                clientId: clientInfo.clientId,
+                appInfo: clientInfo.appInfo,
+              }
+            );
+          }
+
+          // Log as a threat event instead of legitimate access
+          logProtectionEvent({
+            type: protectionEnabled
+              ? "threat_blocked"
+              : "threat_detected_no_action",
+            url: location.href,
+            origin: currentOrigin,
+            reason: `Rogue OAuth application detected: ${clientInfo.reason}`,
+            severity: "critical",
+            redirectTo: redirectHostname,
+            clientId: clientInfo.clientId,
+            clientSuspicious: clientInfo.isMalicious,
+            clientReason: clientInfo.reason,
+            ruleType: "rogue_app_detection",
+          });
+
+          // Send critical CIPP alert
+          sendCippReport({
+            type: "critical_rogue_app_detected",
+            url: location.href,
+            origin: currentOrigin,
+            clientId: clientInfo.clientId,
+            appName: clientInfo.appInfo?.appName || "Unknown",
+            reason: clientInfo.reason,
+            severity: "critical",
+            redirectTo: redirectHostname,
+          });
+
+          return; // Stop processing as this is now treated as a threat
+        }
+
+        // Normal legitimate access logging if no rogue app detected
         logProtectionEvent({
           type: "legitimate_access",
           url: location.href,
@@ -1163,13 +1259,13 @@ async function extractClientInfo(url) {
       return { clientId: null, isMalicious: false, reason: null };
     }
 
-    // Check against Huntress rogue apps from detection rules
+    // Check against rogue apps from detection rules
     const rogueAppCheck = await checkRogueApp(clientId);
     if (rogueAppCheck.isMalicious) {
       return {
         clientId: clientId,
         isMalicious: true,
-        reason: `Huntress rogue app: ${rogueAppCheck.appName}`,
+        reason: `Rogue App: ${rogueAppCheck.appName}`,
         appInfo: rogueAppCheck.appInfo,
       };
     }

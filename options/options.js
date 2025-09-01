@@ -1307,7 +1307,7 @@ class CheckOptions {
       if (event.clientId) {
         info += ` [Client: ${event.clientId}`;
         if (event.clientSuspicious) {
-          info += ` ⚠️ ROGUE APP`;
+          info += ` ⚠️`;
           if (event.clientReason) {
             info += `: ${event.clientReason}`;
           }

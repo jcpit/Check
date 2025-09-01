@@ -51,17 +51,76 @@ class RogueAppsManager {
   constructor() {
     this.rogueApps = new Map(); // clientId -> app data
     this.lastUpdate = 0;
-    this.updateInterval = 12 * 60 * 60 * 1000; // 12 hours
-    this.sourceUrl =
-      "https://raw.githubusercontent.com/huntresslabs/rogueapps/refs/heads/main/public/rogueapps.json";
+    this.updateInterval = 12 * 60 * 60 * 1000; // Default: 12 hours
     this.cacheKey = "rogue_apps_cache";
     this.initialized = false;
+    this.config = null;
+
+    // Default configuration (fallback if detection rules not available)
+    this.defaultConfig = {
+      enabled: true,
+      source_url:
+        "https://raw.githubusercontent.com/huntresslabs/rogueapps/refs/heads/main/public/rogueapps.json",
+      cache_duration: 86400000, // 24 hours
+      update_interval: 43200000, // 12 hours
+      detection_action: "warn",
+      severity: "high",
+      auto_update: true,
+      fallback_on_error: true,
+    };
+  }
+
+  async loadConfiguration() {
+    try {
+      // Load detection rules to get rogue apps configuration
+      const response = await fetch(
+        chrome.runtime.getURL("rules/detection-rules.json")
+      );
+      const detectionRules = await response.json();
+
+      this.config = detectionRules.rogue_apps_detection || this.defaultConfig;
+
+      // Apply configuration
+      this.sourceUrl = this.config.source_url;
+      this.updateInterval = this.config.update_interval;
+      this.cacheKey = "rogue_apps_cache";
+
+      logger.log("RogueAppsManager configuration loaded:", {
+        enabled: this.config.enabled,
+        update_interval: this.config.update_interval,
+        cache_duration: this.config.cache_duration,
+        source_url: this.config.source_url,
+      });
+
+      return this.config;
+    } catch (error) {
+      logger.warn(
+        "Failed to load rogue apps configuration, using defaults:",
+        error.message
+      );
+      this.config = this.defaultConfig;
+      this.sourceUrl = this.config.source_url;
+      this.updateInterval = this.config.update_interval;
+      return this.config;
+    }
   }
 
   async initialize() {
     if (this.initialized) return;
 
     try {
+      // Load configuration from detection rules first
+      await this.loadConfiguration();
+
+      // Check if rogue apps detection is disabled
+      if (!this.config.enabled) {
+        logger.log(
+          "RogueAppsManager: Rogue apps detection is disabled in configuration"
+        );
+        this.initialized = true;
+        return;
+      }
+
       // Load cached data first
       await this.loadFromCache();
 
@@ -92,6 +151,21 @@ class RogueAppsManager {
       const cached = result?.[this.cacheKey];
 
       if (cached && cached.apps && cached.lastUpdate) {
+        // Check if cache is still valid based on configured cache duration
+        const now = Date.now();
+        const cacheAge = now - cached.lastUpdate;
+        const cacheDuration =
+          this.config?.cache_duration || this.defaultConfig.cache_duration;
+
+        if (cacheAge > cacheDuration) {
+          logger.log(
+            `Rogue apps cache expired (age: ${Math.round(
+              cacheAge / 1000 / 60
+            )} minutes, max: ${Math.round(cacheDuration / 1000 / 60)} minutes)`
+          );
+          return; // Cache expired, don't load it
+        }
+
         this.lastUpdate = cached.lastUpdate;
         this.rogueApps.clear();
 
@@ -101,7 +175,13 @@ class RogueAppsManager {
           }
         });
 
-        logger.log(`Loaded ${this.rogueApps.size} rogue apps from cache`);
+        logger.log(
+          `Loaded ${
+            this.rogueApps.size
+          } rogue apps from cache (age: ${Math.round(
+            cacheAge / 1000 / 60
+          )} minutes)`
+        );
       }
     } catch (error) {
       logger.warn("Failed to load rogue apps from cache:", error.message);
@@ -432,6 +512,7 @@ class CheckBackground {
       "trusted-extra": { text: "OK", color: "#0a5" },
       phishy: { text: "!", color: "#d33" },
       "ms-login-unknown": { text: "?", color: "#f90" }, // Yellow/orange for MS login on unknown domain
+      "rogue-app": { text: "⚠", color: "#f00" }, // Red for rogue OAuth apps (critical threat)
       "not-evaluated": { text: "", color: "#000" }, // No badge for irrelevant pages
     };
     const cfg = map[verdict] || map["not-evaluated"];
@@ -874,6 +955,36 @@ class CheckBackground {
                 origin: message.origin,
                 redirectTo: message.redirectTo,
                 reason: "Microsoft login page detected on non-trusted domain",
+              }).catch(() => {})
+            );
+          }
+          break;
+
+        case "FLAG_ROGUE_APP":
+          if (sender.tab?.id) {
+            const tabId = sender.tab.id;
+            await safe(
+              chrome.storage.session.set({
+                ["verdict:" + tabId]: {
+                  verdict: "rogue-app",
+                  url: sender.tab.url,
+                  clientId: message.clientId,
+                  appName: message.appName,
+                  reason: message.reason,
+                },
+              })
+            );
+            this.setBadge(tabId, "rogue-app");
+            sendResponse({ ok: true });
+            // Log rogue app detection
+            queueMicrotask(() =>
+              this.sendEvent({
+                type: "rogue-app-detected",
+                url: sender.tab.url,
+                clientId: message.clientId,
+                appName: message.appName,
+                reason: message.reason,
+                severity: "critical",
               }).catch(() => {})
             );
           }
