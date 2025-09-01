@@ -155,9 +155,21 @@
       }
 
       .company-logo {
-        max-width: 120px;
+        max-width: 80px;
+        max-height: 80px;
+        width: auto;
         height: auto;
-        margin-bottom: 20px;
+        border-radius: 50%;
+        object-fit: contain;
+      }
+
+      .icon-container {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       @media (max-width: 480px) {
@@ -185,7 +197,10 @@
   </head>
   <body>
     <div class="container">
-      <div class="icon material-icons">security</div>
+      <div class="icon-container">
+        <img id="customLogo" class="company-logo" style="display: none;" alt="Company Logo">
+        <div id="defaultIcon" class="icon material-icons">security</div>
+      </div>
 
       <h1>Access Blocked</h1>
       <p class="subtitle">
@@ -418,6 +433,7 @@ Additional context:
           // Load branding from extension storage
           chrome.storage.local.get(['brandingConfig'], (result) => {
             const branding = result.brandingConfig || {};
+            console.log("Loading branding config:", branding);
             
             // Update company name with fallback to "Check"
             const companyName = branding.companyName || "Check";
@@ -427,6 +443,34 @@ Additional context:
             // Update product name if available
             if (branding.productName) {
               document.querySelector('h1').textContent = `Access Blocked by ${branding.productName}`;
+            }
+            
+            // Handle custom logo
+            if (branding.logoUrl) {
+              console.log("Setting custom logo:", branding.logoUrl);
+              const customLogo = document.getElementById("customLogo");
+              const defaultIcon = document.getElementById("defaultIcon");
+              
+              // Try to load the logo
+              const logoSrc = branding.logoUrl.startsWith("http") ?
+                branding.logoUrl :
+                chrome.runtime.getURL(branding.logoUrl);
+              
+              customLogo.src = logoSrc;
+              customLogo.onload = () => {
+                console.log("Custom logo loaded successfully");
+                customLogo.style.display = "block";
+                defaultIcon.style.display = "none";
+              };
+              customLogo.onerror = () => {
+                console.warn("Failed to load custom logo, using default icon");
+                customLogo.style.display = "none";
+                defaultIcon.style.display = "flex";
+              };
+            } else {
+              console.log("No custom logo, using default icon");
+              document.getElementById("customLogo").style.display = "none";
+              document.getElementById("defaultIcon").style.display = "flex";
             }
             
             // Update primary color if available
@@ -441,6 +485,15 @@ Additional context:
                 .btn-primary:hover { background: ${branding.primaryColor}dd !important; }
               `;
               document.head.appendChild(style);
+            }
+            
+            // Load custom CSS if available
+            if (branding.customCss) {
+              console.log("Loading custom CSS");
+              const customStyle = document.createElement('style');
+              customStyle.id = 'custom-branding-css';
+              customStyle.textContent = branding.customCss;
+              document.head.appendChild(customStyle);
             }
           });
           

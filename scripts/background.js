@@ -280,34 +280,66 @@ class CheckBackground {
 
   // CyberDrain integration - Apply branding to extension action with guards and timeouts
   async applyBrandingToAction() {
-    // Title with safe wrapper
-    await safe(chrome.action.setTitle({
-      title: this.policy?.BrandingName || this.getDefaultPolicy().BrandingName,
-    }));
+    try {
+      // Load branding from storage first, then fallback to policy
+      const storageResult = await safe(chrome.storage.local.get(['brandingConfig']));
+      const brandingConfig = storageResult?.brandingConfig || {};
+      
+      // Determine title from storage or policy
+      const title = brandingConfig.productName ||
+                   this.policy?.BrandingName ||
+                   this.getDefaultPolicy().BrandingName;
+      
+      // Title with safe wrapper
+      await safe(chrome.action.setTitle({ title }));
+      console.log("Extension title set to:", title);
 
-    // Icon (optional) with platform feature guards and size limits
-    if (this.policy?.BrandingImage && globalThis.OffscreenCanvas && globalThis.createImageBitmap) {
-      try {
-        const img = await fetchWithTimeout(this.policy.BrandingImage);
-        if (!img.ok) return;
-        
-        const blob = await img.blob();
-        if (blob.size > 1_000_000) return; // Skip huge icons
-        
-        const bmp = await createImageBitmap(blob);
-        const sizes = [16, 32, 48, 128];
-        const images = {};
-        for (const s of sizes) {
-          const canvas = new OffscreenCanvas(s, s);
-          const ctx = canvas.getContext("2d");
-          ctx.clearRect(0, 0, s, s);
-          ctx.drawImage(bmp, 0, 0, s, s);
-          images[String(s)] = ctx.getImageData(0, 0, s, s);
+      // Determine logo URL from storage or policy
+      const logoUrl = brandingConfig.logoUrl || this.policy?.BrandingImage;
+
+      // Icon (optional) with platform feature guards and size limits
+      if (logoUrl && globalThis.OffscreenCanvas && globalThis.createImageBitmap) {
+        try {
+          console.log("Loading custom extension icon from:", logoUrl);
+          
+          // Handle both relative and absolute URLs
+          const iconUrl = logoUrl.startsWith("http") ?
+            logoUrl :
+            chrome.runtime.getURL(logoUrl);
+          
+          const img = await fetchWithTimeout(iconUrl);
+          if (!img.ok) {
+            console.warn("Failed to fetch custom icon:", img.status);
+            return;
+          }
+          
+          const blob = await img.blob();
+          if (blob.size > 1_000_000) {
+            console.warn("Custom icon too large, skipping");
+            return; // Skip huge icons
+          }
+          
+          const bmp = await createImageBitmap(blob);
+          const sizes = [16, 32, 48, 128];
+          const images = {};
+          for (const s of sizes) {
+            const canvas = new OffscreenCanvas(s, s);
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, s, s);
+            ctx.drawImage(bmp, 0, 0, s, s);
+            images[String(s)] = ctx.getImageData(0, 0, s, s);
+          }
+          await safe(chrome.action.setIcon({ imageData: images }));
+          console.log("Custom extension icon applied successfully");
+        } catch (e) {
+          console.warn("Failed to apply custom icon:", e.message);
+          // ignore icon errors, just set title
         }
-        await safe(chrome.action.setIcon({ imageData: images }));
-      } catch (e) {
-        // ignore icon errors, just set title
+      } else {
+        console.log("No custom logo configured or OffscreenCanvas not available");
       }
+    } catch (error) {
+      console.error("Failed to apply branding to action:", error);
     }
   }
 
@@ -762,6 +794,17 @@ class CheckBackground {
             sendResponse({ success: true });
           } catch (error) {
             logger.error("Check: Failed to update config:", error);
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
+        case "UPDATE_BRANDING":
+          try {
+            // Apply branding changes immediately
+            await this.applyBrandingToAction();
+            sendResponse({ success: true });
+          } catch (error) {
+            logger.error("Check: Failed to update branding:", error);
             sendResponse({ success: false, error: error.message });
           }
           break;

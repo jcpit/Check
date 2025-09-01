@@ -532,6 +532,15 @@ class CheckOptions {
         this.originalConfig = JSON.parse(JSON.stringify(newConfig));
         this.hasUnsavedChanges = false;
         this.updateSaveButton();
+        
+        // Trigger branding update in background script
+        try {
+          await this.sendMessage({ type: "UPDATE_BRANDING" });
+          console.log("Branding update triggered successfully");
+        } catch (brandingUpdateError) {
+          console.warn("Failed to trigger branding update:", brandingUpdateError);
+        }
+        
         this.showToast("Settings saved successfully", "success");
       } else {
         throw new Error(response?.error || "Failed to save settings");
