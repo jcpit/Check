@@ -456,8 +456,7 @@ async function runProtection(isRerun = false) {
           // Treat this as a high-severity threat even on legitimate domains
           if (protectionEnabled) {
             // Show both banner and blocking page for maximum visibility
-            const appName =
-              clientInfo.appInfo?.appName || "Unknown Application";
+            const appName = clientInfo.appName || "Unknown Application";
             showWarningBanner(
               `⚠️ CRITICAL WARNING: Rogue OAuth Application Detected - ${appName}`,
               {
@@ -1256,7 +1255,12 @@ async function extractClientInfo(url) {
     const clientId = urlObj.searchParams.get("client_id");
 
     if (!clientId) {
-      return { clientId: null, isMalicious: false, reason: null };
+      return {
+        clientId: null,
+        isMalicious: false,
+        reason: null,
+        appInfo: null,
+      };
     }
 
     // Check against rogue apps from detection rules
@@ -1266,6 +1270,7 @@ async function extractClientInfo(url) {
         clientId: clientId,
         isMalicious: true,
         reason: `Rogue App: ${rogueAppCheck.appName}`,
+        appName: rogueAppCheck.appName,
         appInfo: rogueAppCheck.appInfo,
       };
     }
@@ -1292,6 +1297,7 @@ async function checkRogueApp(clientId) {
     });
 
     if (response && response.isRogue) {
+      console.log(response);
       return {
         isMalicious: true,
         appName: response.appName,
