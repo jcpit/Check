@@ -56,7 +56,7 @@
     {
       "id": "form_post_not_microsoft",
       "type": "form_action_validation",
-      "description": "Block if form post URL is not login.microsoftonline.com",
+      "description": "Block the page if the credentials are not sent to Microsoft",
       "condition": {
         "form_selector": "form",
         "action_must_not_contain": "login.microsoftonline.com",

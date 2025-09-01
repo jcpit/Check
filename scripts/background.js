@@ -5,7 +5,6 @@
  */
 
 import { ConfigManager } from "./modules/config-manager.js";
-import { DetectionEngine } from "./modules/detection-engine.js";
 import { PolicyManager } from "./modules/policy-manager.js";
 import logger from "./utils/logger.js";
 import { store as storeLog } from "./utils/background-logger.js";
@@ -43,7 +42,6 @@ async function fetchWithTimeout(url, ms = 5000) {
 class CheckBackground {
   constructor() {
     this.configManager = new ConfigManager();
-    this.detectionEngine = new DetectionEngine();
     this.policyManager = new PolicyManager();
     this.isInitialized = false;
     this.initializationPromise = null;
@@ -145,9 +143,8 @@ class CheckBackground {
         enabled: true,
       });
 
-      // Load policies and initialize detection engine
+      // Load policies
       await this.policyManager.loadPolicies();
-      await this.detectionEngine.initialize();
 
       await this.refreshPolicy();
 
@@ -217,8 +214,9 @@ class CheckBackground {
   // CyberDrain integration - Policy management with defensive refresh
   async refreshPolicy() {
     try {
-      this.policy =
-        (await this.detectionEngine.policy) || this.getDefaultPolicy();
+      // Load policy from policy manager
+      const policyData = await this.policyManager.getPolicies();
+      this.policy = policyData || this.getDefaultPolicy();
       this.extraWhitelist = new Set(
         (this.policy?.ExtraWhitelist || [])
           .map((s) => this.urlOrigin(s))
@@ -244,7 +242,13 @@ class CheckBackground {
   // CyberDrain integration - Verdict determination
   verdictForUrl(raw) {
     const origin = this.urlOrigin(raw);
-    if (this.detectionEngine.TRUSTED_ORIGINS.has(origin)) return "trusted";
+    // Load trusted origins from policy or use defaults
+    const trustedOrigins = this.policy?.trustedOrigins || new Set([
+      'https://login.microsoftonline.com',
+      'https://login.microsoft.com',
+      'https://account.microsoft.com'
+    ]);
+    if (trustedOrigins.has && trustedOrigins.has(origin)) return "trusted";
     if (this.extraWhitelist.has(origin)) return "trusted-extra";
     return "unknown";
   }
@@ -403,10 +407,8 @@ class CheckBackground {
     // Handle web navigation events with non-blocking heavy work
     chrome.webNavigation?.onCompleted?.addListener((details) => {
       if (details.frameId === 0) {
-        // Fire-and-log pattern for non-critical work
-        queueMicrotask(() =>
-          this.detectionEngine.analyzePageContent(details.tabId, details.url).catch(() => {})
-        );
+        // Log navigation for audit purposes
+        queueMicrotask(() => this.logUrlAccess(details.url, details.tabId).catch(() => {}));
       }
     });
 
@@ -533,22 +535,10 @@ class CheckBackground {
 
       if (!changeInfo.url) return;
 
-      // Analyze URL for threats
-      const urlAnalysis = await this.detectionEngine.analyzeUrl(changeInfo.url);
-
-      if (urlAnalysis.isBlocked) {
-        // Block navigation if URL is flagged
-        await safe(chrome.tabs.update(tabId, {
-          url:
-            chrome.runtime.getURL("blocked.html") +
-            "?reason=" +
-            encodeURIComponent(urlAnalysis.reason),
-        }));
-        return;
-      }
-
-      // Check if page requires content script injection
-      if (urlAnalysis.requiresContentScript) {
+      // Simple URL analysis without DetectionEngine
+      const shouldInjectContentScript = this.shouldInjectContentScript(changeInfo.url);
+      
+      if (shouldInjectContentScript) {
         await this.injectContentScript(tabId);
       }
 
@@ -640,20 +630,11 @@ class CheckBackground {
           break;
 
         case "ANALYZE_CONTENT_WITH_RULES":
-          try {
-            // Strictly validate inputs
-            if (typeof message.content !== "string") {
-              sendResponse({success: false, error: "Invalid content"});
-              return;
-            }
-            const analysis = await this.detectionEngine.analyzeContentWithRules(
-              message.content,
-              { origin: message.origin }
-            );
-            sendResponse({ success: true, analysis });
-          } catch (error) {
-            sendResponse({ success: false, error: error.message });
-          }
+          // DetectionEngine removed - content analysis now handled by content script
+          sendResponse({
+            success: false,
+            error: "Content analysis moved to content script"
+          });
           break;
 
         case "log":
@@ -681,37 +662,14 @@ class CheckBackground {
           break;
 
         case "testDetectionEngine":
-          try {
-            const detectionTest = {
-              rulesLoaded: this.detectionEngine?.detectionRules
-                ? Object.keys(this.detectionEngine.detectionRules).length
-                : 0,
-              engineInitialized: this.detectionEngine?.isInitialized || false,
-              testsRun: 0,
-            };
-
-            if (message.testData) {
-              const testResults = await this.testDetectionRules([
-                {
-                  id: "quick_test",
-                  type: "url_analysis",
-                  input: { url: message.testData.url },
-                  expected: { analyzed: true },
-                },
-              ]);
-              detectionTest.testsRun = testResults.summary.total;
-            }
-
-            sendResponse({
-              success: true,
-              ...detectionTest,
-            });
-          } catch (error) {
-            sendResponse({
-              success: false,
-              error: error.message,
-            });
-          }
+          // DetectionEngine removed - return simple status
+          sendResponse({
+            success: true,
+            message: "Detection engine functionality moved to content script",
+            rulesLoaded: 0,
+            engineInitialized: false,
+            testsRun: 0,
+          });
           break;
 
         case "testConfiguration":
@@ -723,8 +681,7 @@ class CheckBackground {
 
             if (this.configManager)
               configTest.configModules.push("ConfigManager");
-            if (this.detectionEngine)
-              configTest.configModules.push("DetectionEngine");
+            // DetectionEngine removed
             if (this.policyManager)
               configTest.configModules.push("PolicyManager");
 
@@ -741,13 +698,27 @@ class CheckBackground {
           break;
 
         case "URL_ANALYSIS_REQUEST":
-          // Strictly validate inputs
-          if (typeof message.url !== "string") {
-            sendResponse({success: false, error: "Invalid url"});
-            return;
+          // Simple URL analysis without DetectionEngine
+          try {
+            if (typeof message.url !== "string") {
+              sendResponse({success: false, error: "Invalid url"});
+              return;
+            }
+            
+            const analysis = {
+              url: message.url,
+              verdict: this.verdictForUrl(message.url),
+              isBlocked: false,
+              isSuspicious: false,
+              threats: [],
+              reason: "Basic analysis - detailed detection in content script",
+              timestamp: new Date().toISOString()
+            };
+            
+            sendResponse({ success: true, analysis });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message });
           }
-          const analysis = await this.detectionEngine.analyzeUrl(message.url);
-          sendResponse({ success: true, analysis });
           break;
 
         case "POLICY_CHECK":
@@ -815,8 +786,15 @@ class CheckBackground {
           break;
 
         case "VALIDATE_DETECTION_ENGINE":
-          const validationResults = await this.validateDetectionEngine();
-          sendResponse({ success: true, validation: validationResults });
+          // DetectionEngine removed - return simple status
+          sendResponse({
+            success: true,
+            validation: {
+              message: "Detection engine functionality moved to content script",
+              engineInitialized: false,
+              detectionEngineStatus: "removed"
+            }
+          });
           break;
 
         case "RUN_COMPREHENSIVE_TEST":
@@ -1016,12 +994,13 @@ class CheckBackground {
     }
   }
 
-  // Detection Rules Testing Methods
+  // Detection Rules Testing Methods - simplified without DetectionEngine
   async testDetectionRules(testData = null) {
     const results = {
       timestamp: new Date().toISOString(),
       engineStatus: this.isInitialized,
-      rulesLoaded: this.detectionEngine.detectionRules !== null,
+      rulesLoaded: false, // DetectionEngine removed
+      message: "Detection testing moved to content script",
       testResults: [],
       summary: {
         total: 0,
@@ -1031,270 +1010,53 @@ class CheckBackground {
       },
     };
 
-    // Default test cases if none provided
-    if (!testData) {
-      testData = this.getDefaultTestCases();
-    }
-
-    for (const testCase of testData) {
-      const testResult = await this.runSingleTest(testCase);
-      results.testResults.push(testResult);
-      results.summary.total++;
-
-      if (testResult.status === "passed") {
-        results.summary.passed++;
-      } else if (testResult.status === "failed") {
-        results.summary.failed++;
-      } else {
-        results.summary.warnings++;
-      }
-    }
-
-    // Log test results
-    await this.logEvent({
-      type: "detection_rules_test",
-      results: results.summary,
-    });
-
     return results;
   }
 
-  async runSingleTest(testCase) {
-    const result = {
-      testId: testCase.id,
-      description: testCase.description,
-      type: testCase.type,
-      input: testCase.input,
-      expected: testCase.expected,
-      actual: null,
-      status: "unknown",
-      message: "",
-      timestamp: new Date().toISOString(),
-    };
+  // Test methods removed - DetectionEngine functionality moved to content script
 
-    try {
-      switch (testCase.type) {
-        case "url_analysis":
-          result.actual = await this.detectionEngine.analyzeUrl(
-            testCase.input.url
-          );
-          break;
-        case "content_analysis":
-          result.actual = await this.detectionEngine.analyzeContent(
-            testCase.input.content,
-            testCase.input.context
-          );
-          break;
-        case "form_analysis":
-          result.actual = await this.detectionEngine.analyzeForm(
-            testCase.input.formData
-          );
-          break;
-        case "header_analysis":
-          result.actual = await this.detectionEngine.analyzeHeaders(
-            testCase.input.headers
-          );
-          break;
-        case "referrer_check":
-          result.actual = await this.detectionEngine.validateReferrer(
-            testCase.input.referrer
-          );
-          break;
-        default:
-          result.status = "failed";
-          result.message = `Unknown test type: ${testCase.type}`;
-          return result;
-      }
-
-      // Compare results
-      if (this.compareTestResults(result.expected, result.actual)) {
-        result.status = "passed";
-        result.message = "Test passed successfully";
-      } else {
-        result.status = "failed";
-        result.message = `Expected: ${JSON.stringify(
-          result.expected
-        )}, Got: ${JSON.stringify(result.actual)}`;
-      }
-    } catch (error) {
-      result.status = "failed";
-      result.message = `Test execution failed: ${error.message}`;
-      result.actual = { error: error.message };
-    }
-
-    return result;
-  }
-
-  async validateDetectionEngine() {
-    const validation = {
-      timestamp: new Date().toISOString(),
-      engineInitialized: this.isInitialized,
-      detectionEngineStatus: this.detectionEngine ? "loaded" : "not_loaded",
-      rulesValidation: {},
-      componentsStatus: {},
-      configurationStatus: {},
-    };
-
-    try {
-      // Validate rules structure
-      validation.rulesValidation = this.validateRulesStructure();
-
-      // Validate components
-      validation.componentsStatus = this.validateComponents();
-
-      // Validate configuration
-      validation.configurationStatus = await this.validateConfiguration();
-    } catch (error) {
-      validation.error = error.message;
-    }
-
-    return validation;
-  }
-
+  // Test methods removed - DetectionEngine functionality moved to content script
   async runComprehensiveTest() {
-    const comprehensiveResults = {
+    return {
       timestamp: new Date().toISOString(),
+      message: "Comprehensive testing moved to content script",
       testSuites: [],
     };
-
-    // Test Suite 1: Microsoft Authentication Detection
-    const msAuthTests = await this.testMicrosoftAuthDetection();
-    comprehensiveResults.testSuites.push({
-      suite: "Microsoft Authentication Detection",
-      results: msAuthTests,
-    });
-
-    // Test Suite 2: Phishing Detection
-    const phishingTests = await this.testPhishingDetection();
-    comprehensiveResults.testSuites.push({
-      suite: "Phishing Detection",
-      results: phishingTests,
-    });
-
-    // Test Suite 3: Referrer Validation
-    const referrerTests = await this.testReferrerValidation();
-    comprehensiveResults.testSuites.push({
-      suite: "Referrer Validation",
-      results: referrerTests,
-    });
-
-    // Test Suite 4: Content Security Policy
-    const cspTests = await this.testCSPValidation();
-    comprehensiveResults.testSuites.push({
-      suite: "Content Security Policy Validation",
-      results: cspTests,
-    });
-
-    return comprehensiveResults;
   }
 
-  getDefaultTestCases() {
-    return [
-      {
-        id: "legitimate_microsoft_url",
-        description: "Test legitimate Microsoft login URL",
-        type: "url_analysis",
-        input: {
-          url: "https://login.microsoftonline.com/common/oauth2/authorize",
-        },
-        expected: { isLegitimate: true, threat_level: "none" },
-      },
-      {
-        id: "phishing_microsoft_url",
-        description: "Test phishing URL mimicking Microsoft",
-        type: "url_analysis",
-        input: { url: "https://secure-microsoft-login.com/oauth2/authorize" },
-        expected: { isLegitimate: false, threat_level: "high" },
-      },
-      {
-        id: "valid_referrer",
-        description: "Test valid referrer from allow list",
-        type: "referrer_check",
-        input: { referrer: "https://tasks.office.com" },
-        expected: { isValid: true },
-      },
-      {
-        id: "invalid_referrer",
-        description: "Test invalid referrer not in allow list",
-        type: "referrer_check",
-        input: { referrer: "https://evil-site.com" },
-        expected: { isValid: false },
-      },
-      {
-        id: "legitimate_form_elements",
-        description: "Test legitimate Microsoft form elements",
-        type: "content_analysis",
-        input: {
-          content:
-            '<input name="loginfmt"><input name="idPartnerPL"><script>var urlMsaSignUp = "...";</script>',
-          context: "form_analysis",
-        },
-        expected: { hasRequiredElements: true, legitimacyLevel: "high" },
-      },
-    ];
-  }
-
-  compareTestResults(expected, actual) {
-    // Simple comparison logic - can be enhanced based on test requirements
-    if (typeof expected === "object" && typeof actual === "object") {
-      for (const key in expected) {
-        if (expected[key] !== actual[key]) {
-          return false;
-        }
-      }
-      return true;
-    }
-    return expected === actual;
-  }
-
-  validateRulesStructure() {
-    const validation = {
-      hasRules: false,
-      rulesCount: 0,
-      validRules: 0,
-      invalidRules: 0,
-      issues: [],
-    };
-
+  // Helper method for content script injection decision
+  shouldInjectContentScript(url) {
     try {
-      if (!this.detectionEngine.detectionRules) {
-        validation.issues.push("Detection rules not loaded");
-        return validation;
+      const urlObj = new URL(url);
+      const protocol = urlObj.protocol;
+      
+      // Skip disallowed protocols
+      const disallowed = [
+        "chrome:",
+        "edge:",
+        "about:",
+        "chrome-extension:",
+        "moz-extension:",
+        "devtools:",
+      ];
+      
+      if (disallowed.includes(protocol)) {
+        return false;
       }
-
-      const rules = this.detectionEngine.detectionRules;
-      validation.hasRules = true;
-
-      if (rules.rules && Array.isArray(rules.rules)) {
-        validation.rulesCount = rules.rules.length;
-
-        for (const rule of rules.rules) {
-          if (this.validateSingleRule(rule)) {
-            validation.validRules++;
-          } else {
-            validation.invalidRules++;
-            validation.issues.push(`Invalid rule: ${rule.id || "unnamed"}`);
-          }
-        }
-      }
+      
+      // Inject content script for all other URLs
+      return true;
     } catch (error) {
-      validation.issues.push(`Validation error: ${error.message}`);
+      logger.warn("Check: Invalid URL for content script injection:", url);
+      return false;
     }
-
-    return validation;
-  }
-
-  validateSingleRule(rule) {
-    const requiredFields = ["id", "type", "weight", "condition", "description"];
-    return requiredFields.every((field) => field in rule);
   }
 
   validateComponents() {
     return {
       configManager: this.configManager ? "loaded" : "not_loaded",
-      detectionEngine: this.detectionEngine ? "loaded" : "not_loaded",
       policyManager: this.policyManager ? "loaded" : "not_loaded",
-      detectionEngineInitialized: this.detectionEngine?.isInitialized || false,
+      // DetectionEngine removed
     };
   }
 
@@ -1302,152 +1064,9 @@ class CheckBackground {
     const config = await this.configManager.getConfig();
     return {
       configLoaded: !!config,
-      hasValidReferrers: config?.valid_referrers?.referrers?.length > 0,
-      hasWhitelistDomains: config?.whitelist_domains?.length > 0,
-      detectionEnabled: config?.detection_settings?.enable_real_time_scanning,
+      // Simplified validation without DetectionEngine
+      basicValidation: true,
     };
-  }
-
-  async testMicrosoftAuthDetection() {
-    const testCases = [
-      "https://login.microsoftonline.com",
-      "https://fake-microsoft-login.com",
-      "https://login.microsoft.com",
-      "https://secure-office365-login.phishing.com",
-    ];
-
-    const results = [];
-    for (const url of testCases) {
-      try {
-        const analysis = await this.detectionEngine.analyzeUrl(url);
-        results.push({
-          url,
-          analysis,
-          expected:
-            url.includes("microsoftonline.com") ||
-            url.includes("microsoft.com"),
-          passed: this.evaluateMicrosoftAuthResult(url, analysis),
-        });
-      } catch (error) {
-        results.push({
-          url,
-          error: error.message,
-          passed: false,
-        });
-      }
-    }
-    return results;
-  }
-
-  async testPhishingDetection() {
-    const phishingUrls = [
-      "https://secure-microsoft365.com/login",
-      "https://office-security-update.com",
-      "https://microsoft-account-verify.net",
-    ];
-
-    const results = [];
-    for (const url of phishingUrls) {
-      try {
-        const analysis = await this.detectionEngine.analyzeUrl(url);
-        results.push({
-          url,
-          analysis,
-          expected: "blocked_or_flagged",
-          passed: analysis.isBlocked || analysis.threat_level === "high",
-        });
-      } catch (error) {
-        results.push({
-          url,
-          error: error.message,
-          passed: false,
-        });
-      }
-    }
-    return results;
-  }
-
-  async testReferrerValidation() {
-    const validReferrers = [
-      "https://login.microsoftonline.com",
-      "https://tasks.office.com",
-      "https://login.microsoft.net",
-    ];
-
-    const invalidReferrers = [
-      "https://evil-site.com",
-      "https://phishing-microsoft.com",
-      "https://fake-office.net",
-    ];
-
-    const results = [];
-
-    for (const referrer of validReferrers) {
-      const isValid = await this.detectionEngine.validateReferrer(referrer);
-      results.push({
-        referrer,
-        expected: true,
-        actual: isValid,
-        passed: isValid === true,
-      });
-    }
-
-    for (const referrer of invalidReferrers) {
-      const isValid = await this.detectionEngine.validateReferrer(referrer);
-      results.push({
-        referrer,
-        expected: false,
-        actual: isValid,
-        passed: isValid === false,
-      });
-    }
-
-    return results;
-  }
-
-  async testCSPValidation() {
-    const validCSP =
-      "content-security-policy-report-only: default-src 'self'; connect-src https://*.msauth.net/ https://*.microsoft.com/";
-    const invalidCSP =
-      "content-security-policy-report-only: default-src 'self'; connect-src https://evil-site.com/";
-
-    const results = [];
-
-    try {
-      const validResult = await this.detectionEngine.validateCSP(validCSP);
-      results.push({
-        csp: validCSP,
-        expected: true,
-        actual: validResult,
-        passed: validResult === true,
-      });
-
-      const invalidResult = await this.detectionEngine.validateCSP(invalidCSP);
-      results.push({
-        csp: invalidCSP,
-        expected: false,
-        actual: invalidResult,
-        passed: invalidResult === false,
-      });
-    } catch (error) {
-      results.push({
-        error: error.message,
-        passed: false,
-      });
-    }
-
-    return results;
-  }
-
-  evaluateMicrosoftAuthResult(url, analysis) {
-    const isLegitimateUrl =
-      url.includes("microsoftonline.com") || url.includes("microsoft.com");
-
-    if (isLegitimateUrl) {
-      return !analysis.isBlocked && analysis.threat_level !== "high";
-    } else {
-      return analysis.isBlocked || analysis.threat_level === "high";
-    }
   }
 }
 
