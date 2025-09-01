@@ -458,7 +458,7 @@ async function runProtection(isRerun = false) {
             // Show both banner and blocking page for maximum visibility
             const appName = clientInfo.appName || "Unknown Application";
             showWarningBanner(
-              `⚠️ CRITICAL WARNING: Rogue OAuth Application Detected - ${appName}`,
+              `CRITICAL WARNING: Rogue OAuth Application Detected - ${appName}`,
               {
                 type: "rogue_app_on_legitimate_domain",
                 severity: "critical",
@@ -484,7 +484,7 @@ async function runProtection(isRerun = false) {
             const appName =
               clientInfo.appInfo?.appName || "Unknown Application";
             showWarningBanner(
-              `⚠️ CRITICAL WARNING: Rogue OAuth Application Detected - ${appName}`,
+              `CRITICAL WARNING: Rogue OAuth Application Detected - ${appName}`,
               {
                 type: "rogue_app_on_legitimate_domain",
                 severity: "critical",
