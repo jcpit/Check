@@ -555,13 +555,25 @@ class CheckPopup {
       analysis.isSuspicious !== undefined ? analysis.isSuspicious : hasThreats;
     const isProtectionEnabled = analysis.protectionEnabled !== false;
 
-    // Always show the actual security analysis of the URL
+    // Handle different verdict types with improved status display
     if (isBlocked) {
       this.showSecurityBadge("danger", "Blocked");
       this.showThreats(analysis.threats);
     } else if (isSuspicious) {
       this.showSecurityBadge("warning", "Suspicious");
       this.showThreats(analysis.threats);
+    } else if (
+      analysis.verdict === "trusted" ||
+      analysis.verdict === "trusted-extra"
+    ) {
+      this.showSecurityBadge("safe", "Microsoft Domain");
+      this.hideThreats();
+    } else if (analysis.verdict === "ms-login-unknown") {
+      this.showSecurityBadge("warning", "MS Login - Unknown Domain");
+      this.hideThreats();
+    } else if (analysis.verdict === "not-evaluated") {
+      this.showSecurityBadge("neutral", "Not Microsoft Login");
+      this.hideThreats();
     } else {
       this.showSecurityBadge("safe", "Safe");
       this.hideThreats();

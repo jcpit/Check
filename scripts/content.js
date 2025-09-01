@@ -475,6 +475,20 @@ async function runProtection(isRerun = false) {
       "🚨 MICROSOFT LOGON PAGE ON NON-TRUSTED DOMAIN - ANALYZING THREAT"
     );
 
+    // Notify background script that this is a Microsoft login page on unknown domain
+    try {
+      chrome.runtime.sendMessage({
+        type: "FLAG_MS_LOGIN_ON_UNKNOWN_DOMAIN",
+        url: location.href,
+        origin: location.origin,
+      });
+    } catch (messageError) {
+      logger.warn(
+        "Failed to notify background of MS login detection:",
+        messageError.message
+      );
+    }
+
     // Step 4: Check blocking rules first (immediate blocking conditions)
     const blockingResult = runBlockingRules();
     if (blockingResult.shouldBlock) {
@@ -694,6 +708,7 @@ function setupDOMMonitoring() {
     domObserver = new MutationObserver((mutations) => {
       try {
         let shouldRerun = false;
+        let newElementsAdded = false;
 
         // Check if any significant changes occurred
         for (const mutation of mutations) {
@@ -701,6 +716,7 @@ function setupDOMMonitoring() {
             // Check for added forms, inputs, or scripts
             for (const node of mutation.addedNodes) {
               if (node.nodeType === Node.ELEMENT_NODE) {
+                newElementsAdded = true;
                 const tagName = node.tagName?.toLowerCase();
                 if (
                   tagName === "form" ||

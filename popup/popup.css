@@ -357,6 +357,11 @@ body {
   color: #3730a3 !important;
 }
 
+.security-badge.neutral {
+  background: #f8fafc !important;
+  color: #475569 !important;
+}
+
 .security-badge.disabled {
   background: #f1f5f9 !important;
   color: #64748b !important;

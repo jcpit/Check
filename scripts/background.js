@@ -263,7 +263,7 @@ class CheckBackground {
       ]);
     if (trustedOrigins.has && trustedOrigins.has(origin)) return "trusted";
     if (this.extraWhitelist.has(origin)) return "trusted-extra";
-    return "unknown";
+    return "not-evaluated"; // Changed from "unknown" - don't show badge until we know it's relevant
   }
 
   // CyberDrain integration - Badge management with safe wrappers
@@ -272,13 +272,20 @@ class CheckBackground {
       trusted: { text: "MS", color: "#0a5" },
       "trusted-extra": { text: "OK", color: "#0a5" },
       phishy: { text: "!", color: "#d33" },
-      unknown: { text: "?", color: "#777" },
+      "ms-login-unknown": { text: "?", color: "#f90" }, // Yellow/orange for MS login on unknown domain
+      "not-evaluated": { text: "", color: "#000" }, // No badge for irrelevant pages
     };
-    const cfg = map[verdict] || map.unknown;
+    const cfg = map[verdict] || map["not-evaluated"];
     await safe(chrome.action.setBadgeText({ tabId, text: cfg.text }));
-    await safe(
-      chrome.action.setBadgeBackgroundColor({ tabId, color: cfg.color })
-    );
+    if (cfg.text) {
+      // Only set background color if there's text to display
+      await safe(
+        chrome.action.setBadgeBackgroundColor({ tabId, color: cfg.color })
+      );
+    } else {
+      // Clear badge entirely for non-relevant pages
+      await safe(chrome.action.setBadgeText({ tabId, text: "" }));
+    }
   }
 
   // CyberDrain integration - Notify tab to show valid badge with safe wrappers
@@ -426,7 +433,7 @@ class CheckBackground {
     // CyberDrain integration - Handle tab activation for badge updates with safe wrappers
     chrome.tabs.onActivated.addListener(async ({ tabId }) => {
       const data = await safe(chrome.storage.session.get("verdict:" + tabId));
-      const verdict = data?.["verdict:" + tabId]?.verdict || "unknown";
+      const verdict = data?.["verdict:" + tabId]?.verdict || "not-evaluated";
       this.setBadge(tabId, verdict);
     });
 
@@ -682,6 +689,32 @@ class CheckBackground {
                 }).catch(() => {})
               );
             }
+          }
+          break;
+
+        case "FLAG_MS_LOGIN_ON_UNKNOWN_DOMAIN":
+          if (sender.tab?.id) {
+            const tabId = sender.tab.id;
+            await safe(
+              chrome.storage.session.set({
+                ["verdict:" + tabId]: {
+                  verdict: "ms-login-unknown",
+                  url: sender.tab.url,
+                  origin: message.origin,
+                },
+              })
+            );
+            this.setBadge(tabId, "ms-login-unknown");
+            sendResponse({ ok: true });
+            // Log Microsoft login detection on unknown domain
+            queueMicrotask(() =>
+              this.sendEvent({
+                type: "ms-login-unknown-domain",
+                url: sender.tab.url,
+                origin: message.origin,
+                reason: "Microsoft login page detected on non-trusted domain",
+              }).catch(() => {})
+            );
           }
           break;
 
