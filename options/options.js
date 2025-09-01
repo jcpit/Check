@@ -341,10 +341,22 @@ class CheckOptions {
 
   async loadBrandingConfiguration() {
     try {
-      // Wait for runtime to be ready before calling chrome.runtime.getURL
+      // First try to load from storage (user settings)
+      const storageResult = await new Promise((resolve) => {
+        chrome.storage.local.get(['brandingConfig'], (result) => {
+          resolve(result.brandingConfig);
+        });
+      });
+
+      if (storageResult) {
+        this.brandingConfig = storageResult;
+        console.log("Loaded branding from storage:", storageResult);
+        return;
+      }
+
+      // Fallback to loading from branding.json file
       await this.waitForRuntimeReady();
 
-      // Add timeout to fetch operations
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
       
@@ -362,6 +374,7 @@ class CheckOptions {
         }
 
         this.brandingConfig = await response.json();
+        console.log("Loaded branding from file:", this.brandingConfig);
       } finally {
         clearTimeout(timeoutId);
       }
@@ -426,12 +439,12 @@ class CheckOptions {
       this.config.enableDebugLogging || false;
 
     // Branding settings
-    this.elements.companyName.value = this.brandingConfig.companyName;
-    this.elements.productName.value = this.brandingConfig.productName;
-    this.elements.supportEmail.value = this.brandingConfig.supportEmail;
-    this.elements.primaryColor.value = this.brandingConfig.primaryColor;
-    this.elements.logoUrl.value = this.brandingConfig.logoUrl;
-    this.elements.customCss.value = this.brandingConfig.customCss || "";
+    this.elements.companyName.value = this.brandingConfig?.companyName || "";
+    this.elements.productName.value = this.brandingConfig?.productName || "";
+    this.elements.supportEmail.value = this.brandingConfig?.supportEmail || "";
+    this.elements.primaryColor.value = this.brandingConfig?.primaryColor || "#F77F00";
+    this.elements.logoUrl.value = this.brandingConfig?.logoUrl || "";
+    this.elements.customCss.value = this.brandingConfig?.customCss || "";
   }
 
   switchSection(sectionName) {
@@ -480,6 +493,7 @@ class CheckOptions {
   async saveSettings() {
     try {
       const newConfig = this.gatherFormData();
+      const newBranding = this.gatherBrandingData();
 
       // Validate configuration
       const validation = this.validateConfiguration(newConfig);
@@ -494,14 +508,33 @@ class CheckOptions {
         config: newConfig,
       });
 
-      if (response.success) {
+      // Save branding configuration separately
+      try {
+        await new Promise((resolve, reject) => {
+          chrome.storage.local.set({ brandingConfig: newBranding }, () => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+            } else {
+              resolve();
+            }
+          });
+        });
+        
+        this.brandingConfig = newBranding;
+        console.log("Branding config saved:", newBranding);
+      } catch (brandingError) {
+        console.error("Failed to save branding config:", brandingError);
+        this.showToast("Failed to save branding settings", "warning");
+      }
+
+      if (response && response.success) {
         this.config = newConfig;
         this.originalConfig = JSON.parse(JSON.stringify(newConfig));
         this.hasUnsavedChanges = false;
         this.updateSaveButton();
         this.showToast("Settings saved successfully", "success");
       } else {
-        throw new Error(response.error || "Failed to save settings");
+        throw new Error(response?.error || "Failed to save settings");
       }
     } catch (error) {
       console.error("Failed to save settings:", error);
