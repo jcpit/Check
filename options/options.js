@@ -1231,23 +1231,32 @@ class CheckOptions {
   getUrlDisplay(log) {
     try {
       if (log.event?.url) {
-        const url = new URL(log.event.url);
-        return log.event.threatDetected
-          ? url.hostname.replace(/:/g, "[:]")
-          : url.hostname;
+        // Check if URL is already defanged (contains [.] or [:])
+        const isDefanged =
+          log.event.url.includes("[.]") || log.event.url.includes("[:]");
+
+        if (isDefanged) {
+          // URL is already defanged, extract hostname-like part without additional processing
+          const urlStr = log.event.url;
+          // Extract hostname from defanged URL
+          const match = urlStr.match(/^https?\[:\]\/\/([^\/]+)/);
+          if (match) {
+            return match[1]; // Return the defanged hostname as-is
+          }
+          return urlStr; // Fallback to full defanged URL
+        } else {
+          // URL is not defanged, parse normally and show hostname only
+          const url = new URL(log.event.url);
+          return url.hostname;
+        }
       }
       if (log.url) {
         const url = new URL(log.url);
         return url.hostname;
       }
     } catch (e) {
-      // Invalid URL, try to defang the raw URL if it looks like a threat
-      if (
-        log.event?.url &&
-        (log.event?.threatDetected || log.event?.threatLevel === "high")
-      ) {
-        return log.event.url.replace(/:/g, "[:]");
-      }
+      // If parsing fails, return raw URL (might be defanged)
+      return log.event?.url || log.url || "-";
     }
     return "-";
   }

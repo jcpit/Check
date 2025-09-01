@@ -1107,7 +1107,7 @@ function logProtectionEvent(eventData) {
         type: "protection_event",
         data: {
           timestamp: new Date().toISOString(),
-          url: location.href,
+          url: eventData.url || location.href, // Use provided URL or fallback to current
           userAgent: navigator.userAgent,
           ...eventData,
         },

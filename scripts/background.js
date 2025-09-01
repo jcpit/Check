@@ -1123,16 +1123,41 @@ class CheckBackground {
   enhanceEventForLogging(event) {
     const enhancedEvent = { ...event };
 
-    // Defang URLs in threat-related events
-    if (
+    // Define threat events that should have URLs defanged
+    const threatEvents = new Set([
+      "content_threat_detected",
+      "threat_detected",
+      "blocked_page_viewed",
+      "threat_blocked",
+      "threat_detected_no_action",
+    ]);
+
+    // Define legitimate events that should NEVER have URLs defanged
+    const legitimateEvents = new Set([
+      "legitimate_access",
+      "url_access",
+      "page_scanned",
+      "trusted-login-page",
+      "user-logged-on",
+      "ms-login-unknown-domain",
+    ]);
+
+    // Only defang URLs for confirmed threat events
+    const shouldDefangUrl =
       event.url &&
-      (event.type === "content_threat_detected" ||
-        event.type === "threat_detected")
-    ) {
+      threatEvents.has(event.type) &&
+      !legitimateEvents.has(event.type);
+
+    // Debug logging to track URL defanging decisions
+    if (event.url) {
+      console.log(
+        `[URL Defanging] Event type: ${event.type}, shouldDefang: ${shouldDefangUrl}, URL: ${event.url}`
+      );
+    }
+
+    if (shouldDefangUrl) {
       enhancedEvent.url = this.defangUrl(event.url);
       enhancedEvent.threatDetected = true;
-      enhancedEvent.action = event.action || "blocked";
-      enhancedEvent.threatLevel = event.threatLevel || "high";
     }
 
     // Add more context for different event types
@@ -1144,13 +1169,11 @@ class CheckBackground {
       case "content_threat_detected":
         enhancedEvent.action = event.action || "blocked";
         enhancedEvent.threatLevel = event.threatLevel || "high";
-        enhancedEvent.url = this.defangUrl(event.url);
         enhancedEvent.threatDetected = true;
         break;
       case "threat_detected":
         enhancedEvent.action = event.action || "blocked";
         enhancedEvent.threatLevel = event.threatLevel || "high";
-        enhancedEvent.url = this.defangUrl(event.url);
         enhancedEvent.threatDetected = true;
         break;
       case "form_submission":
@@ -1168,7 +1191,6 @@ class CheckBackground {
       case "blocked_page_viewed":
         enhancedEvent.action = event.action || "viewed";
         enhancedEvent.threatLevel = event.threatLevel || "high";
-        enhancedEvent.url = this.defangUrl(event.url);
         enhancedEvent.threatDetected = true;
         break;
       case "threat_blocked":
@@ -1176,7 +1198,6 @@ class CheckBackground {
         enhancedEvent.action =
           event.type === "threat_blocked" ? "blocked" : "detected";
         enhancedEvent.threatLevel = event.severity || "high";
-        enhancedEvent.url = this.defangUrl(event.url);
         enhancedEvent.threatDetected = true;
         break;
       case "legitimate_access":
@@ -1193,6 +1214,11 @@ class CheckBackground {
 
   defangUrl(url) {
     try {
+      // Check if URL is already defanged to prevent double defanging
+      if (url.includes("[:]")) {
+        return url; // Already defanged, return as-is
+      }
+
       // Defang URLs by only replacing colons to prevent clickability while keeping readability
       return url.replace(/:/g, "[:]");
     } catch (e) {
