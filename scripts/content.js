@@ -578,6 +578,7 @@ function showBlockingOverlay(reason, analysisData) {
       url: location.href,
       timestamp: new Date().toISOString(),
       rule: analysisData?.rule?.id || 'unknown',
+      ruleDescription: analysisData?.rule?.description || reason,
       score: analysisData?.score || 0,
       threshold: analysisData?.threshold || 85
     };

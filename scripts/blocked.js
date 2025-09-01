@@ -42,8 +42,10 @@ function parseUrlParams() {
         document.getElementById("blockReason").textContent = details.reason;
       }
       
-      // Update threat category based on rule or score
-      if (details.rule) {
+      // Update threat category based on rule description or score
+      if (details.ruleDescription) {
+        document.getElementById("threatCategory").textContent = details.ruleDescription;
+      } else if (details.rule) {
         document.getElementById("threatCategory").textContent = `Rule: ${details.rule}`;
       } else if (details.score !== undefined) {
         document.getElementById("threatCategory").textContent = `Score: ${details.score}/${details.threshold}`;
