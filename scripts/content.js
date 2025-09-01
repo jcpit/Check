@@ -1395,9 +1395,6 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
           case "modify_text":
             result = this.modifyText(target, options.text);
             break;
-          case "inject_css":
-            result = this.injectCSS(options.css);
-            break;
           case "remove_element":
             result = this.removeElement(target);
             break;
@@ -1467,15 +1464,6 @@ async function validateRuntimeContext(maxAttempts = 3, initialDelay = 50) {
       });
 
       return { success: true, modifiedCount: elements.length };
-    }
-
-    injectCSS(css) {
-      const style = document.createElement("style");
-      style.textContent = css;
-      style.dataset.checkInjected = "true";
-      document.head.appendChild(style);
-
-      return { success: true };
     }
 
     removeElement(selector) {
