@@ -323,6 +323,19 @@ function runDetectionRules() {
  */
 async function runProtection(isRerun = false) {
   try {
+    // Load configuration to check if protection is enabled
+    const config = await new Promise((resolve) => {
+      chrome.storage.local.get(['config'], (result) => {
+        resolve(result.config || {});
+      });
+    });
+    
+    // Check if page blocking is disabled
+    if (config.enablePageBlocking === false) {
+      logger.log("Page blocking disabled in settings - skipping protection");
+      return;
+    }
+    
     // Prevent excessive runs but allow re-runs for DOM changes
     if (protectionActive && !isRerun) {
       logger.debug("Protection already active");
@@ -362,6 +375,15 @@ async function runProtection(isRerun = false) {
           url: location.href,
           origin: currentOrigin,
           reason: 'Trusted Microsoft domain'
+        });
+        
+        // Send CIPP reporting if enabled
+        sendCippReport({
+          type: 'microsoft_logon_detected',
+          url: location.href,
+          origin: currentOrigin,
+          legitimate: true,
+          timestamp: new Date().toISOString()
         });
       } catch (badgeError) {
         logger.warn("Failed to show valid badge:", badgeError.message);
@@ -409,6 +431,17 @@ async function runProtection(isRerun = false) {
         severity: blockingResult.severity
       });
       
+      // Send CIPP reporting if enabled
+      sendCippReport({
+        type: 'phishing_blocked',
+        url: location.href,
+        reason: blockingResult.reason,
+        rule: blockingResult.rule?.id,
+        severity: blockingResult.severity,
+        legitimate: false,
+        timestamp: new Date().toISOString()
+      });
+      
       // Stop monitoring once we've blocked
       stopDOMMonitoring();
       return;
@@ -430,7 +463,12 @@ async function runProtection(isRerun = false) {
         stopDOMMonitoring(); // Stop monitoring once blocked
       } else {
         logger.warn("⚠️ MEDIUM THREAT: Low legitimacy score - warning");
-        showWarningBanner(reason, detectionResult);
+        
+        // Check if warnings are enabled
+        if (config.enablePhishingWarnings !== false) {
+          showWarningBanner(reason, detectionResult);
+        }
+        
         // Continue monitoring for medium threats
         if (!isRerun) {
           setupDOMMonitoring();
@@ -446,6 +484,18 @@ async function runProtection(isRerun = false) {
         threshold: detectionResult.threshold,
         triggeredRules: detectionResult.triggeredRules
       });
+      
+      // Send CIPP reporting if enabled
+      sendCippReport({
+        type: 'suspicious_logon_detected',
+        url: location.href,
+        threatLevel: severity,
+        reason: reason,
+        score: detectionResult.score,
+        threshold: detectionResult.threshold,
+        legitimate: false,
+        timestamp: new Date().toISOString()
+      });
     } else {
       logger.log("✅ Legitimacy score acceptable - no action needed");
       
@@ -460,7 +510,7 @@ async function runProtection(isRerun = false) {
     
     // Emergency fallback - if we can't load rules but detect MS elements, warn user
     try {
-      const hasBasicMSElements = document.querySelector('input[name="loginfmt"]') || 
+      const hasBasicMSElements = document.querySelector('input[name="loginfmt"]') ||
                                 document.querySelector('#i0116');
       const isNotMSDomain = !location.hostname.includes('microsoftonline.com');
       
@@ -850,6 +900,69 @@ function logProtectionEvent(eventData) {
 
   } catch (error) {
     logger.warn("Failed to send protection event:", error.message);
+  }
+}
+
+/**
+ * Send CIPP reporting if enabled
+ */
+async function sendCippReport(reportData) {
+  try {
+    // Get CIPP configuration from storage
+    const result = await new Promise((resolve) => {
+      chrome.storage.local.get(['config'], (result) => {
+        resolve(result.config || {});
+      });
+    });
+    
+    const config = result;
+    
+    // Check if CIPP reporting is enabled and URL is configured
+    if (!config.enableCippReporting || !config.cippServerUrl) {
+      logger.debug("CIPP reporting disabled or no server URL configured");
+      return;
+    }
+    
+    // Prepare CIPP report payload
+    const cippPayload = {
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      extensionVersion: chrome.runtime.getManifest().version,
+      ...reportData
+    };
+    
+    // Send POST request to CIPP server
+    const cippUrl = config.cippServerUrl.replace(/\/+$/, '') + '/api/PublicExecCheck';
+    
+    logger.log(`Sending CIPP report to: ${cippUrl}`);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
+    try {
+      const response = await fetch(cippUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(cippPayload),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        logger.log("CIPP report sent successfully");
+      } else {
+        logger.warn(`CIPP report failed: ${response.status} ${response.statusText}`);
+      }
+      
+    } finally {
+      clearTimeout(timeoutId);
+    }
+    
+  } catch (error) {
+    logger.warn("Failed to send CIPP report:", error.message);
   }
 }
 

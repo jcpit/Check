@@ -66,32 +66,40 @@
 
                 <div class="settings-grid">
                     <div class="setting-group">
-                        <h3>Extension Control</h3>
+                        <h3>Extension Settings</h3>
                         <div class="setting-item">
                             <label class="setting-label">
-                                <input type="checkbox" id="extensionEnabled" class="setting-checkbox">
-                                <span class="checkbox-custom"></span>
-                                Enable Phishing Protection
-                            </label>
-                            <p class="setting-description">Turn Microsoft 365 phishing protection on or off globally</p>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label class="setting-label">
-                                <input type="checkbox" id="enableContentManipulation" class="setting-checkbox">
+                                <input type="checkbox" id="enablePageBlocking" class="setting-checkbox">
                                 <span class="checkbox-custom"></span>
                                 Enable Page Blocking
                             </label>
-                            <p class="setting-description">Allow the extension to block phishing pages and disable forms</p>
+                            <p class="setting-description">Block access to detected phishing pages</p>
                         </div>
                         
                         <div class="setting-item">
                             <label class="setting-label">
-                                <input type="checkbox" id="enableUrlMonitoring" class="setting-checkbox">
+                                <input type="checkbox" id="enablePhishingWarnings" class="setting-checkbox">
                                 <span class="checkbox-custom"></span>
-                                Enable Real-time Scanning
+                                Warn on (potentially) fake logon pages
                             </label>
-                            <p class="setting-description">Monitor and analyze Microsoft 365 login pages in real-time</p>
+                            <p class="setting-description">Show warnings for suspicious Microsoft 365 login pages</p>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <input type="checkbox" id="enableCippReporting" class="setting-checkbox">
+                                <span class="checkbox-custom"></span>
+                                Enable CIPP Reporting
+                            </label>
+                            <p class="setting-description">Send detection events to CIPP server for monitoring</p>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                CIPP Server URL
+                                <input type="url" id="cippServerUrl" class="setting-input" placeholder="https://your-cipp-server.com">
+                            </label>
+                            <p class="setting-description">URL of your CIPP server for reporting Microsoft 365 logon detections</p>
                         </div>
                     </div>
 

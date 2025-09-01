@@ -432,12 +432,26 @@ class CheckOptions {
   }
 
   populateFormFields() {
-    // General settings
-    this.elements.extensionEnabled.checked = this.config?.extensionEnabled;
-    this.elements.enableContentManipulation.checked =
-      this.config?.enableContentManipulation;
-    this.elements.enableUrlMonitoring.checked =
-      this.config?.enableUrlMonitoring;
+    // Extension settings
+    this.elements.enablePageBlocking = document.getElementById("enablePageBlocking");
+    this.elements.enablePhishingWarnings = document.getElementById("enablePhishingWarnings");
+    this.elements.enableCippReporting = document.getElementById("enableCippReporting");
+    this.elements.cippServerUrl = document.getElementById("cippServerUrl");
+    
+    if (this.elements.enablePageBlocking) {
+      this.elements.enablePageBlocking.checked = this.config?.enablePageBlocking !== false;
+    }
+    if (this.elements.enablePhishingWarnings) {
+      this.elements.enablePhishingWarnings.checked = this.config?.enablePhishingWarnings !== false;
+    }
+    if (this.elements.enableCippReporting) {
+      this.elements.enableCippReporting.checked = this.config?.enableCippReporting || false;
+    }
+    if (this.elements.cippServerUrl) {
+      this.elements.cippServerUrl.value = this.config?.cippServerUrl || "";
+    }
+    
+    // UI settings
     this.elements.showNotifications.checked = this.config?.showNotifications;
     this.elements.notificationDuration.value =
       this.config?.notificationDuration;
@@ -570,11 +584,13 @@ class CheckOptions {
 
   gatherFormData() {
     return {
-      // General settings
-      extensionEnabled: this.elements.extensionEnabled?.checked || false,
-      enableContentManipulation:
-        this.elements.enableContentManipulation?.checked || false,
-      enableUrlMonitoring: this.elements.enableUrlMonitoring?.checked || false,
+      // Extension settings
+      enablePageBlocking: this.elements.enablePageBlocking?.checked !== false,
+      enablePhishingWarnings: this.elements.enablePhishingWarnings?.checked !== false,
+      enableCippReporting: this.elements.enableCippReporting?.checked || false,
+      cippServerUrl: this.elements.cippServerUrl?.value || "",
+      
+      // UI settings
       showNotifications: this.elements.showNotifications?.checked || false,
       notificationDuration: parseInt(
         this.elements.notificationDuration?.value || 5000
@@ -921,9 +937,9 @@ class CheckOptions {
 
   disablePolicyManagedFields(policies) {
     const policyFieldMap = {
-      extensionEnabled: this.elements.extensionEnabled,
-      enableContentManipulation: this.elements.enableContentManipulation,
-      enableUrlMonitoring: this.elements.enableUrlMonitoring,
+      enablePageBlocking: this.elements.enablePageBlocking,
+      enablePhishingWarnings: this.elements.enablePhishingWarnings,
+      enableCippReporting: this.elements.enableCippReporting,
       enableDebugLogging: this.elements.enableDebugLogging,
     };
 
