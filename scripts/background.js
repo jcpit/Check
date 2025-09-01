@@ -44,10 +44,166 @@ async function fetchWithTimeout(url, ms = 5000) {
   }
 }
 
+/**
+ * Rogue Apps Manager - Dynamically fetches and manages known rogue OAuth applications
+ */
+class RogueAppsManager {
+  constructor() {
+    this.rogueApps = new Map(); // clientId -> app data
+    this.lastUpdate = 0;
+    this.updateInterval = 12 * 60 * 60 * 1000; // 12 hours
+    this.sourceUrl =
+      "https://raw.githubusercontent.com/huntresslabs/rogueapps/refs/heads/main/public/rogueapps.json";
+    this.cacheKey = "rogue_apps_cache";
+    this.initialized = false;
+  }
+
+  async initialize() {
+    if (this.initialized) return;
+
+    try {
+      // Load cached data first
+      await this.loadFromCache();
+
+      // Check if we need to update
+      const now = Date.now();
+      if (now - this.lastUpdate > this.updateInterval) {
+        // Update in background
+        this.updateRogueApps().catch((error) => {
+          logger.warn(
+            "Failed to update rogue apps in background:",
+            error.message
+          );
+        });
+      }
+
+      this.initialized = true;
+      logger.log(
+        `RogueAppsManager initialized with ${this.rogueApps.size} known rogue apps`
+      );
+    } catch (error) {
+      logger.error("Failed to initialize RogueAppsManager:", error.message);
+    }
+  }
+
+  async loadFromCache() {
+    try {
+      const result = await safe(chrome.storage.local.get([this.cacheKey]));
+      const cached = result?.[this.cacheKey];
+
+      if (cached && cached.apps && cached.lastUpdate) {
+        this.lastUpdate = cached.lastUpdate;
+        this.rogueApps.clear();
+
+        cached.apps.forEach((app) => {
+          if (app.appId) {
+            this.rogueApps.set(app.appId, app);
+          }
+        });
+
+        logger.log(`Loaded ${this.rogueApps.size} rogue apps from cache`);
+      }
+    } catch (error) {
+      logger.warn("Failed to load rogue apps from cache:", error.message);
+    }
+  }
+
+  async updateRogueApps() {
+    try {
+      logger.log("Fetching latest rogue apps from Huntress repository...");
+      const response = await fetchWithTimeout(this.sourceUrl, 10000);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const apps = await response.json();
+
+      if (!Array.isArray(apps)) {
+        throw new Error("Invalid response format: expected array");
+      }
+
+      // Update local cache
+      this.rogueApps.clear();
+      apps.forEach((app) => {
+        if (app.appId) {
+          this.rogueApps.set(app.appId, app);
+        }
+      });
+
+      this.lastUpdate = Date.now();
+
+      // Save to storage
+      await safe(
+        chrome.storage.local.set({
+          [this.cacheKey]: {
+            apps: apps,
+            lastUpdate: this.lastUpdate,
+          },
+        })
+      );
+
+      logger.log(
+        `Updated rogue apps database: ${this.rogueApps.size} apps loaded`
+      );
+    } catch (error) {
+      logger.error("Failed to update rogue apps:", error.message);
+      throw error;
+    }
+  }
+
+  checkClientId(clientId) {
+    if (!clientId || !this.initialized) {
+      return null;
+    }
+
+    const app = this.rogueApps.get(clientId);
+    if (app) {
+      return {
+        isRogue: true,
+        appName: app.appDisplayName,
+        description: app.description,
+        tags: app.tags || [],
+        risk: this.calculateRiskLevel(app),
+        references: app.references || [],
+      };
+    }
+
+    return { isRogue: false };
+  }
+
+  calculateRiskLevel(app) {
+    // Calculate risk based on permissions and tags
+    const highRiskTags = ["BEC", "exfiltration", "phishing", "spam"];
+    const mediumRiskTags = ["email", "backup", "collection"];
+
+    if (app.tags && app.tags.some((tag) => highRiskTags.includes(tag))) {
+      return "high";
+    } else if (
+      app.tags &&
+      app.tags.some((tag) => mediumRiskTags.includes(tag))
+    ) {
+      return "medium";
+    }
+
+    return "low";
+  }
+
+  async forceUpdate() {
+    try {
+      await this.updateRogueApps();
+      return { success: true, count: this.rogueApps.size };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+}
+
 class CheckBackground {
   constructor() {
     this.configManager = new ConfigManager();
     this.policyManager = new PolicyManager();
+    this.rogueAppsManager = new RogueAppsManager();
     this.isInitialized = false;
     this.initializationPromise = null;
     this.initializationRetries = 0;
@@ -154,6 +310,9 @@ class CheckBackground {
       await this.policyManager.loadPolicies();
 
       await this.refreshPolicy();
+
+      // Initialize rogue apps manager
+      await this.rogueAppsManager.initialize();
 
       // Load profile information
       await this.loadProfileInformation();
@@ -977,6 +1136,23 @@ class CheckBackground {
         case "RUN_COMPREHENSIVE_TEST":
           const comprehensiveResults = await this.runComprehensiveTest();
           sendResponse({ success: true, tests: comprehensiveResults });
+          break;
+
+        case "CHECK_ROGUE_APP":
+          try {
+            if (!message.clientId) {
+              sendResponse({ success: false, error: "No client ID provided" });
+              return;
+            }
+
+            const result = this.rogueAppsManager.checkClientId(
+              message.clientId
+            );
+            sendResponse({ success: true, ...result });
+          } catch (error) {
+            logger.error("Check: Failed to check rogue app:", error);
+            sendResponse({ success: false, error: error.message });
+          }
           break;
 
         default:

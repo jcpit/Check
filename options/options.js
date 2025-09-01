@@ -1300,7 +1300,21 @@ class CheckOptions {
 
     // Helper function to format redirect destination
     const formatRedirectInfo = (event) => {
-      return event.redirectTo ? ` → ${event.redirectTo}` : "";
+      let info = "";
+      if (event.redirectTo) {
+        info += ` → ${event.redirectTo}`;
+      }
+      if (event.clientId) {
+        info += ` [Client: ${event.clientId}`;
+        if (event.clientSuspicious) {
+          info += ` ⚠️ ROGUE APP`;
+          if (event.clientReason) {
+            info += `: ${event.clientReason}`;
+          }
+        }
+        info += `]`;
+      }
+      return info;
     };
 
     if (log.event) {

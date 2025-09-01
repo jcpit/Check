@@ -93,19 +93,26 @@
   "aad_detection_elements": [
     {
       "id": "loginfmt_field",
-      "selectors": ["input[name='loginfmt']", "#i0116"],
+      "selectors": [
+        "input[name='loginfmt']",
+        "#i0116"
+      ],
       "description": "Azure AD username/email input field",
       "weight": 30
     },
     {
       "id": "next_button",
-      "selectors": ["#idSIButton9"],
+      "selectors": [
+        "#idSIButton9"
+      ],
       "description": "Azure AD Next/Sign in button",
       "weight": 25
     },
     {
       "id": "password_field",
-      "selectors": ["input[type='password']"],
+      "selectors": [
+        "input[type='password']"
+      ],
       "description": "Password input field",
       "weight": 20
     },
@@ -135,19 +142,25 @@
     },
     {
       "id": "urlMsaSignUp",
-      "text_patterns": ["urlMsaSignUp"],
+      "text_patterns": [
+        "urlMsaSignUp"
+      ],
       "description": "Microsoft signup URL reference",
       "weight": 15
     },
     {
       "id": "flowToken",
-      "text_patterns": ["flowToken"],
+      "text_patterns": [
+        "flowToken"
+      ],
       "description": "Microsoft authentication flow token",
       "weight": 15
     },
     {
       "id": "aadcdn_msauth",
-      "text_patterns": ["https://aadcdn\\.msauth\\.net/"],
+      "text_patterns": [
+        "https://aadcdn\\.msauth\\.net/"
+      ],
       "description": "Microsoft authentication CDN reference",
       "weight": 15
     }
@@ -158,7 +171,9 @@
       "type": "url",
       "weight": 25,
       "condition": {
-        "domains": ["login.microsoftonline.com"]
+        "domains": [
+          "login.microsoftonline.com"
+        ]
       },
       "description": "Verify legitimate Microsoft domain (must be login.microsoftonline.com)"
     },
@@ -210,7 +225,10 @@
       "type": "dom",
       "weight": 20,
       "condition": {
-        "selectors": ["input[name='loginfmt']", "#i0116"]
+        "selectors": [
+          "input[name='loginfmt']",
+          "#i0116"
+        ]
       },
       "description": "Check for loginfmt input field availability"
     },
@@ -453,7 +471,9 @@
     },
     {
       "id": "leg_004",
-      "resource_patterns": ["https://aadcdn.msftauthimages.net/.*customcss.*"],
+      "resource_patterns": [
+        "https://aadcdn.msftauthimages.net/.*customcss.*"
+      ],
       "description": "Legitimate source for custom CSS resources",
       "confidence": 0.9
     },
@@ -670,7 +690,9 @@
       {
         "id": "validate_css_origin",
         "pattern": "customcss",
-        "required_origins": ["aadcdn.msftauthimages.net"],
+        "required_origins": [
+          "aadcdn.msftauthimages.net"
+        ],
         "action": "block",
         "description": "Custom CSS must come from Microsoft CDN"
       }
@@ -713,9 +735,21 @@
       "interface_spoofing",
       "incomplete_spoofing"
     ],
-    "severity_levels": ["low", "medium", "high", "critical"],
-    "actions": ["monitor", "warn", "block"],
-    "confidence_range": [0.0, 1.0],
+    "severity_levels": [
+      "low",
+      "medium",
+      "high",
+      "critical"
+    ],
+    "actions": [
+      "monitor",
+      "warn",
+      "block"
+    ],
+    "confidence_range": [
+      0.0,
+      1.0
+    ],
     "update_frequency": "daily",
     "source": "Microsoft 365 Security Research Team + CyberDrain Enhanced Detection",
     "cyberdrain_integration": {
@@ -736,5 +770,17 @@
         "CSP header validation"
       ]
     }
+  },
+  "rogue_apps_detection": {
+    "description": "Dynamic detection of known rogue OAuth applications",
+    "enabled": true,
+    "source_url": "https://raw.githubusercontent.com/huntresslabs/rogueapps/refs/heads/main/public/rogueapps.json",
+    "cache_duration": 86400000,
+    "update_interval": 43200000,
+    "detection_action": "warn",
+    "severity": "high",
+    "log_matches": true,
+    "auto_update": true,
+    "fallback_on_error": true
   }
 }

@@ -430,12 +430,17 @@ async function runProtection(isRerun = false) {
           showValidBadge();
         }
         const redirectHostname = extractRedirectHostname(location.href);
+        const clientInfo = await extractClientInfo(location.href);
+
         logProtectionEvent({
           type: "legitimate_access",
           url: location.href,
           origin: currentOrigin,
           reason: "Trusted Microsoft domain",
           redirectTo: redirectHostname,
+          clientId: clientInfo.clientId,
+          clientSuspicious: clientInfo.isMalicious,
+          clientReason: clientInfo.reason,
         });
 
         // Send CIPP reporting if enabled
@@ -480,11 +485,16 @@ async function runProtection(isRerun = false) {
     // Notify background script that this is a Microsoft login page on unknown domain
     try {
       const redirectHostname = extractRedirectHostname(location.href);
+      const clientInfo = await extractClientInfo(location.href);
+
       chrome.runtime.sendMessage({
         type: "FLAG_MS_LOGIN_ON_UNKNOWN_DOMAIN",
         url: location.href,
         origin: location.origin,
         redirectTo: redirectHostname,
+        clientId: clientInfo.clientId,
+        clientSuspicious: clientInfo.isMalicious,
+        clientReason: clientInfo.reason,
       });
     } catch (messageError) {
       logger.warn(
@@ -540,6 +550,8 @@ async function runProtection(isRerun = false) {
       }
 
       const redirectHostname = extractRedirectHostname(location.href);
+      const clientInfo = await extractClientInfo(location.href);
+
       logProtectionEvent({
         type: protectionEnabled
           ? "threat_blocked"
@@ -550,6 +562,9 @@ async function runProtection(isRerun = false) {
         severity: blockingResult.severity,
         protectionEnabled: protectionEnabled,
         redirectTo: redirectHostname,
+        clientId: clientInfo.clientId,
+        clientSuspicious: clientInfo.isMalicious,
+        clientReason: clientInfo.reason,
       });
 
       // Send CIPP reporting if enabled
@@ -636,6 +651,8 @@ async function runProtection(isRerun = false) {
       }
 
       const redirectHostname = extractRedirectHostname(location.href);
+      const clientInfo = await extractClientInfo(location.href);
+
       logProtectionEvent({
         type: protectionEnabled
           ? "threat_detected"
@@ -648,6 +665,9 @@ async function runProtection(isRerun = false) {
         triggeredRules: detectionResult.triggeredRules,
         protectionEnabled: protectionEnabled,
         redirectTo: redirectHostname,
+        clientId: clientInfo.clientId,
+        clientSuspicious: clientInfo.isMalicious,
+        clientReason: clientInfo.reason,
       });
 
       // Send CIPP reporting if enabled
@@ -1128,6 +1148,70 @@ function extractRedirectHostname(url) {
     return null;
   } catch (e) {
     return null;
+  }
+}
+
+/**
+ * Extract client_id parameter and check against known malicious client IDs
+ */
+async function extractClientInfo(url) {
+  try {
+    const urlObj = new URL(url);
+    const clientId = urlObj.searchParams.get("client_id");
+
+    if (!clientId) {
+      return { clientId: null, isMalicious: false, reason: null };
+    }
+
+    // Check against Huntress rogue apps from detection rules
+    const rogueAppCheck = await checkRogueApp(clientId);
+    if (rogueAppCheck.isMalicious) {
+      return {
+        clientId: clientId,
+        isMalicious: true,
+        reason: `Huntress rogue app: ${rogueAppCheck.appName}`,
+        appInfo: rogueAppCheck.appInfo,
+      };
+    }
+
+    return {
+      clientId: clientId,
+      isMalicious: false,
+      reason: null,
+    };
+  } catch (e) {
+    return { clientId: null, isMalicious: false, reason: null };
+  }
+}
+
+/**
+ * Check if client_id matches known rogue applications from Huntress data
+ */
+async function checkRogueApp(clientId) {
+  try {
+    // Query background script's RogueAppsManager
+    const response = await chrome.runtime.sendMessage({
+      type: "CHECK_ROGUE_APP",
+      clientId: clientId,
+    });
+
+    if (response && response.isRogue) {
+      return {
+        isMalicious: true,
+        appName: response.appName,
+        appInfo: {
+          description: response.description,
+          tags: response.tags,
+          risk: response.risk,
+          references: response.references,
+        },
+      };
+    }
+
+    return { isMalicious: false };
+  } catch (e) {
+    logger.warn("Error checking rogue app:", e.message);
+    return { isMalicious: false };
   }
 }
 
