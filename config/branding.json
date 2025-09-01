@@ -65,7 +65,6 @@
     "showCompanyBranding": true,
     "allowUserCustomization": true,
     "enableWhiteLabeling": true,
-    "customCssEnabled": true,
     "customIconsEnabled": true
   },
   
@@ -110,7 +109,6 @@
     "allowCustomLogos": true,
     "allowCustomText": true,
     "allowCustomIcons": true,
-    "allowCustomCss": true,
     "preserveAttribution": false,
     "customizableElements": [
       "extension_name",
@@ -118,8 +116,7 @@
       "logo",
       "colors",
       "contact_info",
-      "support_links",
-      "custom_css"
+      "support_links"
     ]
   },
   

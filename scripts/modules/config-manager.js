@@ -191,7 +191,6 @@ export class ConfigManager {
 
       // Feature customization
       showCompanyBranding: true,
-      customCss: "",
 
       // License information
       licenseKey: "",

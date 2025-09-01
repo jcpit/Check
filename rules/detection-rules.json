@@ -10,86 +10,6 @@
     "https://login.partner.microsoftonline.cn",
     "https://login.live.com"
   ],
-  "m365_detection_requirements": {
-    "description": "Required elements to identify a Microsoft 365 login page",
-    "required_elements": [
-      {
-        "id": "idPartnerPL",
-        "type": "source_content",
-        "pattern": "idPartnerPL",
-        "description": "Microsoft partner login field must be in source",
-        "required": true
-      },
-      {
-        "id": "loginfmt",
-        "type": "source_content",
-        "pattern": "loginfmt",
-        "description": "Login format field must be in source",
-        "required": true
-      },
-      {
-        "id": "aadcdn_msauth",
-        "type": "source_content",
-        "pattern": "aadcdn\\.msauth\\.net",
-        "description": "Microsoft auth CDN must be present in source",
-        "required": true
-      },
-      {
-        "id": "urlMsaSignUp",
-        "type": "source_content",
-        "pattern": "urlMsaSignUp",
-        "description": "Microsoft signup URL reference must be in source",
-        "required": false
-      },
-      {
-        "id": "i0116_element",
-        "type": "source_content",
-        "pattern": "#i0116",
-        "description": "Microsoft login input element must be in source",
-        "required": false
-      }
-    ],
-    "minimum_required": 2,
-    "all_must_be_present": false
-  },
-  "blocking_rules": [
-    {
-      "id": "form_post_not_microsoft",
-      "type": "form_action_validation",
-      "description": "Block if form post URL is not login.microsoftonline.com",
-      "condition": {
-        "form_selector": "form",
-        "action_must_not_contain": "login.microsoftonline.com",
-        "has_password_field": true
-      },
-      "action": "block",
-      "severity": "critical"
-    },
-    {
-      "id": "customcss_wrong_origin",
-      "type": "resource_validation",
-      "description": "Block if customcss is loaded from non-Microsoft CDN",
-      "condition": {
-        "resource_pattern": "customcss",
-        "required_origin": "https://aadcdn.msftauthimages.net/",
-        "block_if_different_origin": true
-      },
-      "action": "block",
-      "severity": "critical"
-    }
-  ],
-  "allow_rules": [
-    {
-      "id": "microsoft_domain_allow",
-      "type": "url_validation",
-      "description": "Allow if URL is login.microsoftonline.com",
-      "condition": {
-        "url_equals": "login.microsoftonline.com"
-      },
-      "action": "allow",
-      "priority": "highest"
-    }
-  ],
   "aad_detection_elements": [
     {
       "id": "loginfmt_field",
@@ -111,13 +31,7 @@
     },
     {
       "id": "microsoft_branding",
-      "text_patterns": [
-        "Microsoft\\s*365",
-        "Office\\s*365",
-        "Entra\\s*ID",
-        "Azure\\s*AD",
-        "Microsoft"
-      ],
+      "text_patterns": ["Microsoft\\s*365", "Office\\s*365", "Entra\\s*ID", "Azure\\s*AD", "Microsoft"],
       "description": "Microsoft branding text",
       "weight": 15
     }
@@ -125,11 +39,7 @@
   "required_elements": [
     {
       "id": "idPartnerPL",
-      "selectors": [
-        "input[name='idPartnerPL']",
-        "[name*='idPartnerPL']",
-        "[id*='idPartnerPL']"
-      ],
+      "selectors": ["input[name='idPartnerPL']", "[name*='idPartnerPL']", "[id*='idPartnerPL']"],
       "description": "Microsoft partner login field",
       "weight": 20
     },
@@ -158,7 +68,9 @@
       "type": "url",
       "weight": 25,
       "condition": {
-        "domains": ["login.microsoftonline.com"]
+        "domains": [
+          "login.microsoftonline.com"
+        ]
       },
       "description": "Verify legitimate Microsoft domain (must be login.microsoftonline.com)"
     },
@@ -210,7 +122,10 @@
       "type": "dom",
       "weight": 20,
       "condition": {
-        "selectors": ["input[name='loginfmt']", "#i0116"]
+        "selectors": [
+          "input[name='loginfmt']",
+          "#i0116"
+        ]
       },
       "description": "Check for loginfmt input field availability"
     },
@@ -453,7 +368,9 @@
     },
     {
       "id": "leg_004",
-      "resource_patterns": ["https://aadcdn.msftauthimages.net/.*customcss.*"],
+      "resource_patterns": [
+        "https://aadcdn.msftauthimages.net/.*customcss.*"
+      ],
       "description": "Legitimate source for custom CSS resources",
       "confidence": 0.9
     },
@@ -713,9 +630,21 @@
       "interface_spoofing",
       "incomplete_spoofing"
     ],
-    "severity_levels": ["low", "medium", "high", "critical"],
-    "actions": ["monitor", "warn", "block"],
-    "confidence_range": [0.0, 1.0],
+    "severity_levels": [
+      "low",
+      "medium",
+      "high",
+      "critical"
+    ],
+    "actions": [
+      "monitor",
+      "warn",
+      "block"
+    ],
+    "confidence_range": [
+      0.0,
+      1.0
+    ],
     "update_frequency": "daily",
     "source": "Microsoft 365 Security Research Team + CyberDrain Enhanced Detection",
     "cyberdrain_integration": {

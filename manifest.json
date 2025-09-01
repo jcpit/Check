@@ -22,8 +22,8 @@
       "matches": ["<all_urls>"],
       "js": ["scripts/content.js"],
       "css": ["styles/content.css"],
-      "run_at": "document_idle",
-      "all_frames": false
+      "run_at": "document_start",
+      "all_frames": true
     }
   ],
   "action": {

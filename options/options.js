@@ -77,7 +77,6 @@ class CheckOptions {
     this.elements.supportEmail = document.getElementById("supportEmail");
     this.elements.primaryColor = document.getElementById("primaryColor");
     this.elements.logoUrl = document.getElementById("logoUrl");
-    this.elements.customCss = document.getElementById("customCss");
     this.elements.brandingPreview = document.getElementById("brandingPreview");
     this.elements.previewLogo = document.getElementById("previewLogo");
     this.elements.previewTitle = document.getElementById("previewTitle");
@@ -681,7 +680,6 @@ class CheckOptions {
       supportEmail: this.elements.supportEmail.value,
       primaryColor: this.elements.primaryColor.value,
       logoUrl: this.elements.logoUrl.value,
-      customCss: this.elements.customCss.value,
     };
   }
 
