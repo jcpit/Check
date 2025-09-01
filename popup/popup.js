@@ -234,28 +234,7 @@ class CheckPopup {
 
   async loadBrandingConfiguration() {
     try {
-      // First try to load from storage (user settings)
-      const storageResult = await new Promise((resolve) => {
-        chrome.storage.local.get(['brandingConfig'], (result) => {
-          resolve(result.brandingConfig);
-        });
-      });
-
-      if (storageResult) {
-        this.brandingConfig = {
-          companyName: storageResult.companyName || "CyberDrain",
-          productName: storageResult.productName || "Microsoft 365 Phishing Protection",
-          logoUrl: storageResult.logoUrl || "images/icon32.png",
-          supportUrl: storageResult.supportUrl || "https://support.cyberdrain.com",
-          privacyPolicyUrl: storageResult.privacyPolicyUrl || "https://cyberdrain.com/privacy",
-          primaryColor: storageResult.primaryColor || "#F77F00",
-          customCss: storageResult.customCss || ""
-        };
-        console.log("Loaded branding from storage:", this.brandingConfig);
-        return;
-      }
-
-      // Fallback to loading from branding.json file
+      // Add timeout to fetch operations
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
@@ -268,7 +247,6 @@ class CheckPopup {
 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         this.brandingConfig = await response.json();
-        console.log("Loaded branding from file:", this.brandingConfig);
       } finally {
         clearTimeout(timeoutId);
       }
@@ -280,50 +258,28 @@ class CheckPopup {
         logoUrl: "images/icon32.png",
         supportUrl: "https://support.cyberdrain.com",
         privacyPolicyUrl: "https://cyberdrain.com/privacy",
-        primaryColor: "#F77F00",
-        customCss: ""
       };
     }
   }
 
   applyBranding() {
-    console.log("Applying branding:", this.brandingConfig);
-    
     // Update title and version
-    this.elements.brandingTitle.textContent = this.brandingConfig.productName || "Microsoft 365 Phishing Protection";
+    this.elements.brandingTitle.textContent = this.brandingConfig.productName;
     this.elements.extensionVersion.textContent = `v${
       chrome.runtime.getManifest().version
     }`;
 
-    // Update logo with fallback handling
+    // Update logo
     if (this.brandingConfig.logoUrl) {
-      console.log("Setting custom logo:", this.brandingConfig.logoUrl);
-      
-      // Handle both relative and absolute URLs
-      const logoSrc = this.brandingConfig.logoUrl.startsWith("http") ?
-        this.brandingConfig.logoUrl :
-        chrome.runtime.getURL(this.brandingConfig.logoUrl);
-      
-      // Test if logo loads, fallback to default if it fails
-      const testImg = new Image();
-      testImg.onload = () => {
-        console.log("Custom logo loaded successfully");
-        this.elements.brandingLogo.src = logoSrc;
-      };
-      testImg.onerror = () => {
-        console.warn("Failed to load custom logo, using default");
-        this.elements.brandingLogo.src = chrome.runtime.getURL("images/icon32.png");
-      };
-      testImg.src = logoSrc;
-    } else {
-      console.log("No custom logo, using default");
-      this.elements.brandingLogo.src = chrome.runtime.getURL("images/icon32.png");
+      this.elements.brandingLogo.src = chrome.runtime.getURL(
+        this.brandingConfig.logoUrl
+      );
     }
 
     // Update company name
-    this.elements.companyName.textContent = this.brandingConfig.companyName || "CyberDrain";
+    this.elements.companyName.textContent = this.brandingConfig.companyName;
 
-    // Update link URLs with fallbacks
+    // Update link URLs
     if (this.brandingConfig.supportUrl) {
       this.elements.supportLink.href = this.brandingConfig.supportUrl;
     }
@@ -331,40 +287,7 @@ class CheckPopup {
       this.elements.privacyLink.href = this.brandingConfig.privacyPolicyUrl;
     }
 
-    // Apply primary color if available
-    if (this.brandingConfig.primaryColor) {
-      console.log("Applying primary color:", this.brandingConfig.primaryColor);
-      const style = document.createElement('style');
-      style.id = 'custom-branding-css';
-      style.textContent = `
-        :root {
-          --theme-primary: ${this.brandingConfig.primaryColor} !important;
-          --theme-primary-hover: ${this.brandingConfig.primaryColor}dd !important;
-        }
-        .action-btn.primary {
-          background-color: ${this.brandingConfig.primaryColor} !important;
-        }
-        .action-btn.primary:hover {
-          background-color: ${this.brandingConfig.primaryColor}dd !important;
-        }
-        .security-badge.safe {
-          background-color: ${this.brandingConfig.primaryColor}22 !important;
-          color: ${this.brandingConfig.primaryColor} !important;
-        }
-      `;
-      document.head.appendChild(style);
-    }
-
-    // Load custom CSS if available
-    if (this.brandingConfig.customCss) {
-      console.log("Loading custom CSS");
-      const customStyle = document.createElement('style');
-      customStyle.id = 'popup-custom-css';
-      customStyle.textContent = this.brandingConfig.customCss;
-      document.head.appendChild(customStyle);
-    }
-
-    // Apply custom theme colors if available (legacy support)
+    // Apply custom theme colors if available
     this.applyThemeColors();
   }
 

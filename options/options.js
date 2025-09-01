@@ -77,6 +77,7 @@ class CheckOptions {
     this.elements.supportEmail = document.getElementById("supportEmail");
     this.elements.primaryColor = document.getElementById("primaryColor");
     this.elements.logoUrl = document.getElementById("logoUrl");
+    this.elements.customCss = document.getElementById("customCss");
     this.elements.brandingPreview = document.getElementById("brandingPreview");
     this.elements.previewLogo = document.getElementById("previewLogo");
     this.elements.previewTitle = document.getElementById("previewTitle");
@@ -531,15 +532,6 @@ class CheckOptions {
         this.originalConfig = JSON.parse(JSON.stringify(newConfig));
         this.hasUnsavedChanges = false;
         this.updateSaveButton();
-        
-        // Trigger branding update in background script
-        try {
-          await this.sendMessage({ type: "UPDATE_BRANDING" });
-          console.log("Branding update triggered successfully");
-        } catch (brandingUpdateError) {
-          console.warn("Failed to trigger branding update:", brandingUpdateError);
-        }
-        
         this.showToast("Settings saved successfully", "success");
       } else {
         throw new Error(response?.error || "Failed to save settings");
@@ -680,6 +672,7 @@ class CheckOptions {
       supportEmail: this.elements.supportEmail.value,
       primaryColor: this.elements.primaryColor.value,
       logoUrl: this.elements.logoUrl.value,
+      customCss: this.elements.customCss.value,
     };
   }
 
