@@ -253,15 +253,6 @@ async function loadBranding() {
         document.head.appendChild(style);
       }
       
-      // Load custom CSS if available
-      if (storageResult.customCss) {
-        console.log("Loading custom CSS");
-        const customStyle = document.createElement('style');
-        customStyle.id = 'custom-branding-css';
-        customStyle.textContent = storageResult.customCss;
-        document.head.appendChild(customStyle);
-      }
-      
       return; // Exit early if we loaded from storage
     }
     

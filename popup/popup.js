@@ -248,8 +248,7 @@ class CheckPopup {
           logoUrl: storageResult.logoUrl || "images/icon32.png",
           supportUrl: storageResult.supportUrl || "https://support.cyberdrain.com",
           privacyPolicyUrl: storageResult.privacyPolicyUrl || "https://cyberdrain.com/privacy",
-          primaryColor: storageResult.primaryColor || "#F77F00",
-          customCss: storageResult.customCss || ""
+          primaryColor: storageResult.primaryColor || "#F77F00"
         };
         console.log("Loaded branding from storage:", this.brandingConfig);
         return;
@@ -280,8 +279,7 @@ class CheckPopup {
         logoUrl: "images/icon32.png",
         supportUrl: "https://support.cyberdrain.com",
         privacyPolicyUrl: "https://cyberdrain.com/privacy",
-        primaryColor: "#F77F00",
-        customCss: ""
+        primaryColor: "#F77F00"
       };
     }
   }
@@ -353,15 +351,6 @@ class CheckPopup {
         }
       `;
       document.head.appendChild(style);
-    }
-
-    // Load custom CSS if available
-    if (this.brandingConfig.customCss) {
-      console.log("Loading custom CSS");
-      const customStyle = document.createElement('style');
-      customStyle.id = 'popup-custom-css';
-      customStyle.textContent = this.brandingConfig.customCss;
-      document.head.appendChild(customStyle);
     }
 
     // Apply custom theme colors if available (legacy support)

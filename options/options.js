@@ -77,7 +77,6 @@ class CheckOptions {
     this.elements.supportEmail = document.getElementById("supportEmail");
     this.elements.primaryColor = document.getElementById("primaryColor");
     this.elements.logoUrl = document.getElementById("logoUrl");
-    this.elements.customCss = document.getElementById("customCss");
     this.elements.brandingPreview = document.getElementById("brandingPreview");
     this.elements.previewLogo = document.getElementById("previewLogo");
     this.elements.previewTitle = document.getElementById("previewTitle");
@@ -480,7 +479,6 @@ class CheckOptions {
     this.elements.supportEmail.value = this.brandingConfig?.supportEmail || "";
     this.elements.primaryColor.value = this.brandingConfig?.primaryColor || "#F77F00";
     this.elements.logoUrl.value = this.brandingConfig?.logoUrl || "";
-    this.elements.customCss.value = this.brandingConfig?.customCss || "";
   }
 
   switchSection(sectionName) {
@@ -709,7 +707,6 @@ class CheckOptions {
       supportEmail: this.elements.supportEmail.value,
       primaryColor: this.elements.primaryColor.value,
       logoUrl: this.elements.logoUrl.value,
-      customCss: this.elements.customCss.value,
     };
   }
 
