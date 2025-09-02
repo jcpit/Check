@@ -530,17 +530,45 @@ class CheckOptions {
       );
     });
 
-    // Update page title
-    const sectionTitles = {
-      general: "General Settings",
-      detection: "Detection Rules",
-      logs: "Activity Logs",
-      branding: "Branding & White Labeling",
-      about: "About",
+    // Update page title and subtitle
+    const sectionInfo = {
+      general: {
+        title: "General Settings",
+        subtitle:
+          "Configure basic phishing protection behavior and detection features",
+      },
+      detection: {
+        title: "Detection Rules",
+        subtitle:
+          "Configure Microsoft 365 phishing detection patterns and configuration source",
+      },
+      logs: {
+        title: "Activity Logs",
+        subtitle: "View security events and extension activity",
+      },
+      branding: {
+        title: "Branding & White Labeling",
+        subtitle: "Customize the extension's appearance and branding",
+      },
+      about: {
+        title: "About Check, a product by CyberDrain",
+        subtitle:
+          "Enterprise-grade protection against Microsoft 365 phishing attacks",
+      },
     };
 
-    this.elements.pageTitle.textContent =
-      sectionTitles[sectionName] || "Settings";
+    const info = sectionInfo[sectionName] || {
+      title: "Settings",
+      subtitle: "",
+    };
+    this.elements.pageTitle.textContent = info.title;
+
+    // Update subtitle if it exists
+    const pageSubtitle = document.getElementById("pageSubtitle");
+    if (pageSubtitle) {
+      pageSubtitle.textContent = info.subtitle;
+    }
+
     this.currentSection = sectionName;
 
     // Update URL hash
@@ -2056,7 +2084,8 @@ class CheckOptions {
     try {
       // Get extension manifest for version info
       const manifest = chrome.runtime.getManifest();
-      const extensionVersionElement = document.getElementById("extensionVersion");
+      const extensionVersionElement =
+        document.getElementById("extensionVersion");
       if (extensionVersionElement) {
         extensionVersionElement.textContent = manifest.version;
       }
@@ -2064,10 +2093,13 @@ class CheckOptions {
       // Get detection rules version from storage
       const rulesVersionElement = document.getElementById("rulesVersion");
       const lastUpdatedElement = document.getElementById("lastUpdated");
-      
+
       try {
-        const result = await chrome.storage.local.get(['detectionRules', 'detectionRulesLastUpdated']);
-        
+        const result = await chrome.storage.local.get([
+          "detectionRules",
+          "detectionRulesLastUpdated",
+        ]);
+
         if (result.detectionRules && result.detectionRules.version) {
           rulesVersionElement.textContent = result.detectionRules.version;
         } else {
@@ -2076,7 +2108,10 @@ class CheckOptions {
 
         if (result.detectionRulesLastUpdated) {
           const lastUpdated = new Date(result.detectionRulesLastUpdated);
-          lastUpdatedElement.textContent = lastUpdated.toLocaleDateString() + ' ' + lastUpdated.toLocaleTimeString();
+          lastUpdatedElement.textContent =
+            lastUpdated.toLocaleDateString() +
+            " " +
+            lastUpdated.toLocaleTimeString();
         } else {
           lastUpdatedElement.textContent = "Never";
         }
@@ -2085,7 +2120,6 @@ class CheckOptions {
         rulesVersionElement.textContent = "Error loading";
         lastUpdatedElement.textContent = "Error loading";
       }
-
     } catch (error) {
       console.error("Error loading about section:", error);
     }
