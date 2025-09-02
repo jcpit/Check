@@ -750,26 +750,7 @@
       0.0,
       1.0
     ],
-    "update_frequency": "daily",
-    "source": "Microsoft 365 Security Research Team + CyberDrain Enhanced Detection",
-    "cyberdrain_integration": {
-      "version": "2.0.0",
-      "features": [
-        "Real-time AAD fingerprinting",
-        "Dynamic content monitoring",
-        "Form action validation",
-        "Credential input blocking",
-        "Trusted badge display",
-        "Enhanced phishing detection"
-      ],
-      "detection_methods": [
-        "DOM element analysis",
-        "Resource origin auditing",
-        "Form submission blocking",
-        "Referrer validation",
-        "CSP header validation"
-      ]
-    }
+    "update_frequency": "daily"
   },
   "rogue_apps_detection": {
     "description": "Dynamic detection of known rogue OAuth applications",
@@ -782,5 +763,22 @@
     "log_matches": true,
     "auto_update": true,
     "fallback_on_error": true
+  },
+  "metadata": {
+    "features": [
+      "Real-time AAD fingerprinting",
+      "Dynamic content monitoring",
+      "Form action validation",
+      "Credential input blocking",
+      "Trusted badge display",
+      "Enhanced phishing detection"
+    ],
+    "detection_methods": [
+      "DOM element analysis",
+      "Resource origin auditing",
+      "Form submission blocking",
+      "Referrer validation",
+      "CSP header validation"
+    ]
   }
 }

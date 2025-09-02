@@ -10,6 +10,8 @@ class CheckOptions {
     this.originalConfig = null;
     this.hasUnsavedChanges = false;
     this.currentSection = "general";
+    this.configViewMode = "formatted"; // "formatted" or "raw"
+    this.currentConfigData = null;
 
     this.elements = {};
     this.bindElements();
@@ -56,11 +58,9 @@ class CheckOptions {
       document.getElementById("enableCustomRules");
     this.elements.customRulesUrl = document.getElementById("customRulesUrl");
     this.elements.updateInterval = document.getElementById("updateInterval");
-    this.elements.customRulesEditor =
-      document.getElementById("customRulesEditor");
-    this.elements.validateRules = document.getElementById("validateRules");
-    this.elements.loadDefaultRules =
-      document.getElementById("loadDefaultRules");
+    this.elements.configDisplay = document.getElementById("configDisplay");
+    this.elements.toggleConfigView =
+      document.getElementById("toggleConfigView");
 
     // Logging settings (moved from privacy section)
     this.elements.enableDebugLogging =
@@ -130,19 +130,16 @@ class CheckOptions {
       this.updateSliderProgress(this.elements.notificationDuration);
     }
 
-    // Detection rules actions
-    this.elements.validateRules?.addEventListener("click", () =>
-      this.validateCustomRules()
-    );
-    this.elements.loadDefaultRules?.addEventListener("click", () =>
-      this.loadDefaultDetectionRules()
-    );
-
     // Logs actions
     this.elements.logFilter?.addEventListener("change", () => this.loadLogs());
     this.elements.clearLogs?.addEventListener("click", () => this.clearLogs());
     this.elements.exportLogs?.addEventListener("click", () =>
       this.exportLogs()
+    );
+
+    // Config display toggle
+    this.elements.toggleConfigView?.addEventListener("click", () =>
+      this.toggleConfigView()
     );
 
     // Branding preview updates
@@ -540,6 +537,8 @@ class CheckOptions {
     // Load section-specific data
     if (sectionName === "logs") {
       this.loadLogs();
+    } else if (sectionName === "detection") {
+      this.loadConfigDisplay();
     }
   }
 
@@ -736,48 +735,6 @@ class CheckOptions {
     };
   }
 
-  async validateCustomRules() {
-    try {
-      const rulesText = this.elements.customRulesEditor.value;
-      if (!rulesText.trim()) {
-        this.showToast("No rules to validate", "warning");
-        return;
-      }
-
-      const rules = JSON.parse(rulesText);
-
-      // Basic validation
-      if (!rules.malicious && !rules.phishing && !rules.suspicious) {
-        throw new Error(
-          "Rules must contain at least one category (malicious, phishing, or suspicious)"
-        );
-      }
-
-      // Validate patterns
-      const categories = ["malicious", "phishing", "suspicious"];
-      for (const category of categories) {
-        if (rules[category]) {
-          for (const rule of rules[category]) {
-            if (!rule.pattern) {
-              throw new Error(`Rule in ${category} category missing pattern`);
-            }
-            try {
-              new RegExp(rule.pattern, rule.flags || "i");
-            } catch (e) {
-              throw new Error(
-                `Invalid regex pattern in ${category}: ${rule.pattern}`
-              );
-            }
-          }
-        }
-      }
-
-      this.showToast("Custom rules are valid", "success");
-    } catch (error) {
-      this.showToast(`Validation failed: ${error.message}`, "error");
-    }
-  }
-
   async loadDefaultDetectionRules() {
     try {
       // Add timeout to fetch operations
@@ -793,11 +750,10 @@ class CheckOptions {
 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const defaultRules = await response.json();
-        this.elements.customRulesEditor.value = JSON.stringify(
-          defaultRules,
-          null,
-          2
-        );
+
+        // No longer editing rules, just display them
+        this.currentConfigData = defaultRules;
+        this.updateConfigDisplay();
         this.showToast("Default rules loaded", "success");
       } finally {
         clearTimeout(timeoutId);
@@ -805,6 +761,264 @@ class CheckOptions {
     } catch (error) {
       console.error("Failed to load default rules:", error);
       this.showToast("Failed to load default rules", "error");
+    }
+  }
+
+  async loadConfigDisplay() {
+    try {
+      if (!this.elements.configDisplay) return;
+
+      this.elements.configDisplay.innerHTML =
+        '<div class="config-loading">Loading configuration...</div>';
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      try {
+        const response = await fetch(
+          chrome.runtime.getURL("rules/detection-rules.json"),
+          { signal: controller.signal }
+        );
+        clearTimeout(timeoutId);
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const config = await response.json();
+
+        this.currentConfigData = config;
+        this.updateConfigDisplay();
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    } catch (error) {
+      console.error("Failed to load config display:", error);
+      if (this.elements.configDisplay) {
+        this.elements.configDisplay.innerHTML =
+          '<div class="config-loading" style="color: var(--error-color);">Failed to load configuration</div>';
+      }
+    }
+  }
+
+  displayConfigInCard(config) {
+    if (!this.elements.configDisplay) return;
+
+    const sections = [];
+
+    // Basic info
+    sections.push(`
+      <div class="config-section">
+        <div class="config-section-title">Basic Information</div>
+        <div class="config-item"><strong>Version:</strong> <span class="config-value">${
+          config.version || "Unknown"
+        }</span></div>
+        <div class="config-item"><strong>Last Updated:</strong> <span class="config-value">${
+          config.lastUpdated || "Unknown"
+        }</span></div>
+        <div class="config-item"><strong>Description:</strong> ${
+          config.description || "No description"
+        }</div>
+      </div>
+    `);
+
+    // Trusted origins
+    if (config.trusted_origins && config.trusted_origins.length > 0) {
+      sections.push(`
+        <div class="config-section">
+          <div class="config-section-title">Trusted Origins (${
+            config.trusted_origins.length
+          })</div>
+          ${config.trusted_origins
+            .map((origin) => `<div class="config-item">• ${origin}</div>`)
+            .join("")}
+        </div>
+      `);
+    }
+
+    // Rules summary
+    const ruleSections = [];
+    if (config.blocking_rules && config.blocking_rules.length > 0) {
+      ruleSections.push(
+        `<div class="config-item"><strong>Blocking Rules:</strong> <span class="config-value">${config.blocking_rules.length}</span></div>`
+      );
+    }
+    if (config.allow_rules && config.allow_rules.length > 0) {
+      ruleSections.push(
+        `<div class="config-item"><strong>Allow Rules:</strong> <span class="config-value">${config.allow_rules.length}</span></div>`
+      );
+    }
+    if (
+      config.aad_detection_elements &&
+      config.aad_detection_elements.length > 0
+    ) {
+      ruleSections.push(
+        `<div class="config-item"><strong>AAD Detection Elements:</strong> <span class="config-value">${config.aad_detection_elements.length}</span></div>`
+      );
+    }
+    if (config.rules && config.rules.length > 0) {
+      ruleSections.push(
+        `<div class="config-item"><strong>General Rules:</strong> <span class="config-value">${config.rules.length}</span></div>`
+      );
+    }
+
+    if (ruleSections.length > 0) {
+      sections.push(`
+        <div class="config-section">
+          <div class="config-section-title">Detection Rules Summary</div>
+          ${ruleSections.join("")}
+        </div>
+      `);
+    }
+
+    // Pattern categories
+    const patternSections = [];
+    if (config.phishing && config.phishing.length > 0) {
+      patternSections.push(
+        `<div class="config-item"><strong>Phishing Patterns:</strong> <span class="config-value">${config.phishing.length}</span></div>`
+      );
+    }
+    if (config.malicious && config.malicious.length > 0) {
+      patternSections.push(
+        `<div class="config-item"><strong>Malicious Patterns:</strong> <span class="config-value">${config.malicious.length}</span></div>`
+      );
+    }
+    if (config.suspicious && config.suspicious.length > 0) {
+      patternSections.push(
+        `<div class="config-item"><strong>Suspicious Patterns:</strong> <span class="config-value">${config.suspicious.length}</span></div>`
+      );
+    }
+    if (config.legitimate_patterns && config.legitimate_patterns.length > 0) {
+      patternSections.push(
+        `<div class="config-item"><strong>Legitimate Patterns:</strong> <span class="config-value">${config.legitimate_patterns.length}</span></div>`
+      );
+    }
+    if (config.suspicious_behaviors && config.suspicious_behaviors.length > 0) {
+      patternSections.push(
+        `<div class="config-item"><strong>Suspicious Behaviors:</strong> <span class="config-value">${config.suspicious_behaviors.length}</span></div>`
+      );
+    }
+
+    if (patternSections.length > 0) {
+      sections.push(`
+        <div class="config-section">
+          <div class="config-section-title">Pattern Categories</div>
+          ${patternSections.join("")}
+        </div>
+      `);
+    }
+
+    // Whitelist domains
+    if (config.whitelist_domains && config.whitelist_domains.length > 0) {
+      sections.push(`
+        <div class="config-section">
+          <div class="config-section-title">Whitelist Domains (${
+            config.whitelist_domains.length
+          })</div>
+          ${config.whitelist_domains
+            .map((domain) => `<div class="config-item">• ${domain}</div>`)
+            .join("")}
+        </div>
+      `);
+    }
+
+    // Rogue apps detection
+    if (config.rogue_apps_detection) {
+      const rogue = config.rogue_apps_detection;
+      sections.push(`
+        <div class="config-section">
+          <div class="config-section-title">Rogue Apps Detection</div>
+          <div class="config-item"><strong>Enabled:</strong> <span class="config-value">${
+            rogue.enabled ? "Yes" : "No"
+          }</span></div>
+          <div class="config-item"><strong>Source:</strong> <span class="config-value">${
+            rogue.source_url ? rogue.source_url : "None"
+          }</span></div>
+          <div class="config-item"><strong>Cache Duration:</strong> <span class="config-value">${Math.round(
+            (rogue.cache_duration || 0) / 3600000
+          )}h</span></div>
+          <div class="config-item"><strong>Update Interval:</strong> <span class="config-value">${Math.round(
+            (rogue.update_interval || 0) / 3600000
+          )}h</span></div>
+          <div class="config-item"><strong>Detection Action:</strong> <span class="config-value">${
+            rogue.detection_action || "None"
+          }</span></div>
+          <div class="config-item"><strong>Auto Update:</strong> <span class="config-value">${
+            rogue.auto_update ? "Yes" : "No"
+          }</span></div>
+        </div>
+      `);
+    }
+
+    // Configuration statistics
+    const stats = [];
+    let totalPatterns = 0;
+    if (config.phishing) totalPatterns += config.phishing.length;
+    if (config.malicious) totalPatterns += config.malicious.length;
+    if (config.suspicious) totalPatterns += config.suspicious.length;
+    if (config.legitimate_patterns)
+      totalPatterns += config.legitimate_patterns.length;
+
+    let totalRules = 0;
+    if (config.blocking_rules) totalRules += config.blocking_rules.length;
+    if (config.allow_rules) totalRules += config.allow_rules.length;
+    if (config.rules) totalRules += config.rules.length;
+
+    sections.push(`
+      <div class="config-section">
+        <div class="config-section-title">Configuration Statistics</div>
+        <div class="config-item"><strong>Total Patterns:</strong> <span class="config-value">${totalPatterns}</span></div>
+        <div class="config-item"><strong>Total Rules:</strong> <span class="config-value">${totalRules}</span></div>
+        <div class="config-item"><strong>Trusted Domains:</strong> <span class="config-value">${
+          config.trusted_origins ? config.trusted_origins.length : 0
+        }</span></div>
+        <div class="config-item"><strong>Whitelist Domains:</strong> <span class="config-value">${
+          config.whitelist_domains ? config.whitelist_domains.length : 0
+        }</span></div>
+      </div>
+    `);
+
+    this.elements.configDisplay.innerHTML = sections.join("");
+  }
+
+  toggleConfigView() {
+    if (!this.currentConfigData) return;
+
+    this.configViewMode =
+      this.configViewMode === "formatted" ? "raw" : "formatted";
+
+    // Update button text and icon
+    if (this.elements.toggleConfigView) {
+      const icon =
+        this.elements.toggleConfigView.querySelector(".material-icons");
+      const text =
+        this.elements.toggleConfigView.querySelector(
+          ".material-icons"
+        ).nextSibling;
+
+      if (this.configViewMode === "raw") {
+        icon.textContent = "view_list";
+        this.elements.toggleConfigView.innerHTML =
+          '<span class="material-icons">view_list</span> Show Formatted';
+      } else {
+        icon.textContent = "code";
+        this.elements.toggleConfigView.innerHTML =
+          '<span class="material-icons">code</span> Show Raw JSON';
+      }
+    }
+
+    // Update display
+    this.updateConfigDisplay();
+  }
+
+  updateConfigDisplay() {
+    if (!this.currentConfigData || !this.elements.configDisplay) return;
+
+    if (this.configViewMode === "raw") {
+      this.elements.configDisplay.innerHTML = `<div class="config-raw-json">${JSON.stringify(
+        this.currentConfigData,
+        null,
+        2
+      )}</div>`;
+    } else {
+      this.displayConfigInCard(this.currentConfigData);
     }
   }
 

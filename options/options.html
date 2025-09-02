@@ -167,16 +167,17 @@
                     </div>
 
                     <div class="setting-group">
-                        <h3>Custom Rules Editor</h3>
-                        <div class="setting-item">
-                            <label class="setting-label">Custom Detection Rules (JSON)</label>
-                            <textarea id="customRulesEditor" class="setting-textarea large" placeholder='{"malicious": [], "phishing": [], "suspicious": []}'></textarea>
-                            <p class="setting-description">Define custom detection patterns in JSON format</p>
-                            <div class="setting-actions">
-                                <button class="btn btn-secondary small" id="validateRules">Validate</button>
-                                <button class="btn btn-secondary small" id="loadDefaultRules">Load Defaults</button>
-                            </div>
+                        <div class="config-header">
+                            <h3>Configuration Overview</h3>
+                            <button class="btn btn-secondary small" id="toggleConfigView">
+                                <span class="material-icons">code</span>
+                                Show Raw JSON
+                            </button>
                         </div>
+                        <div id="configDisplay" class="config-display">
+                            <div class="config-loading">Loading configuration...</div>
+                        </div>
+                        <p class="setting-description">Read-only view of the current detection rules and configuration</p>
                     </div>
                 </div>
             </section>

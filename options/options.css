@@ -204,6 +204,8 @@ body {
   margin-left: 260px;
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
+  width: calc(100vw - 260px);
 }
 
 .content-header {
@@ -213,6 +215,8 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .header-title-section {
@@ -279,7 +283,9 @@ body {
 .settings-section {
   display: none;
   padding: 32px;
-  max-width: 1200px;
+  width: 100%;
+  box-sizing: border-box;
+  flex: 1;
 }
 
 .settings-section.active {
@@ -330,6 +336,77 @@ body {
 
 .setting-item:last-child {
   margin-bottom: 0;
+}
+
+/* Config Header */
+.config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.config-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.config-display {
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 16px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.config-loading {
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+}
+
+.config-section {
+  margin-bottom: 16px;
+}
+
+.config-section:last-child {
+  margin-bottom: 0;
+}
+
+.config-section-title {
+  font-weight: 600;
+  color: var(--warning-color);
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.config-item {
+  margin-bottom: 4px;
+  color: var(--text-secondary);
+}
+
+.config-item strong {
+  color: var(--text-primary);
+}
+
+.config-value {
+  color: var(--success-color);
+  font-weight: 500;
+}
+
+.config-raw-json {
+  white-space: pre-wrap;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 11px;
+  color: var(--text-primary);
 }
 
 .setting-label {
@@ -1280,6 +1357,7 @@ body {
 
   .main-content {
     margin-left: 220px;
+    width: calc(100vw - 220px);
   }
 
   .settings-grid {
@@ -1299,6 +1377,7 @@ body {
 
   .main-content {
     margin-left: 0;
+    width: 100vw;
   }
 
   .content-header {
