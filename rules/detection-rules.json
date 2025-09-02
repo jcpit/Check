@@ -1,7 +1,7 @@
 {
   "version": "2.0.0",
   "lastUpdated": "2024-08-29T12:42:00Z",
-  "description": "Microsoft 365 Phishing Protection detection rules enhanced with CyberDrain phishing detection logic for identifying phishing attempts targeting Microsoft 365 login pages",
+  "description": "Phishing detection logic for identifying phishing attempts targeting Microsoft 365 login pages",
   "trusted_origins": [
     "https://login.microsoftonline.com",
     "https://login.microsoft.com",
