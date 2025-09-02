@@ -445,6 +445,34 @@ class CheckPopup {
 
   async loadStatistics() {
     try {
+      // First try to get statistics from background script
+      try {
+        const response = await this.sendMessage({ type: "GET_STATISTICS" });
+        if (response && response.success && response.statistics) {
+          this.stats = {
+            blockedThreats: response.statistics.blockedThreats || 0,
+            scannedPages: response.statistics.scannedPages || 0,
+            securityEvents: response.statistics.securityEvents || 0,
+          };
+
+          // Update UI
+          this.elements.blockedThreats.textContent =
+            this.stats.blockedThreats.toLocaleString();
+          this.elements.scannedPages.textContent =
+            this.stats.scannedPages.toLocaleString();
+          this.elements.securityEvents.textContent =
+            this.stats.securityEvents.toLocaleString();
+          
+          console.log("Statistics loaded from background script:", this.stats);
+          return;
+        }
+      } catch (backgroundError) {
+        console.warn("Failed to get statistics from background script:", backgroundError);
+      }
+
+      // Fallback: calculate statistics from storage directly
+      console.log("Using fallback statistics calculation");
+      
       // Safe wrapper for chrome.* operations
       const safe = async (promise) => {
         try {
@@ -454,11 +482,56 @@ class CheckPopup {
         }
       };
 
-      // Get statistics from storage
-      const result = await safe(chrome.storage.local.get(["statistics"]));
-      if (result?.statistics) {
-        this.stats = { ...this.stats, ...result.statistics };
-      }
+      // Get logs from storage for fallback calculation
+      const result = await safe(
+        chrome.storage.local.get(["securityEvents", "accessLogs"])
+      );
+
+      const securityEvents = result?.securityEvents || [];
+      const accessLogs = result?.accessLogs || [];
+
+      // Calculate statistics manually as fallback
+      let blockedThreats = 0;
+      let scannedPages = 0;
+      let securityEventsCount = securityEvents.length;
+
+      // Count blocked threats
+      securityEvents.forEach((entry) => {
+        const event = entry.event;
+        if (!event) return;
+
+        if (
+          event.type === "threat_blocked" ||
+          event.type === "threat_detected" ||
+          event.type === "content_threat_detected" ||
+          (event.action && event.action.includes("blocked")) ||
+          (event.threatLevel && ["high", "critical"].includes(event.threatLevel))
+        ) {
+          blockedThreats++;
+        }
+      });
+
+      // Count scanned pages
+      accessLogs.forEach((entry) => {
+        const event = entry.event;
+        if (event && event.type === "page_scanned") {
+          scannedPages++;
+        }
+      });
+
+      // Also count legitimate access events as scanned pages
+      securityEvents.forEach((entry) => {
+        const event = entry.event;
+        if (event && event.type === "legitimate_access") {
+          scannedPages++;
+        }
+      });
+
+      this.stats = {
+        blockedThreats: blockedThreats,
+        scannedPages: scannedPages,
+        securityEvents: securityEventsCount,
+      };
 
       // Update UI
       this.elements.blockedThreats.textContent =
@@ -467,8 +540,14 @@ class CheckPopup {
         this.stats.scannedPages.toLocaleString();
       this.elements.securityEvents.textContent =
         this.stats.securityEvents.toLocaleString();
+        
+      console.log("Statistics calculated from fallback method:", this.stats);
     } catch (error) {
       console.error("Failed to load statistics:", error);
+      // Show zero values on error
+      this.elements.blockedThreats.textContent = "0";
+      this.elements.scannedPages.textContent = "0";
+      this.elements.securityEvents.textContent = "0";
     }
   }
 

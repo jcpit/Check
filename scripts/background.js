@@ -1250,6 +1250,16 @@ class CheckBackground {
           }
           break;
 
+        case "GET_STATISTICS":
+          try {
+            const statistics = await this.getStatistics();
+            sendResponse({ success: true, statistics });
+          } catch (error) {
+            logger.error("Check: Failed to get statistics:", error);
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
         case "get_detection_rules":
           try {
             const rules = await this.detectionRulesManager.getDetectionRules();
@@ -2000,6 +2010,91 @@ class CheckBackground {
       // Simplified validation without DetectionEngine
       basicValidation: true,
     };
+  }
+
+  // Get aggregated statistics for popup display
+  async getStatistics() {
+    try {
+      // Safe wrapper for chrome storage operations
+      const safe = async (promise) => {
+        try {
+          return await promise;
+        } catch (_) {
+          return {};
+        }
+      };
+
+      // Get all logs from storage
+      const result = await safe(
+        chrome.storage.local.get(["securityEvents", "accessLogs", "debugLogs"])
+      );
+
+      const securityEvents = result?.securityEvents || [];
+      const accessLogs = result?.accessLogs || [];
+      const debugLogs = result?.debugLogs || [];
+
+      // Calculate statistics from logged events
+      let blockedThreats = 0;
+      let scannedPages = 0;
+      let securityEventsCount = 0;
+
+      // Count blocked threats from security events
+      securityEvents.forEach((entry) => {
+        const event = entry.event;
+        if (!event) return;
+
+        // Count as security event
+        securityEventsCount++;
+
+        // Count blocked threats (various types of blocking/threat detection)
+        if (
+          event.type === "threat_blocked" ||
+          event.type === "threat_detected" ||
+          event.type === "content_threat_detected" ||
+          (event.action && event.action.includes("blocked")) ||
+          (event.threatLevel && ["high", "critical"].includes(event.threatLevel))
+        ) {
+          blockedThreats++;
+        }
+      });
+
+      // Count scanned pages from access logs and legitimate access events
+      accessLogs.forEach((entry) => {
+        const event = entry.event;
+        if (event && event.type === "page_scanned") {
+          scannedPages++;
+        }
+      });
+
+      // Also count legitimate access events as scanned pages
+      securityEvents.forEach((entry) => {
+        const event = entry.event;
+        if (event && event.type === "legitimate_access") {
+          scannedPages++;
+        }
+      });
+
+      // Return aggregated statistics
+      const statistics = {
+        blockedThreats: blockedThreats,
+        scannedPages: scannedPages,
+        securityEvents: securityEventsCount,
+        lastUpdated: new Date().toISOString(),
+      };
+
+      logger.log("Calculated statistics:", statistics);
+      return statistics;
+    } catch (error) {
+      logger.error("Failed to calculate statistics:", error);
+      // Return default statistics on error
+      return {
+        blockedThreats: 0,
+        scannedPages: 0,
+        securityEvents: 0,
+        lastUpdated: new Date().toISOString(),
+        error: error.message,
+      };
+    }
   }
 }
 
