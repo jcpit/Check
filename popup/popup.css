@@ -119,6 +119,85 @@ body {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
+/* Header Settings Button */
+.header-settings-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  color: var(--theme-text-primary);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  backdrop-filter: blur(8px);
+}
+
+.header-settings-btn:hover {
+  background: rgba(247, 127, 0, 0.2);
+  border-color: var(--theme-primary);
+  transform: translateY(-1px);
+}
+
+.header-settings-btn .material-icons {
+  font-size: 18px;
+}
+
+/* Enhanced tooltip styles for header settings button */
+.header-settings-btn {
+  position: relative;
+}
+
+.header-settings-btn:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  margin-right: 8px;
+  transform: translateY(-50%);
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 4px;
+  white-space: nowrap;
+  z-index: 10000;
+  opacity: 0;
+  animation: tooltipFadeIn 0.2s ease-out 0.5s forwards;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.header-settings-btn:hover::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  margin-right: 2px;
+  transform: translateY(-50%);
+  border: 4px solid transparent;
+  border-left-color: rgba(0, 0, 0, 0.9);
+  z-index: 10001;
+  opacity: 0;
+  animation: tooltipFadeIn 0.2s ease-out 0.5s forwards;
+  pointer-events: none;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .status-indicator {
   display: flex;
   align-items: center;

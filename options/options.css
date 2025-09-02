@@ -211,7 +211,7 @@ body {
 .content-header {
   background: var(--surface-color);
   border-bottom: 1px solid var(--border-color);
-  padding: 10px 20px;
+  padding: 10px 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
