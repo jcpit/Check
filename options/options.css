@@ -1541,6 +1541,10 @@ body {
   margin-bottom: 0;
 }
 
+.about-section-spacer {
+  height: 24px;
+}
+
 .links-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
