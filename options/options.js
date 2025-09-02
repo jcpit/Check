@@ -416,9 +416,6 @@ class CheckOptions {
     // Update sidebar branding
     document.getElementById("sidebarTitle").textContent =
       this.brandingConfig?.productName || "Microsoft 365 Phishing Protection";
-    document.getElementById("sidebarVersion").textContent = `v${
-      chrome.runtime.getManifest().version
-    }`;
 
     // Update sidebar logo
     const sidebarLogo = document.getElementById("sidebarLogo");
