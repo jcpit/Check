@@ -521,6 +521,12 @@ class CheckBackground {
       "not-evaluated": { text: "", color: "#000" }, // No badge for irrelevant pages
     };
     const cfg = map[verdict] || map["not-evaluated"];
+
+    // Log badge updates for debugging
+    logger.log(
+      `🏷️ Setting badge for tab ${tabId}: verdict="${verdict}" → text="${cfg.text}" color="${cfg.color}"`
+    );
+
     await safe(chrome.action.setBadgeText({ tabId, text: cfg.text }));
     if (cfg.text) {
       // Only set background color if there's text to display
@@ -814,22 +820,49 @@ class CheckBackground {
 
       // CyberDrain integration - Handle URL changes and set badges
       if (changeInfo.status === "complete" && tab?.url) {
-        const verdict = this.verdictForUrl(tab.url);
-        await safe(
-          chrome.storage.session.set({
-            ["verdict:" + tabId]: { verdict, url: tab.url },
-          })
-        );
-        this.setBadge(tabId, verdict);
+        const urlBasedVerdict = this.verdictForUrl(tab.url);
 
-        if (verdict === "trusted") {
+        // Check if there's already a more specific verdict (like rogue-app)
+        const existingData = await safe(
+          chrome.storage.session.get("verdict:" + tabId)
+        );
+        const existingVerdict = existingData?.["verdict:" + tabId]?.verdict;
+
+        // Don't override specific verdicts (like rogue-app) with generic URL-based verdicts
+        const shouldUpdateVerdict =
+          !existingVerdict ||
+          existingVerdict === "not-evaluated" ||
+          (existingVerdict === "trusted" && urlBasedVerdict !== "trusted");
+
+        if (shouldUpdateVerdict) {
+          logger.log(
+            `🔄 Updating verdict for tab ${tabId}: ${
+              existingVerdict || "none"
+            } → ${urlBasedVerdict}`
+          );
+          await safe(
+            chrome.storage.session.set({
+              ["verdict:" + tabId]: { verdict: urlBasedVerdict, url: tab.url },
+            })
+          );
+          this.setBadge(tabId, urlBasedVerdict);
+        } else {
+          logger.log(
+            `⏭️ Keeping existing verdict for tab ${tabId}: ${existingVerdict} (not overriding with ${urlBasedVerdict})`
+          );
+          // Keep existing verdict and badge
+          this.setBadge(tabId, existingVerdict);
+        }
+
+        if (urlBasedVerdict === "trusted") {
           // "Valid page" sighting - fire-and-log pattern for non-critical work
           queueMicrotask(() =>
             this.sendEvent({ type: "trusted-login-page", url: tab.url }).catch(
               () => {}
             )
           );
-          queueMicrotask(() => this.showValidBadge(tabId).catch(() => {}));
+          // DO NOT show valid badge automatically - let content script decide after rogue app analysis
+          // queueMicrotask(() => this.showValidBadge(tabId).catch(() => {}));
         }
       }
 
@@ -968,6 +1001,10 @@ class CheckBackground {
         case "FLAG_ROGUE_APP":
           if (sender.tab?.id) {
             const tabId = sender.tab.id;
+            logger.log(
+              `🚨 FLAG_ROGUE_APP received for tab ${tabId}, updating badge to rogue-app`
+            );
+
             await safe(
               chrome.storage.session.set({
                 ["verdict:" + tabId]: {
@@ -992,6 +1029,28 @@ class CheckBackground {
                 severity: "critical",
               }).catch(() => {})
             );
+          }
+          break;
+
+        case "UPDATE_VERDICT_TO_SAFE":
+          if (sender.tab?.id) {
+            const tabId = sender.tab.id;
+            await safe(
+              chrome.storage.session.set({
+                ["verdict:" + tabId]: {
+                  verdict: "safe",
+                  url: sender.tab.url,
+                  reason: message.reason,
+                  analysis: message.analysis,
+                  legitimacyScore: message.legitimacyScore,
+                  threshold: message.threshold,
+                },
+              })
+            );
+            this.setBadge(tabId, "trusted"); // Use trusted badge for safe sites
+            sendResponse({ ok: true });
+            // Show valid badge for safe sites
+            queueMicrotask(() => this.showValidBadge(tabId).catch(() => {}));
           }
           break;
 

@@ -430,7 +430,7 @@ async function runProtection(isRerun = false) {
         "✅ TRUSTED ORIGIN - No phishing possible, exiting immediately"
       );
 
-      // Store detection result
+      // Store initial detection result (may be overridden if rogue app found)
       lastDetectionResult = {
         verdict: "trusted",
         isSuspicious: false,
@@ -442,9 +442,6 @@ async function runProtection(isRerun = false) {
       };
 
       try {
-        if (protectionEnabled) {
-          showValidBadge();
-        }
         const redirectHostname = extractRedirectHostname(location.href);
         const clientInfo = await extractClientInfo(location.href);
 
@@ -454,14 +451,41 @@ async function runProtection(isRerun = false) {
             `🚨 ROGUE OAUTH APP DETECTED ON LEGITIMATE MICROSOFT DOMAIN: ${clientInfo.reason}`
           );
 
+          // Override detection result for rogue app
+          lastDetectionResult = {
+            verdict: "rogue-app",
+            isSuspicious: true,
+            isBlocked: false,
+            threats: [
+              {
+                type: "rogue-oauth-app",
+                description: `Rogue OAuth application: ${clientInfo.reason}`,
+              },
+            ],
+            reason: `Rogue OAuth application detected: ${clientInfo.reason}`,
+            score: 0, // Critical threat gets lowest score
+            threshold: 85,
+          };
+
           // Notify background script about rogue app detection
           try {
-            chrome.runtime.sendMessage({
+            const response = await chrome.runtime.sendMessage({
               type: "FLAG_ROGUE_APP",
               clientId: clientInfo.clientId,
               appName: clientInfo.appInfo?.appName || "Unknown",
               reason: clientInfo.reason,
             });
+
+            if (response?.ok) {
+              logger.log(
+                "✅ Background script notified about rogue app, badge should update"
+              );
+            } else {
+              logger.warn(
+                "⚠️ Background script rogue app notification failed:",
+                response
+              );
+            }
           } catch (messageError) {
             logger.warn(
               "Failed to notify background about rogue app:",
@@ -483,14 +507,14 @@ async function runProtection(isRerun = false) {
           // Log as a threat event instead of legitimate access
           logProtectionEvent({
             type: "threat_detected",
+            action: "warned", // Rogue apps are warned about, not blocked
             url: location.href,
             origin: currentOrigin,
             reason: `Rogue OAuth application detected: ${clientInfo.reason}`,
             severity: "critical",
             redirectTo: redirectHostname,
             clientId: clientInfo.clientId,
-            clientSuspicious: clientInfo.isMalicious,
-            clientReason: clientInfo.reason,
+            appName: clientInfo.appInfo?.appName || "Unknown",
             ruleType: "rogue_app_detection",
           });
 
@@ -506,20 +530,27 @@ async function runProtection(isRerun = false) {
             redirectTo: redirectHostname,
           });
 
-          return; // Stop processing as this is now treated as a threat
+          return; // Stop processing - do NOT show valid badge for rogue apps
         }
 
-        // Normal legitimate access logging if no rogue app detected
-        logProtectionEvent({
-          type: "legitimate_access",
-          url: location.href,
-          origin: currentOrigin,
-          reason: "Trusted Microsoft domain",
-          redirectTo: redirectHostname,
-          clientId: clientInfo.clientId,
-          clientSuspicious: clientInfo.isMalicious,
-          clientReason: clientInfo.reason,
-        });
+        // Only show valid badge if no rogue app detected
+        if (protectionEnabled) {
+          showValidBadge();
+        }
+
+        // Normal legitimate access logging if no rogue app detected (only on first run)
+        if (!isRerun) {
+          logProtectionEvent({
+            type: "legitimate_access",
+            url: location.href,
+            origin: currentOrigin,
+            reason: "Trusted Microsoft domain",
+            redirectTo: redirectHostname,
+            clientId: clientInfo.clientId,
+            clientSuspicious: clientInfo.isMalicious,
+            clientReason: clientInfo.reason,
+          });
+        }
 
         // Send CIPP reporting if enabled
         sendCippReport({
@@ -560,11 +591,12 @@ async function runProtection(isRerun = false) {
       "🚨 MICROSOFT LOGON PAGE ON NON-TRUSTED DOMAIN - ANALYZING THREAT"
     );
 
+    // Extract client info and redirect hostname for analysis
+    const redirectHostname = extractRedirectHostname(location.href);
+    const clientInfo = await extractClientInfo(location.href);
+
     // Notify background script that this is a Microsoft login page on unknown domain
     try {
-      const redirectHostname = extractRedirectHostname(location.href);
-      const clientInfo = await extractClientInfo(location.href);
-
       chrome.runtime.sendMessage({
         type: "FLAG_MS_LOGIN_ON_UNKNOWN_DOMAIN",
         url: location.href,
@@ -574,6 +606,96 @@ async function runProtection(isRerun = false) {
         clientSuspicious: clientInfo.isMalicious,
         clientReason: clientInfo.reason,
       });
+
+      // Check for rogue apps even on non-trusted domains with Microsoft login pages
+      if (clientInfo.isMalicious) {
+        logger.warn(
+          `🚨 ROGUE OAUTH APP DETECTED ON MICROSOFT LOGIN PAGE: ${clientInfo.reason}`
+        );
+
+        // Notify background script about rogue app detection
+        try {
+          const response = await chrome.runtime.sendMessage({
+            type: "FLAG_ROGUE_APP",
+            clientId: clientInfo.clientId,
+            appName: clientInfo.appInfo?.appName || "Unknown",
+            reason: clientInfo.reason,
+          });
+
+          if (response?.ok) {
+            logger.log(
+              "✅ Background script notified about rogue app, badge should update"
+            );
+          } else {
+            logger.warn(
+              "⚠️ Background script rogue app notification failed:",
+              response
+            );
+          }
+        } catch (rogueMessageError) {
+          logger.warn(
+            "Failed to notify background about rogue app:",
+            rogueMessageError
+          );
+        }
+
+        const appName = clientInfo.appName || "Unknown Application";
+        showWarningBanner(
+          `CRITICAL WARNING: Rogue OAuth Application Detected - ${appName}`,
+          {
+            type: "rogue_app_on_legitimate_domain",
+            severity: "critical",
+            reason: clientInfo.reason,
+            clientId: clientInfo.clientId,
+            appInfo: clientInfo.appInfo,
+          }
+        );
+
+        // Log as a critical threat event
+        logProtectionEvent({
+          type: "threat_detected",
+          action: "warned", // Rogue apps are warned about, not blocked
+          url: location.href,
+          origin: location.origin,
+          reason: `Rogue OAuth application detected: ${clientInfo.reason}`,
+          severity: "critical",
+          redirectTo: redirectHostname,
+          clientId: clientInfo.clientId,
+          clientSuspicious: clientInfo.isMalicious,
+          clientReason: clientInfo.reason,
+          ruleType: "rogue_app_detection",
+        });
+
+        // Send critical CIPP alert
+        sendCippReport({
+          type: "critical_rogue_app_detected",
+          url: location.href,
+          origin: location.origin,
+          clientId: clientInfo.clientId,
+          appName: clientInfo.appInfo?.appName || "Unknown",
+          reason: clientInfo.reason,
+          severity: "critical",
+          redirectTo: redirectHostname,
+        });
+
+        // Store detection result as critical threat
+        lastDetectionResult = {
+          verdict: "rogue-app",
+          isSuspicious: true,
+          isBlocked: false, // Rogue apps get warnings, not blocks
+          threats: [
+            {
+              type: "rogue-oauth-app",
+              description: `Rogue OAuth application: ${clientInfo.reason}`,
+            },
+          ],
+          reason: `Rogue OAuth application detected: ${clientInfo.reason}`,
+          score: 0, // Critical threat gets lowest score
+          threshold: 85,
+        };
+
+        return; // Stop processing as this is now treated as a critical threat
+      }
     } catch (messageError) {
       logger.warn(
         "Failed to notify background of MS login detection:",
@@ -774,6 +896,58 @@ async function runProtection(isRerun = false) {
         score: detectionResult.score,
         threshold: detectionResult.threshold,
       };
+
+      // Log legitimate access for non-trusted domains that pass analysis (only on first run)
+      if (!isRerun) {
+        try {
+          logProtectionEvent({
+            type: "legitimate_access",
+            url: location.href,
+            origin: location.origin,
+            reason: `Microsoft login page on non-trusted domain passed analysis (score: ${detectionResult.score}/${detectionResult.threshold})`,
+            redirectTo: redirectHostname,
+            clientId: clientInfo.clientId,
+            clientSuspicious: clientInfo.isMalicious,
+            clientReason: clientInfo.reason,
+            legitimacyScore: detectionResult.score,
+            threshold: detectionResult.threshold,
+          });
+        } catch (logError) {
+          logger.warn("Failed to log legitimate access:", logError);
+        }
+      }
+
+      // Send CIPP reporting for legitimate access on non-trusted domain
+      sendCippReport({
+        type: "microsoft_logon_detected",
+        url: location.href,
+        origin: location.origin,
+        legitimate: true,
+        nonTrustedDomain: true,
+        legitimacyScore: detectionResult.score,
+        threshold: detectionResult.threshold,
+        clientId: clientInfo.clientId,
+        redirectTo: redirectHostname,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Notify background script that analysis concluded site is legitimate
+      try {
+        chrome.runtime.sendMessage({
+          type: "UPDATE_VERDICT_TO_SAFE",
+          url: location.href,
+          origin: location.origin,
+          reason: `Passed security analysis (score: ${detectionResult.score}/${detectionResult.threshold})`,
+          analysis: true,
+          legitimacyScore: detectionResult.score,
+          threshold: detectionResult.threshold,
+        });
+      } catch (updateError) {
+        logger.warn(
+          "Failed to update background verdict:",
+          updateError.message
+        );
+      }
 
       // Continue monitoring in case content changes
       if (!isRerun) {
@@ -1024,11 +1198,35 @@ function showWarningBanner(reason, analysisData) {
       ? ` (Score: ${analysisData.score}/${analysisData.threshold})`
       : "";
 
+    // Determine banner type and styling based on analysis data
+    let bannerTitle = "Suspicious Microsoft 365 Login Page";
+    let bannerIcon = "⚠️";
+    let bannerColor = "linear-gradient(135deg, #ff9800, #f57c00)"; // Orange for warnings
+
+    // Check for rogue app detection
+    if (
+      analysisData?.type === "rogue_app_on_legitimate_domain" ||
+      reason.toLowerCase().includes("rogue oauth") ||
+      reason.toLowerCase().includes("rogue app")
+    ) {
+      bannerTitle = "🚨 CRITICAL SECURITY THREAT";
+      bannerIcon = "🛡️";
+      bannerColor = "linear-gradient(135deg, #f44336, #d32f2f)"; // Red for critical threats
+    } else if (analysisData?.severity === "critical") {
+      bannerTitle = "Critical Security Warning";
+      bannerIcon = "🚨";
+      bannerColor = "linear-gradient(135deg, #f44336, #d32f2f)"; // Red for critical
+    } else if (analysisData?.severity === "high") {
+      bannerTitle = "High Risk Security Warning";
+      bannerIcon = "⚠️";
+      bannerColor = "linear-gradient(135deg, #ff5722, #d84315)"; // Orange-red for high risk
+    }
+
     const bannerContent = `
       <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
-        <span style="font-size: 24px;">⚠️</span>
+        <span style="font-size: 24px;">${bannerIcon}</span>
         <div>
-          <strong>Suspicious Microsoft 365 Login Page</strong><br>
+          <strong>${bannerTitle}</strong><br>
           <small>${reason}${detailsText}</small>
         </div>
         <button onclick="this.parentElement.parentElement.remove();" style="
@@ -1042,8 +1240,9 @@ function showWarningBanner(reason, analysisData) {
     let banner = document.getElementById("ms365-warning-banner");
 
     if (banner) {
-      // Update existing banner content
+      // Update existing banner content and color
       banner.innerHTML = bannerContent;
+      banner.style.background = bannerColor;
       logger.log("Warning banner updated with new analysis");
       return;
     }
@@ -1056,7 +1255,7 @@ function showWarningBanner(reason, analysisData) {
       top: 0 !important;
       left: 0 !important;
       width: 100% !important;
-      background: linear-gradient(135deg, #ff9800, #f57c00) !important;
+      background: ${bannerColor} !important;
       color: white !important;
       padding: 16px !important;
       z-index: 2147483646 !important;
@@ -1226,6 +1425,20 @@ function extractRedirectHostname(url) {
     return null;
   } catch (e) {
     return null;
+  }
+}
+
+/**
+ * Check if a URL is from a trusted origin
+ */
+function isTrustedOrigin(url) {
+  try {
+    const urlObj = new URL(url);
+    const origin = urlObj.origin.toLowerCase();
+    return trustedOrigins.has(origin);
+  } catch (error) {
+    logger.warn("Invalid URL for trusted origin check:", url);
+    return false;
   }
 }
 
@@ -1453,6 +1666,18 @@ initializeProtection();
  * Message listener for popup communication
  */
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "SHOW_VALID_BADGE") {
+    try {
+      logger.log("📋 VALID BADGE: Received request to show valid page badge");
+      showValidBadge();
+      sendResponse({ success: true });
+    } catch (error) {
+      logger.error("Failed to show valid badge:", error);
+      sendResponse({ success: false, error: error.message });
+    }
+    return true;
+  }
+
   if (message.type === "GET_DETECTION_RESULTS") {
     try {
       // Use stored detection results if available

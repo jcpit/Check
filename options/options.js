@@ -1081,9 +1081,25 @@ class CheckOptions {
       const accessLogs = result?.accessLogs || [];
       const debugLogs = result?.debugLogs || [];
 
-      // Combine and sort logs
+      // Combine and sort logs with proper categorization
       const allLogs = [
-        ...securityEvents.map((event) => ({ ...event, category: "security" })),
+        ...securityEvents.map((event) => {
+          // Properly categorize based on event type
+          let category = "security"; // default
+
+          if (event.event?.type === "legitimate_access") {
+            category = "legitimate";
+          } else if (event.event?.type === "rogue_app_detected") {
+            category = "rogue_app";
+          } else if (
+            event.event?.type === "url_access" ||
+            event.event?.type === "page_scanned"
+          ) {
+            category = "access";
+          }
+
+          return { ...event, category };
+        }),
         ...accessLogs.map((event) => ({ ...event, category: "access" })),
         ...debugLogs.map((log) => ({ ...log, category: "debug" })),
       ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -1127,7 +1143,11 @@ class CheckOptions {
       // Event type column
       const eventType = document.createElement("div");
       eventType.className = `log-column event-type ${log.category}`;
-      eventType.textContent = this.getEventTypeDisplay(log);
+      const eventTypeText = this.getEventTypeDisplay(log);
+      eventType.textContent = eventTypeText;
+
+      // Apply color based on event type
+      this.applyEventTypeColor(eventType, log);
 
       // URL/Domain column
       const url = document.createElement("div");
@@ -1137,7 +1157,11 @@ class CheckOptions {
       // Threat level column
       const threatLevel = document.createElement("div");
       threatLevel.className = "log-column threat-level";
-      threatLevel.textContent = this.getThreatLevelDisplay(log);
+      const threatLevelText = this.getThreatLevelDisplay(log);
+      threatLevel.textContent = threatLevelText;
+
+      // Apply color based on threat level
+      this.applyThreatLevelColor(threatLevel, threatLevelText, log);
 
       // Action taken column
       const action = document.createElement("div");
@@ -1553,9 +1577,20 @@ class CheckOptions {
   }
 
   getThreatLevelDisplay(log) {
-    if (log.event?.threatLevel) {
-      return log.event.threatLevel.toUpperCase();
+    const threatLevel = log.event?.threatLevel;
+
+    if (threatLevel) {
+      if (threatLevel === "none") {
+        return "NONE";
+      }
+      return threatLevel.toUpperCase();
     }
+
+    // Special handling for legitimate access
+    if (log.event?.type === "legitimate_access") {
+      return "NONE";
+    }
+
     if (
       log.event?.type === "threat_detected" ||
       log.event?.type === "content_threat_detected"
@@ -1566,6 +1601,72 @@ class CheckOptions {
       return "MEDIUM";
     }
     return "-";
+  }
+
+  applyThreatLevelColor(element, threatLevelText, log) {
+    // Reset any existing threat level classes
+    element.classList.remove(
+      "threat-critical",
+      "threat-high",
+      "threat-medium",
+      "threat-low",
+      "threat-none"
+    );
+
+    // Apply CSS class based on threat level
+    const threatLevel = log.event?.threatLevel || "";
+    const eventType = log.event?.type || "";
+
+    if (threatLevel === "critical" || threatLevelText === "CRITICAL") {
+      element.classList.add("threat-critical");
+    } else if (threatLevel === "high" || threatLevelText === "HIGH") {
+      element.classList.add("threat-high");
+    } else if (threatLevel === "medium" || threatLevelText === "MEDIUM") {
+      element.classList.add("threat-medium");
+    } else if (threatLevel === "low" || threatLevelText === "LOW") {
+      element.classList.add("threat-low");
+    } else if (threatLevel === "none" || eventType === "legitimate_access") {
+      element.classList.add("threat-none");
+    } else {
+      // Default/unknown threat level - no special class, use default color
+    }
+  }
+
+  applyEventTypeColor(element, log) {
+    // Reset any existing event type classes
+    element.classList.remove(
+      "event-type-security",
+      "event-type-threat",
+      "event-type-rogue",
+      "event-type-legitimate",
+      "event-type-access",
+      "event-type-warning",
+      "event-type-default"
+    );
+
+    const eventType = log.event?.type || "";
+    const category = log.category || "";
+
+    // Apply color based on event type/category - prioritize specific event types
+    if (eventType === "legitimate_access" || category === "legitimate") {
+      element.classList.add("event-type-legitimate");
+    } else if (eventType === "rogue_app_detected" || category === "rogue_app") {
+      element.classList.add("event-type-rogue");
+    } else if (
+      eventType === "threat_detected" ||
+      eventType === "content_threat_detected" ||
+      category === "security"
+    ) {
+      element.classList.add("event-type-security");
+    } else if (category === "access" || eventType.includes("access")) {
+      element.classList.add("event-type-access");
+    } else if (eventType.includes("warning") || category === "warning") {
+      element.classList.add("event-type-warning");
+    } else if (eventType.includes("threat") || category === "threat") {
+      element.classList.add("event-type-threat");
+    } else {
+      element.classList.add("event-type-default");
+    }
   }
 
   getActionDisplay(log) {

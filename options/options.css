@@ -910,6 +910,59 @@ body {
   text-align: center;
 }
 
+/* Threat level color classes */
+.log-column.threat-level.threat-critical {
+  color: #dc2626 !important; /* Red - Critical threats */
+}
+
+.log-column.threat-level.threat-high {
+  color: #ea580c !important; /* Orange-red - High threats */
+}
+
+.log-column.threat-level.threat-medium {
+  color: #d97706 !important; /* Orange - Medium threats */
+}
+
+.log-column.threat-level.threat-low {
+  color: #eab308 !important; /* Yellow - Low threats */
+}
+
+.log-column.threat-level.threat-none {
+  color: #16a34a !important; /* Green - No threat/legitimate */
+}
+
+/* Event type color classes */
+.log-column.event-type.event-type-security {
+  color: #dc2626 !important; /* Red - Security events */
+  font-weight: 600;
+}
+
+.log-column.event-type.event-type-threat {
+  color: #ea580c !important; /* Orange-red - Threat events */
+  font-weight: 600;
+}
+
+.log-column.event-type.event-type-rogue {
+  color: #f59e0b !important; /* Amber - Rogue app events */
+  font-weight: 600;
+}
+
+.log-column.event-type.event-type-legitimate {
+  color: #16a34a !important; /* Green - Legitimate access */
+}
+
+.log-column.event-type.event-type-access {
+  color: #2563eb !important; /* Blue - Access events */
+}
+
+.log-column.event-type.event-type-warning {
+  color: #d97706 !important; /* Orange - Warning events */
+}
+
+.log-column.event-type.event-type-default {
+  color: #6b7280 !important; /* Gray - Default/other events */
+}
+
 .log-column.action {
   font-weight: 500;
   text-transform: uppercase;
@@ -1544,7 +1597,7 @@ body {
   :root:not(.light-theme) .cyberdrain-shield-light {
     display: none;
   }
-  
+
   :root:not(.light-theme) .cyberdrain-shield-dark {
     display: block;
   }
