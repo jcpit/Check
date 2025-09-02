@@ -29,9 +29,25 @@ const SCAN_COOLDOWN = 1000; // 1 second between scans
 
 /**
  * Load detection rules from the rule file - EVERYTHING comes from here
+ * Now uses the detection rules manager for caching and remote loading
  */
 async function loadDetectionRules() {
   try {
+    // Try to get rules from background script first (which handles caching)
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: "get_detection_rules",
+      });
+
+      if (response && response.success && response.rules) {
+        logger.log("Loaded detection rules from background script cache");
+        return response.rules;
+      }
+    } catch (error) {
+      logger.warn("Failed to get rules from background script:", error.message);
+    }
+
+    // Fallback to direct loading (with no-cache to ensure fresh data)
     const response = await fetch(
       chrome.runtime.getURL("rules/detection-rules.json"),
       {

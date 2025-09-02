@@ -54,10 +54,11 @@ class CheckOptions {
     );
 
     // Detection settings
-    this.elements.enableCustomRules =
-      document.getElementById("enableCustomRules");
     this.elements.customRulesUrl = document.getElementById("customRulesUrl");
     this.elements.updateInterval = document.getElementById("updateInterval");
+    this.elements.refreshDetectionRules = document.getElementById(
+      "refreshDetectionRules"
+    );
     this.elements.configDisplay = document.getElementById("configDisplay");
     this.elements.toggleConfigView =
       document.getElementById("toggleConfigView");
@@ -68,6 +69,7 @@ class CheckOptions {
 
     // Logs
     this.elements.logFilter = document.getElementById("logFilter");
+    this.elements.refreshLogs = document.getElementById("refreshLogs");
     this.elements.clearLogs = document.getElementById("clearLogs");
     this.elements.exportLogs = document.getElementById("exportLogs");
     this.elements.logsList = document.getElementById("logsList");
@@ -132,6 +134,9 @@ class CheckOptions {
 
     // Logs actions
     this.elements.logFilter?.addEventListener("change", () => this.loadLogs());
+    this.elements.refreshLogs?.addEventListener("click", () =>
+      this.refreshLogs()
+    );
     this.elements.clearLogs?.addEventListener("click", () => this.clearLogs());
     this.elements.exportLogs?.addEventListener("click", () =>
       this.exportLogs()
@@ -140,6 +145,11 @@ class CheckOptions {
     // Config display toggle
     this.elements.toggleConfigView?.addEventListener("click", () =>
       this.toggleConfigView()
+    );
+
+    // Detection rules management
+    this.elements.refreshDetectionRules?.addEventListener("click", () =>
+      this.refreshDetectionRules()
     );
 
     // Branding preview updates
@@ -300,8 +310,8 @@ class CheckOptions {
         showNotifications: true,
         notificationDuration: 5000,
         enableValidPageBadge: false,
-        enableCustomRules: false,
-        customRulesUrl: "",
+        customRulesUrl:
+          "https://raw.githubusercontent.com/CyberDrain/ProjectX/refs/heads/main/rules/detection-rules.json",
         updateInterval: 24,
         enableDebugLogging: false,
       };
@@ -473,18 +483,23 @@ class CheckOptions {
       this.config.enableValidPageBadge || false;
 
     // Detection settings
-    this.elements.enableCustomRules.checked =
-      this.config.detectionRules?.enableCustomRules ||
-      this.config.enableCustomRules ||
-      false;
     this.elements.customRulesUrl.value =
       this.config.detectionRules?.customRulesUrl ||
       this.config.customRulesUrl ||
       "";
-    this.elements.updateInterval.value =
-      (this.config.detectionRules?.updateInterval ||
-        this.config.updateInterval * 3600000 ||
-        86400000) / 3600000;
+
+    // Handle updateInterval - ensure we always show hours in the UI
+    let updateIntervalHours = 24; // default
+    if (this.config.detectionRules?.updateInterval) {
+      // If it's in the detectionRules object, it could be milliseconds or hours
+      const interval = this.config.detectionRules.updateInterval;
+      updateIntervalHours =
+        interval > 1000 ? Math.round(interval / 3600000) : interval;
+    } else if (this.config.updateInterval) {
+      // Legacy field, assume it's in hours
+      updateIntervalHours = this.config.updateInterval;
+    }
+    this.elements.updateInterval.value = updateIntervalHours;
 
     // Logging settings
     this.elements.enableDebugLogging.checked =
@@ -617,7 +632,6 @@ class CheckOptions {
         this.elements.enableValidPageBadge?.checked || false,
 
       // Detection settings
-      enableCustomRules: this.elements.enableCustomRules?.checked || false,
       customRulesUrl: this.elements.customRulesUrl?.value || "",
       updateInterval: parseInt(this.elements.updateInterval?.value || 24),
 
@@ -1665,6 +1679,40 @@ class CheckOptions {
     return log.message || log.type || "Unknown event";
   }
 
+  async refreshLogs() {
+    try {
+      // Show a loading indicator
+      if (this.elements.refreshLogs) {
+        const originalText = this.elements.refreshLogs.innerHTML;
+        this.elements.refreshLogs.innerHTML = "🔄 Refreshing...";
+        this.elements.refreshLogs.disabled = true;
+
+        // Reload the logs
+        await this.loadLogs();
+
+        // Show success feedback
+        this.showToast("Logs refreshed successfully", "success");
+
+        // Restore button state
+        this.elements.refreshLogs.innerHTML = originalText;
+        this.elements.refreshLogs.disabled = false;
+      } else {
+        // Fallback if button element not found
+        await this.loadLogs();
+        this.showToast("Logs refreshed successfully", "success");
+      }
+    } catch (error) {
+      console.error("Failed to refresh logs:", error);
+      this.showToast("Failed to refresh logs", "error");
+
+      // Restore button state on error
+      if (this.elements.refreshLogs) {
+        this.elements.refreshLogs.innerHTML = "Refresh";
+        this.elements.refreshLogs.disabled = false;
+      }
+    }
+  }
+
   async clearLogs() {
     const confirmed = await this.showConfirmDialog(
       "Clear All Logs",
@@ -1736,6 +1784,48 @@ class CheckOptions {
     } catch (error) {
       console.error("Failed to export logs:", error);
       this.showToast("Failed to export logs", "error");
+    }
+  }
+
+  // Detection Rules Management Methods
+  async refreshDetectionRules() {
+    try {
+      // Update button state
+      if (this.elements.refreshDetectionRules) {
+        this.elements.refreshDetectionRules.innerHTML =
+          '<span class="material-icons">hourglass_empty</span> Updating...';
+        this.elements.refreshDetectionRules.disabled = true;
+      }
+
+      // Send message to background to force update detection rules
+      const response = await new Promise((resolve) => {
+        chrome.runtime.sendMessage(
+          { type: "force_update_detection_rules" },
+          resolve
+        );
+      });
+
+      if (response?.success) {
+        this.showToast("Detection rules updated successfully", "success");
+
+        // Reload configuration display if visible
+        await this.updateConfigDisplay();
+      } else {
+        throw new Error(response?.error || "Failed to update detection rules");
+      }
+    } catch (error) {
+      console.error("Failed to refresh detection rules:", error);
+      this.showToast(
+        "Failed to update detection rules: " + error.message,
+        "error"
+      );
+    } finally {
+      // Restore button state
+      if (this.elements.refreshDetectionRules) {
+        this.elements.refreshDetectionRules.innerHTML =
+          '<span class="material-icons">refresh</span> Update Rules Now';
+        this.elements.refreshDetectionRules.disabled = false;
+      }
     }
   }
 

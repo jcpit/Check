@@ -133,8 +133,8 @@
             <!-- Detection Section -->
             <section id="detection-section" class="settings-section">
                 <div class="section-header">
-                    <h2>Phishing Detection Rules</h2>
-                    <p>Manage Microsoft 365 phishing detection patterns and custom rules</p>
+                    <h2>Detection Rules</h2>
+                    <p>Configure Microsoft 365 phishing detection patterns and configuration source</p>
                 </div>
 
                 <div class="settings-grid">
@@ -142,19 +142,10 @@
                         <h3>Detection Configuration</h3>
                         <div class="setting-item">
                             <label class="setting-label">
-                                <input type="checkbox" id="enableCustomRules" class="setting-checkbox">
-                                <span class="checkbox-custom"></span>
-                                Enable Custom Rules
+                                Config URL
+                                <input type="url" id="customRulesUrl" class="setting-input" placeholder="https://raw.githubusercontent.com/CyberDrain/ProjectX/refs/heads/main/rules/detection-rules.json">
                             </label>
-                            <p class="setting-description">Allow custom detection rules to be loaded</p>
-                        </div>
-
-                        <div class="setting-item">
-                            <label class="setting-label">
-                                Custom Rules URL
-                                <input type="url" id="customRulesUrl" class="setting-input" placeholder="https://example.com/rules.json">
-                            </label>
-                            <p class="setting-description">URL to fetch custom detection rules from</p>
+                            <p class="setting-description">URL to fetch detection configuration from (leave empty for default)</p>
                         </div>
 
                         <div class="setting-item">
@@ -163,6 +154,16 @@
                                 <input type="number" id="updateInterval" class="setting-input" min="1" max="168" value="24">
                             </label>
                             <p class="setting-description">How often to update detection rules</p>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-actions">
+                                <button class="btn btn-secondary" id="refreshDetectionRules">
+                                    <span class="material-icons">refresh</span>
+                                    Update Rules Now
+                                </button>
+                            </div>
+                            <p class="setting-description">Manually update detection rules from the remote source</p>
                         </div>
                     </div>
 
@@ -206,6 +207,7 @@
                             <option value="page_scanned">Page Scans</option>
                             <option value="debug">Debug Events</option>
                         </select>
+                        <button class="btn btn-primary" id="refreshLogs">Refresh</button>
                         <button class="btn btn-secondary" id="clearLogs">Clear Logs</button>
                         <button class="btn btn-secondary" id="exportLogs">Export Logs</button>
                     </div>

@@ -16,9 +16,13 @@ export class ConfigManager {
     try {
       // Safe wrapper for chrome.* operations
       const safe = async (promise) => {
-        try { return await promise; } catch(_) { return {}; }
+        try {
+          return await promise;
+        } catch (_) {
+          return {};
+        }
       };
-      
+
       // Load enterprise configuration from managed storage (GPO/Intune)
       this.enterpriseConfig = await this.loadEnterpriseConfig();
 
@@ -47,9 +51,13 @@ export class ConfigManager {
     try {
       // Safe wrapper for chrome.* operations
       const safe = async (promise) => {
-        try { return await promise; } catch(_) { return {}; }
+        try {
+          return await promise;
+        } catch (_) {
+          return {};
+        }
       };
-      
+
       // Attempt to load from managed storage (deployed via GPO/Intune)
       const managedConfig = await safe(chrome.storage.managed.get(null));
 
@@ -70,14 +78,14 @@ export class ConfigManager {
       // Load branding configuration from config file with timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
+
       try {
         const response = await fetch(
           chrome.runtime.getURL("config/branding.json"),
           { signal: controller.signal }
         );
         clearTimeout(timeoutId);
-        
+
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const brandingConfig = await response.json();
         return brandingConfig;
@@ -131,8 +139,9 @@ export class ConfigManager {
       // Detection settings
       detectionRules: {
         enableCustomRules: true,
-        customRulesUrl: "",
-        updateInterval: 3600000, // 1 hour
+        customRulesUrl:
+          "https://raw.githubusercontent.com/CyberDrain/ProjectX/refs/heads/main/rules/detection-rules.json",
+        updateInterval: 86400000, // 24 hours
         strictMode: false,
       },
 
@@ -203,9 +212,13 @@ export class ConfigManager {
     try {
       // Safe wrapper for chrome.* operations
       const safe = async (promise) => {
-        try { return await promise; } catch(_) { return undefined; }
+        try {
+          return await promise;
+        } catch (_) {
+          return undefined;
+        }
       };
-      
+
       const defaultConfig = this.getDefaultConfig();
       await safe(chrome.storage.local.set({ config: defaultConfig }));
       this.config = defaultConfig;
@@ -219,9 +232,13 @@ export class ConfigManager {
     try {
       // Safe wrapper for chrome.* operations
       const safe = async (promise) => {
-        try { return await promise; } catch(_) { return undefined; }
+        try {
+          return await promise;
+        } catch (_) {
+          return undefined;
+        }
       };
-      
+
       const currentConfig = await this.getConfig();
       const updatedConfig = { ...currentConfig, ...updates };
 
@@ -247,14 +264,17 @@ export class ConfigManager {
 
       // Notify other components of configuration change with safe wrapper
       try {
-        chrome.runtime.sendMessage({
-          type: "CONFIG_UPDATED",
-          config: updatedConfig,
-        }, () => {
-          if (chrome.runtime.lastError) {
-            // Silently handle errors
+        chrome.runtime.sendMessage(
+          {
+            type: "CONFIG_UPDATED",
+            config: updatedConfig,
+          },
+          () => {
+            if (chrome.runtime.lastError) {
+              // Silently handle errors
+            }
           }
-        });
+        );
       } catch (error) {
         // Silently handle errors
       }
@@ -291,9 +311,13 @@ export class ConfigManager {
     try {
       // Safe wrapper for chrome.* operations
       const safe = async (promise) => {
-        try { return await promise; } catch(_) { return {}; }
+        try {
+          return await promise;
+        } catch (_) {
+          return {};
+        }
       };
-      
+
       logger.log(
         `Check: Migrating configuration from version ${previousVersion}`
       );
@@ -356,7 +380,11 @@ export class ConfigManager {
       // Update branding if provided with safe wrapper
       if (importData.branding) {
         const safe = async (promise) => {
-          try { return await promise; } catch(_) { return undefined; }
+          try {
+            return await promise;
+          } catch (_) {
+            return undefined;
+          }
         };
         await safe(chrome.storage.local.set({ branding: importData.branding }));
         this.brandingConfig = importData.branding;

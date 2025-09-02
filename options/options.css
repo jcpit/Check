@@ -354,15 +354,15 @@ body {
 }
 
 .config-display {
-  background: var(--input-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  padding: 16px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 12px;
-  max-height: 300px;
-  overflow-y: auto;
-  line-height: 1.5;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  max-height: none;
+  overflow-y: visible;
+  line-height: inherit;
   color: var(--text-primary);
 }
 
@@ -375,6 +375,10 @@ body {
 
 .config-section {
   margin-bottom: 16px;
+  padding: 12px;
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
 }
 
 .config-section:last-child {
@@ -383,23 +387,33 @@ body {
 
 .config-section-title {
   font-weight: 600;
-  color: var(--warning-color);
+  color: var(--primary-color);
   margin-bottom: 8px;
   font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .config-item {
   margin-bottom: 4px;
   color: var(--text-secondary);
+  line-height: 1.4;
 }
 
 .config-item strong {
   color: var(--text-primary);
+  font-weight: 600;
 }
 
 .config-value {
-  color: var(--success-color);
+  color: var(--text-primary);
   font-weight: 500;
+  background: var(--input-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 11px;
 }
 
 .config-raw-json {
@@ -407,6 +421,13 @@ body {
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 11px;
   color: var(--text-primary);
+  background: var(--input-bg);
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  overflow-x: auto;
+  max-height: 500px;
+  overflow-y: auto;
 }
 
 .setting-label {

@@ -6,6 +6,7 @@
 
 import { ConfigManager } from "./modules/config-manager.js";
 import { PolicyManager } from "./modules/policy-manager.js";
+import { DetectionRulesManager } from "./modules/detection-rules-manager.js";
 import logger from "./utils/logger.js";
 import { store as storeLog } from "./utils/background-logger.js";
 
@@ -283,6 +284,7 @@ class CheckBackground {
   constructor() {
     this.configManager = new ConfigManager();
     this.policyManager = new PolicyManager();
+    this.detectionRulesManager = new DetectionRulesManager();
     this.rogueAppsManager = new RogueAppsManager();
     this.isInitialized = false;
     this.initializationPromise = null;
@@ -388,6 +390,9 @@ class CheckBackground {
 
       // Load policies
       await this.policyManager.loadPolicies();
+
+      // Initialize detection rules manager
+      await this.detectionRulesManager.initialize();
 
       await this.refreshPolicy();
 
@@ -1186,6 +1191,34 @@ class CheckBackground {
           }
           break;
 
+        case "get_detection_rules":
+          try {
+            const rules = await this.detectionRulesManager.getDetectionRules();
+            const cacheInfo = this.detectionRulesManager.getCacheInfo();
+            sendResponse({ success: true, rules, cacheInfo });
+          } catch (error) {
+            logger.error("Check: Failed to get detection rules:", error);
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
+        case "force_update_detection_rules":
+          try {
+            const rules = await this.detectionRulesManager.forceUpdate();
+            sendResponse({
+              success: true,
+              rules,
+              message: "Detection rules updated",
+            });
+          } catch (error) {
+            logger.error(
+              "Check: Failed to force update detection rules:",
+              error
+            );
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
         case "UPDATE_CONFIG":
           try {
             await this.configManager.updateConfig(message.config);
@@ -1577,6 +1610,9 @@ class CheckBackground {
     return {
       configManager: this.configManager ? "loaded" : "not_loaded",
       policyManager: this.policyManager ? "loaded" : "not_loaded",
+      detectionRulesManager: this.detectionRulesManager
+        ? "loaded"
+        : "not_loaded",
       // DetectionEngine removed
     };
   }
