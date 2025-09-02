@@ -554,6 +554,8 @@ class CheckOptions {
       this.loadLogs();
     } else if (sectionName === "detection") {
       this.loadConfigDisplay();
+    } else if (sectionName === "about") {
+      this.loadAboutSection();
     }
   }
 
@@ -2051,6 +2053,45 @@ class CheckOptions {
 
   hideModal() {
     this.elements.modalOverlay.style.display = "none";
+  }
+
+  async loadAboutSection() {
+    try {
+      // Get extension manifest for version info
+      const manifest = chrome.runtime.getManifest();
+      const extensionVersionElement = document.getElementById("extensionVersion");
+      if (extensionVersionElement) {
+        extensionVersionElement.textContent = manifest.version;
+      }
+
+      // Get detection rules version from storage
+      const rulesVersionElement = document.getElementById("rulesVersion");
+      const lastUpdatedElement = document.getElementById("lastUpdated");
+      
+      try {
+        const result = await chrome.storage.local.get(['detectionRules', 'detectionRulesLastUpdated']);
+        
+        if (result.detectionRules && result.detectionRules.version) {
+          rulesVersionElement.textContent = result.detectionRules.version;
+        } else {
+          rulesVersionElement.textContent = "Not available";
+        }
+
+        if (result.detectionRulesLastUpdated) {
+          const lastUpdated = new Date(result.detectionRulesLastUpdated);
+          lastUpdatedElement.textContent = lastUpdated.toLocaleDateString() + ' ' + lastUpdated.toLocaleTimeString();
+        } else {
+          lastUpdatedElement.textContent = "Never";
+        }
+      } catch (error) {
+        console.error("Error loading detection rules info:", error);
+        rulesVersionElement.textContent = "Error loading";
+        lastUpdatedElement.textContent = "Error loading";
+      }
+
+    } catch (error) {
+      console.error("Error loading about section:", error);
+    }
   }
 
   // Dark Mode Management
