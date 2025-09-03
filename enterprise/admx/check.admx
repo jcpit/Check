@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<policyDefinitions xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" revision="1.0" schemaVersion="1.0" xmlns="http://schemas.microsoft.com/GroupPolicy/2006/07/PolicyDefinitions">
+  <policyNamespaces>
+    <target prefix="check" namespace="CyberDrain.Check" />
+    <using prefix="windows" namespace="Microsoft.Policies.Windows" />
+  </policyNamespaces>
+
+  <supersededAdm fileName="" />
+
+  <resources minRequiredRevision="1.0" />
+
+  <categories>
+    <category name="CyberDrain" displayName="$(string.CyberDrain)" />
+    <category name="Check" displayName="$(string.Check)" parentCategory="CyberDrain" />
+    <category name="CheckSecurity" displayName="$(string.CheckSecurity)" parentCategory="Check" />
+    <category name="CheckBranding" displayName="$(string.CheckBranding)" parentCategory="Check" />
+    <category name="CheckLogging" displayName="$(string.CheckLogging)" parentCategory="Check" />
+  </categories>
+
+  <policies>
+    <!-- Security Settings -->
+    <policy name="ShowNotifications" class="Both" displayName="$(string.ShowNotifications)" explainText="$(string.ShowNotifications_Help)" key="Software\Policies\CyberDrain\Check" valueName="showNotifications">
+      <parentCategory ref="CheckSecurity" />
+      <supportedOn ref="windows:SUPPORTED_WindowsVista" />
+      <enabledValue>
+        <decimal value="1" />
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0" />
+      </disabledValue>
+    </policy>
+
+    <policy name="EnableValidPageBadge" class="Both" displayName="$(string.EnableValidPageBadge)" explainText="$(string.EnableValidPageBadge_Help)" key="Software\Policies\CyberDrain\Check" valueName="enableValidPageBadge">
+      <parentCategory ref="CheckSecurity" />
+      <supportedOn ref="windows:SUPPORTED_WindowsVista" />
+      <enabledValue>
+        <decimal value="0" />
+      </enabledValue>
+      <disabledValue>
+        <decimal value="1" />
+      </disabledValue>
+    </policy>
+
+    <policy name="EnablePageBlocking" class="Both" displayName="$(string.EnablePageBlocking)" explainText="$(string.EnablePageBlocking_Help)" key="Software\Policies\CyberDrain\Check" valueName="enablePageBlocking">
+      <parentCategory ref="CheckSecurity" />
+      <supportedOn ref="windows:SUPPORTED_WindowsVista" />
+      <enabledValue>
+        <decimal value="1" />
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0" />
+      </disabledValue>
+    </policy>
+
+    <policy name="EnableCippReporting" class="Both" displayName="$(string.EnableCippReporting)" explainText="$(string.EnableCippReporting_Help)" key="Software\Policies\CyberDrain\Check" valueName="enableCippReporting">
+      <parentCategory ref="CheckSecurity" />
+      <supportedOn ref="windows:SUPPORTED_WindowsVista" />
+      <enabledValue>
+        <decimal value="1" />
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0" />
+      </disabledValue>
+    </policy>
+
+    <policy name="CippServerUrl" class="Both" displayName="$(string.CippServerUrl)" explainText="$(string.CippServerUrl_Help)" key="Software\Policies\CyberDrain\Check" valueName="cippServerUrl">
+      <parentCategory ref="CheckSecurity" />
+      <supportedOn ref="windows:SUPPORTED_WindowsVista" />
+      <elements>
+        <text id="CippServerUrl_Text" valueName="cippServerUrl" required="false" />
+      </elements>
+    </policy>
+
+    <policy name="CustomRulesUrl" class="Both" displayName="$(string.CustomRulesUrl)" explainText="$(string.CustomRulesUrl_Help)" key="Software\Policies\CyberDrain\Check" valueName="customRulesUrl">
+      <parentCategory ref="CheckSecurity" />
+      <supportedOn ref="windows:SUPPORTED_WindowsVista" />
+      <elements>
+        <text id="CustomRulesUrl_Text" valueName="customRulesUrl" required="false" />
+      </elements>
+    </policy>
+
+    <policy name="UpdateInterval" class="Both" displayName="$(string.UpdateInterval)" explainText="$(string.UpdateInterval_Help)" key="Software\Policies\CyberDrain\Check" valueName="updateInterval">
+      <parentCategory ref="CheckSecurity" />
+      <supportedOn ref="windows:SUPPORTED_WindowsVista" />
+      <elements>
+        <decimal id="UpdateInterval_Value" valueName="updateInterval" minValue="1" maxValue="168" />
+      </elements>
+    </policy>
+
+    <!-- Logging Settings -->
+    <policy name="EnableDebugLogging" class="Both" displayName="$(string.EnableDebugLogging)" explainText="$(string.EnableDebugLogging_Help)" key="Software\Policies\CyberDrain\Check" valueName="enableDebugLogging">
+      <parentCategory ref="CheckLogging" />
+      <supportedOn ref="windows:SUPPORTED_WindowsVista" />
+      <enabledValue>
+        <decimal value="1" />
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0" />
+      </disabledValue>
+    </policy>
+
+    <!-- Branding Settings -->
+    <policy name="CompanyName" class="Both" displayName="$(string.CompanyName)" explainText="$(string.CompanyName_Help)" key="Software\Policies\CyberDrain\Check\CustomBranding" valueName="companyName">
+      <parentCategory ref="CheckBranding" />
+      <supportedOn ref="windows:SUPPORTED_WindowsVista" />
+      <elements>
+        <text id="CompanyName_Text" valueName="companyName" required="false" />
+      </elements>
+    </policy>
+
+    <policy name="ProductName" class="Both" displayName="$(string.ProductName)" explainText="$(string.ProductName_Help)" key="Software\Policies\CyberDrain\Check\CustomBranding" valueName="productName">
+      <parentCategory ref="CheckBranding" />
+      <supportedOn ref="windows:SUPPORTED_WindowsVista" />
+      <elements>
+        <text id="ProductName_Text" valueName="productName" required="false" />
+      </elements>
+    </policy>
+
+    <policy name="SupportEmail" class="Both" displayName="$(string.SupportEmail)" explainText="$(string.SupportEmail_Help)" key="Software\Policies\CyberDrain\Check\CustomBranding" valueName="supportEmail">
+      <parentCategory ref="CheckBranding" />
+      <supportedOn ref="windows:SUPPORTED_WindowsVista" />
+      <elements>
+        <text id="SupportEmail_Text" valueName="supportEmail" required="false" />
+      </elements>
+    </policy>
+
+    <policy name="PrimaryColor" class="Both" displayName="$(string.PrimaryColor)" explainText="$(string.PrimaryColor_Help)" key="Software\Policies\CyberDrain\Check\CustomBranding" valueName="primaryColor">
+      <parentCategory ref="CheckBranding" />
+      <supportedOn ref="windows:SUPPORTED_WindowsVista" />
+      <elements>
+        <text id="PrimaryColor_Text" valueName="primaryColor" required="false" />
+      </elements>
+    </policy>
+
+    <policy name="LogoUrl" class="Both" displayName="$(string.LogoUrl)" explainText="$(string.LogoUrl_Help)" key="Software\Policies\CyberDrain\Check\CustomBranding" valueName="logoUrl">
+      <parentCategory ref="CheckBranding" />
+      <supportedOn ref="windows:SUPPORTED_WindowsVista" />
+      <elements>
+        <text id="LogoUrl_Text" valueName="logoUrl" required="false" />
+      </elements>
+    </policy>
+  </policies>
+</policyDefinitions>

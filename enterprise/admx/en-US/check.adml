@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<policyDefinitionResources xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" revision="1.0" schemaVersion="1.0" xmlns="http://schemas.microsoft.com/GroupPolicy/2006/07/PolicyDefinitions">
+  <displayName />
+  <description />
+  <resources>
+    <stringTable>
+      <!-- Categories -->
+      <string id="CyberDrain">CyberDrain</string>
+      <string id="Check">Check - Microsoft 365 Phishing Protection</string>
+      <string id="CheckSecurity">Security Settings</string>
+      <string id="CheckBranding">Branding & White Labeling</string>
+      <string id="CheckLogging">Logging & Debugging</string>
+
+      <!-- Security Policies -->
+      <string id="ShowNotifications">Show Security Notifications</string>
+      <string id="ShowNotifications_Help">Controls whether the extension displays security notifications and warnings to users.
+
+When enabled, users will see notifications for security events such as threats detected, malicious pages blocked, and other security-related activities.
+
+When disabled, the extension will operate silently without showing notifications to users.
+
+Default: Enabled</string>
+
+      <string id="EnableValidPageBadge">Show Valid Page Badge</string>
+      <string id="EnableValidPageBadge_Help">Controls whether the extension displays a validation badge on legitimate Microsoft login pages.
+
+When enabled, users will see a green checkmark badge on authentic Microsoft 365 login pages, providing visual confirmation that the page is legitimate.
+
+When disabled, no validation badge will be displayed on legitimate pages.
+
+Default: Enabled</string>
+
+      <string id="EnablePageBlocking">Enable Page Blocking</string>
+      <string id="EnablePageBlocking_Help">Controls whether the extension actively blocks access to malicious pages.
+
+When enabled, the extension will block access to pages identified as phishing, malicious, or otherwise dangerous, displaying a warning page instead.
+
+When disabled, the extension will operate in monitoring mode only, logging threats but not blocking access.
+
+Default: Enabled</string>
+
+      <string id="EnableCippReporting">Enable CIPP Reporting</string>
+      <string id="EnableCippReporting_Help">Controls whether the extension reports security events to a CyberDrain CIPP (CyberDrain Improved Partner Portal) server.
+
+When enabled, security events and threat detections will be reported to the configured CIPP server for centralized monitoring and analysis.
+
+When disabled, no reporting to CIPP servers will occur.
+
+Requires: CIPP Server URL to be configured
+
+Default: Disabled</string>
+
+      <string id="CippServerUrl">CIPP Server URL</string>
+      <string id="CippServerUrl_Help">Specifies the base URL for the CyberDrain CIPP server where security events should be reported.
+
+This should be the full URL including the protocol (https://) to your CIPP server endpoint.
+
+Example: https://your-cipp-server.com
+
+Required when CIPP Reporting is enabled.
+
+Default: Empty</string>
+
+      <string id="CustomRulesUrl">Custom Detection Rules URL</string>
+      <string id="CustomRulesUrl_Help">Specifies a custom URL from which to fetch threat detection rules.
+
+This allows organizations to use custom or updated detection rules beyond the default set. The URL should point to a JSON file containing detection rules in the expected format.
+
+Example: https://raw.githubusercontent.com/YourOrg/rules/main/detection-rules.json
+
+Leave empty to use default detection rules.
+
+Default: https://raw.githubusercontent.com/CyberDrain/ProjectX/refs/heads/main/rules/detection-rules.json</string>
+
+      <string id="UpdateInterval">Detection Rules Update Interval</string>
+      <string id="UpdateInterval_Help">Specifies how often (in hours) the extension should check for and download updated detection rules.
+
+Valid range: 1 to 168 hours (1 week)
+
+Lower values provide more frequent updates but may impact performance. Higher values reduce network usage but may delay security updates.
+
+Default: 24 hours</string>
+
+      <!-- Logging Policies -->
+      <string id="EnableDebugLogging">Enable Debug Logging</string>
+      <string id="EnableDebugLogging_Help">Controls whether the extension generates detailed debug logs for troubleshooting purposes.
+
+When enabled, the extension will log detailed information about its operations, including detection processes, configuration changes, and internal operations.
+
+When disabled, only basic operational logs will be generated.
+
+Warning: Debug logging may impact performance and should only be enabled for troubleshooting purposes.
+
+Default: Disabled</string>
+
+      <!-- Branding Policies -->
+      <string id="CompanyName">Company Name</string>
+      <string id="CompanyName_Help">Specifies the company name to display in the extension interface.
+
+This name will appear in extension popups, notifications, and other user-facing elements as part of white-labeling customization.
+
+Leave empty to use the default "CyberDrain" branding.
+
+Default: Empty</string>
+
+      <string id="ProductName">Product Name</string>
+      <string id="ProductName_Help">Specifies a custom name for the extension to display in the user interface.
+
+This allows organizations to rebrand the extension with their own product name while maintaining the underlying functionality.
+
+Leave empty to use the default "Check" product name.
+
+Default: Empty</string>
+
+      <string id="SupportEmail">Support Email Address</string>
+      <string id="SupportEmail_Help">Specifies the email address users should contact for support with the extension.
+
+This email address will be displayed in extension interfaces and error messages, allowing users to contact your organization's support team instead of CyberDrain support.
+
+Must be a valid email address format.
+
+Default: Empty</string>
+
+      <string id="PrimaryColor">Primary Theme Color</string>
+      <string id="PrimaryColor_Help">Specifies the primary color for the extension interface using a hexadecimal color code.
+
+This color will be used for buttons, highlights, and other interface elements to match your organization's branding.
+
+Must be in the format #RRGGBB or #RGB (e.g., #FF6600 or #F60).
+
+Default: #F77F00 (CyberDrain Orange)</string>
+
+      <string id="LogoUrl">Company Logo URL</string>
+      <string id="LogoUrl_Help">Specifies the URL of your company logo to display in the extension interface.
+
+The logo should be a square image (recommended 48x48 pixels or larger) accessible via HTTPS. Supported formats include PNG, JPG, and SVG.
+
+Leave empty to use the default CyberDrain logo.
+
+Example: https://yourcompany.com/logo.png
+
+Default: Empty</string>
+    </stringTable>
+  </resources>
+</policyDefinitionResources>

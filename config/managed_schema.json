@@ -1,297 +1,57 @@
 {
   "type": "object",
   "properties": {
-    "extensionEnabled": {
-      "title": "Extension Enabled",
-      "description": "Enable or disable the extension globally",
-      "type": "boolean",
-      "default": true
-    },
-    "BrandingName": {
-      "title": "Extension Display Name",
-      "description": "Name displayed in the extension popup and notifications",
-      "type": "string",
-      "default": "Check"
-    },
-    "BrandingImage": {
-      "title": "Branding Logo URL",
-      "description": "URL or data: URI of a square logo for branding",
-      "type": "string"
-    },
-    "ValidPageBadgeImage": {
-      "title": "Valid Page Badge Image",
-      "description": "URL or data: URI for badge shown on legitimate Microsoft login pages",
-      "type": "string"
-    },
-    "ExtraWhitelist": {
-      "title": "Extra Trusted Domains",
-      "description": "Additional domains to treat as trusted for login purposes",
-      "type": "array",
-      "items": {
-        "type": "string",
-        "description": "Origin like https://idp.contoso.com"
-      },
-      "default": []
-    },
-    "CIPPReportingServer": {
-      "title": "CIPP Reporting Server",
-      "description": "Base URL to POST JSON events for CyberDrain CIPP integration",
-      "type": "string"
-    },
-    "AlertWhenLogon": {
-      "title": "Alert on Successful Login",
-      "description": "Send notifications when users successfully log into Microsoft 365",
-      "type": "boolean",
-      "default": true
-    },
-    "StrictResourceAudit": {
-      "title": "Strict Resource Audit",
-      "description": "Flag pages with non-Microsoft subresources as suspicious",
-      "type": "boolean",
-      "default": true
-    },
-    "RequireMicrosoftAction": {
-      "title": "Require Microsoft Form Action",
-      "description": "Block login forms that don't submit to Microsoft domains",
-      "type": "boolean",
-      "default": true
-    },
-    "enablePhishingDetection": {
-      "title": "Phishing Detection Enabled",
-      "description": "Enable real-time Microsoft 365 phishing detection",
-      "type": "boolean",
-      "default": true
-    },
-    "lockCredentialsOnPhishing": {
-      "title": "Lock Credentials on Phishing",
-      "description": "Disable input fields when phishing is detected",
-      "type": "boolean",
-      "default": true
-    },
-    "preventPhishingSubmission": {
-      "title": "Prevent Phishing Form Submission",
-      "description": "Block form submissions on detected phishing pages",
-      "type": "boolean",
-      "default": true
-    },
-    "showValidPageBadge": {
-      "title": "Show Valid Page Badge",
-      "description": "Display validation badge on legitimate Microsoft login pages",
-      "type": "boolean",
-      "default": true
-    },
-    "enableContentManipulation": {
-      "title": "Content Manipulation Enabled",
-      "description": "Allow the extension to manipulate page content for security",
-      "type": "boolean",
-      "default": true
-    },
-    "enableUrlMonitoring": {
-      "title": "URL Monitoring Enabled",
-      "description": "Monitor and analyze visited URLs for threats",
-      "type": "boolean",
-      "default": true
-    },
-    "blockMaliciousUrls": {
-      "title": "Block Malicious URLs",
-      "description": "Automatically block known malicious websites",
-      "type": "boolean",
-      "default": true
-    },
-    "blockPhishingAttempts": {
-      "title": "Block Phishing Attempts",
-      "description": "Block suspected phishing websites",
-      "type": "boolean",
-      "default": true
-    },
-    "whitelistedDomains": {
-      "title": "Additional Whitelisted Domains",
-      "description": "Legacy setting - use ExtraWhitelist instead",
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "default": []
-    },
-    "blacklistedDomains": {
-      "title": "Blacklisted Domains",
-      "description": "List of domains that are always blocked",
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "default": []
-    },
-    "enableLogging": {
-      "title": "Activity Logging Enabled",
-      "description": "Log security events and activities",
-      "type": "boolean",
-      "default": true
-    },
-    "logLevel": {
-      "title": "Log Level",
-      "description": "Level of detail for logging",
-      "type": "string",
-      "enum": ["error", "warn", "info", "debug"],
-      "default": "info"
-    },
-    "maxLogEntries": {
-      "title": "Maximum Log Entries",
-      "description": "Maximum number of log entries to keep",
-      "type": "integer",
-      "minimum": 100,
-      "maximum": 10000,
-      "default": 1000
-    },
     "showNotifications": {
       "title": "Show Notifications",
       "description": "Display security notifications and warnings",
       "type": "boolean",
       "default": true
     },
-    "notificationDuration": {
-      "title": "Notification Duration (ms)",
-      "description": "How long notifications stay visible in milliseconds",
-      "type": "integer",
-      "minimum": 1000,
-      "maximum": 10000,
-      "default": 5000
+    "enableValidPageBadge": {
+      "title": "Show Valid Page Badge",
+      "description": "Display validation badge on legitimate Microsoft login pages",
+      "type": "boolean",
+      "default": true
     },
-    "detectionRules": {
-      "title": "Detection Rules Configuration",
-      "description": "Configuration for threat detection rules",
-      "type": "object",
-      "properties": {
-        "enableCustomRules": {
-          "title": "Enable Custom Rules",
-          "description": "Allow custom detection rules to be loaded",
-          "type": "boolean",
-          "default": false
-        },
-        "customRulesUrl": {
-          "title": "Custom Rules URL",
-          "description": "URL to fetch custom detection rules from",
-          "type": "string",
-          "format": "uri",
-          "default": ""
-        },
-        "updateInterval": {
-          "title": "Update Interval (ms)",
-          "description": "How often to update detection rules in milliseconds",
-          "type": "integer",
-          "minimum": 3600000,
-          "maximum": 604800000,
-          "default": 86400000
-        },
-        "strictMode": {
-          "title": "Strict Mode",
-          "description": "Enable strict detection mode for enhanced security",
-          "type": "boolean",
-          "default": false
-        }
-      },
-      "additionalProperties": false
+    "enablePageBlocking": {
+      "title": "Page Blocking Enabled",
+      "description": "Enable blocking of malicious pages",
+      "type": "boolean",
+      "default": true
     },
-    "enterpriseMode": {
-      "title": "Enterprise Mode",
-      "description": "Enable enterprise-specific features",
+    "enableCippReporting": {
+      "title": "CIPP Reporting Enabled",
+      "description": "Enable reporting to CIPP server",
       "type": "boolean",
       "default": false
     },
-    "organizationName": {
-      "title": "Organization Name",
-      "description": "Name of the organization managing this extension",
-      "type": "string",
-      "default": ""
-    },
-    "centralManagement": {
-      "title": "Central Management",
-      "description": "Enable central management features",
-      "type": "boolean",
-      "default": false
-    },
-    "reportingEndpoint": {
-      "title": "Reporting Endpoint",
-      "description": "URL endpoint for sending compliance reports",
+    "cippServerUrl": {
+      "title": "CIPP Server URL",
+      "description": "Base URL for CIPP reporting server",
       "type": "string",
       "format": "uri",
       "default": ""
     },
-    "complianceMode": {
-      "title": "Compliance Mode",
-      "description": "Enable compliance monitoring and reporting",
+    "customRulesUrl": {
+      "title": "Custom Rules URL",
+      "description": "URL to fetch custom detection rules from",
+      "type": "string",
+      "format": "uri",
+      "default": ""
+    },
+    "updateInterval": {
+      "title": "Update Interval (hours)",
+      "description": "How often to update detection rules in hours",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 168,
+      "default": 24
+    },
+    "enableDebugLogging": {
+      "title": "Debug Logging Enabled",
+      "description": "Enable debug logging for troubleshooting",
       "type": "boolean",
       "default": false
-    },
-    "respectDoNotTrack": {
-      "title": "Respect Do Not Track",
-      "description": "Honor browser's Do Not Track setting",
-      "type": "boolean",
-      "default": true
-    },
-    "enableIncognitoMode": {
-      "title": "Enable in Incognito Mode",
-      "description": "Allow extension to run in private browsing mode",
-      "type": "boolean",
-      "default": true
-    },
-    "disableInPrivateBrowsing": {
-      "title": "Disable in Private Browsing",
-      "description": "Disable extension functionality in private browsing mode",
-      "type": "boolean",
-      "default": false
-    },
-    "features": {
-      "title": "Feature Flags",
-      "description": "Enable or disable specific extension features",
-      "type": "object",
-      "properties": {
-        "urlBlocking": {
-          "title": "URL Blocking",
-          "description": "Enable URL blocking functionality",
-          "type": "boolean",
-          "default": true
-        },
-        "contentInjection": {
-          "title": "Content Injection",
-          "description": "Enable content injection capabilities",
-          "type": "boolean",
-          "default": true
-        },
-        "realTimeScanning": {
-          "title": "Real-time Scanning",
-          "description": "Enable real-time threat scanning",
-          "type": "boolean",
-          "default": true
-        },
-        "behaviorAnalysis": {
-          "title": "Behavior Analysis",
-          "description": "Enable behavioral analysis features",
-          "type": "boolean",
-          "default": false
-        }
-      },
-      "additionalProperties": false
-    },
-    "enforcedPolicies": {
-      "title": "Enforced Policies",
-      "description": "Policies that cannot be changed by users",
-      "type": "object",
-      "patternProperties": {
-        ".*": {
-          "type": "object",
-          "properties": {
-            "locked": {
-              "type": "boolean"
-            },
-            "reason": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        }
-      },
-      "additionalProperties": false
     },
     "customBranding": {
       "title": "Custom Branding",
@@ -317,33 +77,12 @@
           "format": "email",
           "default": ""
         },
-        "supportUrl": {
-          "title": "Support URL",
-          "description": "URL for user support and documentation",
-          "type": "string",
-          "format": "uri",
-          "default": ""
-        },
-        "privacyPolicyUrl": {
-          "title": "Privacy Policy URL",
-          "description": "URL to privacy policy",
-          "type": "string",
-          "format": "uri",
-          "default": ""
-        },
-        "termsOfServiceUrl": {
-          "title": "Terms of Service URL",
-          "description": "URL to terms of service",
-          "type": "string",
-          "format": "uri",
-          "default": ""
-        },
         "primaryColor": {
           "title": "Primary Color",
           "description": "Primary theme color (hex code)",
           "type": "string",
           "pattern": "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$",
-          "default": "#2563eb"
+          "default": "#F77F00"
         },
         "logoUrl": {
           "title": "Logo URL",
@@ -351,76 +90,6 @@
           "type": "string",
           "format": "uri",
           "default": ""
-        },
-        "showCompanyBranding": {
-          "title": "Show Company Branding",
-          "description": "Display company branding elements",
-          "type": "boolean",
-          "default": true
-        }
-      },
-      "additionalProperties": false
-    },
-    "performanceSettings": {
-      "title": "Performance Settings",
-      "description": "Settings to control extension performance",
-      "type": "object",
-      "properties": {
-        "scanDelay": {
-          "title": "Scan Delay (ms)",
-          "description": "Delay before scanning page content in milliseconds",
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 5000,
-          "default": 100
-        },
-        "maxScanDepth": {
-          "title": "Maximum Scan Depth",
-          "description": "Maximum depth for DOM scanning",
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 50,
-          "default": 10
-        },
-        "enableCaching": {
-          "title": "Enable Caching",
-          "description": "Enable caching for improved performance",
-          "type": "boolean",
-          "default": true
-        },
-        "cacheTimeout": {
-          "title": "Cache Timeout (ms)",
-          "description": "How long to cache analysis results in milliseconds",
-          "type": "integer",
-          "minimum": 60000,
-          "maximum": 3600000,
-          "default": 300000
-        }
-      },
-      "additionalProperties": false
-    },
-    "debugSettings": {
-      "title": "Debug Settings",
-      "description": "Settings for debugging and development",
-      "type": "object",
-      "properties": {
-        "debugMode": {
-          "title": "Debug Mode",
-          "description": "Enable debug mode with additional logging",
-          "type": "boolean",
-          "default": false
-        },
-        "verboseLogging": {
-          "title": "Verbose Logging",
-          "description": "Enable verbose logging for troubleshooting",
-          "type": "boolean",
-          "default": false
-        },
-        "enableConsoleOutput": {
-          "title": "Enable Console Output",
-          "description": "Enable console output for debugging",
-          "type": "boolean",
-          "default": false
         }
       },
       "additionalProperties": false

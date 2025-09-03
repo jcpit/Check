@@ -1248,11 +1248,11 @@ function showWarningBanner(reason, analysisData) {
       // Update existing banner content and color
       banner.innerHTML = bannerContent;
       banner.style.background = bannerColor;
-      
+
       // Ensure page content is still pushed down
       const bannerHeight = banner.offsetHeight || 64;
       document.body.style.marginTop = `${bannerHeight}px`;
-      
+
       logger.log("Warning banner updated with new analysis");
       return;
     }
@@ -1301,12 +1301,17 @@ function showValidBadge() {
 
     // Check if mobile using media query (more conservative breakpoint)
     const isMobile = window.matchMedia("(max-width: 480px)").matches;
-    
-    console.log("Screen width:", window.innerWidth, "Media query matches:", isMobile); // Debug log
+
+    console.log(
+      "Screen width:",
+      window.innerWidth,
+      "Media query matches:",
+      isMobile
+    ); // Debug log
 
     const badge = document.createElement("div");
     badge.id = "ms365-valid-badge";
-    
+
     if (isMobile) {
       // Mobile: Banner style
       badge.style.cssText = `
@@ -1346,7 +1351,6 @@ function showValidBadge() {
       document.body.appendChild(badge);
       const bannerHeight = badge.offsetHeight || 64;
       document.body.style.marginTop = `${bannerHeight}px`;
-      
     } else {
       // Desktop: Badge style (original)
       badge.style.cssText = `
@@ -1370,7 +1374,7 @@ function showValidBadge() {
           <span>Verified Microsoft Domain</span>
         </div>
       `;
-      
+
       document.body.appendChild(badge);
     }
 
