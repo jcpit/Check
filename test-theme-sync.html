@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Theme Synchronization Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        .test-step {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        .code {
+            background: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .expected {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .warning {
+            background: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎨 Theme Synchronization Test</h1>
+    <p>This test verifies that the popup respects the light/dark mode setting from the options page.</p>
+
+    <div class="test-section">
+        <h2>🔧 Setup Instructions</h2>
+        <div class="test-step">
+            <strong>1. Load Extension</strong><br>
+            Load the extension in Chrome using Developer Mode:<br>
+            <span class="code">chrome://extensions/</span> → Enable Developer Mode → Load unpacked
+        </div>
+        <div class="test-step">
+            <strong>2. Open Options Page</strong><br>
+            Right-click extension icon → <span class="code">Options</span><br>
+            OR navigate to: <span class="code">chrome-extension://[extension-id]/options/options.html</span>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🧪 Test Cases</h2>
+        
+        <div class="test-step">
+            <strong>Test 1: Default Theme</strong><br>
+            1. Fresh install - theme should follow system preference<br>
+            2. Open popup and verify it matches system dark/light mode<br>
+            <div class="expected">✅ Expected: Popup theme matches system preference</div>
+        </div>
+
+        <div class="test-step">
+            <strong>Test 2: Manual Light Mode</strong><br>
+            1. In options page, click the dark mode toggle to set light mode<br>
+            2. Open popup immediately after<br>
+            <div class="expected">✅ Expected: Popup shows light theme (white background, dark text)</div>
+        </div>
+
+        <div class="test-step">
+            <strong>Test 3: Manual Dark Mode</strong><br>
+            1. In options page, click the toggle again to set dark mode<br>
+            2. Open popup immediately after<br>
+            <div class="expected">✅ Expected: Popup shows dark theme (dark background, light text)</div>
+        </div>
+
+        <div class="test-step">
+            <strong>Test 4: Text Readability</strong><br>
+            1. Switch to dark mode in options<br>
+            2. Open popup and check all text elements are clearly readable<br>
+            3. Pay attention to: statistics labels, activity text, footer links<br>
+            <div class="expected">✅ Expected: All text has sufficient contrast in dark mode</div>
+        </div>
+
+        <div class="test-step">
+            <strong>Test 5: Real-time Sync</strong><br>
+            1. Keep popup open<br>
+            2. In another tab, open options page<br>
+            3. Toggle theme while watching popup<br>
+            <div class="expected">✅ Expected: Popup theme changes instantly without closing/reopening</div>
+        </div>
+
+        <div class="test-step">
+            <strong>Test 6: Persistence</strong><br>
+            1. Set a specific theme in options<br>
+            2. Close and reopen popup multiple times<br>
+            3. Restart browser and test popup<br>
+            <div class="expected">✅ Expected: Theme preference persists across sessions</div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔍 What to Look For</h2>
+        
+        <div class="test-step">
+            <strong>Light Theme Popup:</strong><br>
+            • White/light gray backgrounds<br>
+            • Dark text (nearly black)<br>
+            • Light borders and surfaces<br>
+            • Orange/blue accent colors preserved
+        </div>
+
+        <div class="test-step">
+            <strong>Dark Theme Popup:</strong><br>
+            • Dark gray/blue backgrounds<br>
+            • Light text (nearly white)<br>
+            • Dark borders with subtle highlights<br>
+            • Orange/blue accent colors preserved
+        </div>
+
+        <div class="test-step warning">
+            <strong>⚠️ Troubleshooting:</strong><br>
+            • If popup doesn't change, check browser console for errors<br>
+            • Verify Chrome storage permissions are granted<br>
+            • Test with background script enabled/disabled<br>
+            • Check if system preference override is working
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🛠️ Technical Details</h2>
+        <div class="test-step">
+            <strong>Storage Key:</strong> <span class="code">themeMode</span><br>
+            <strong>Values:</strong> <span class="code">"light"</span> | <span class="code">"dark"</span> | <span class="code">undefined</span> (system)<br>
+            <strong>CSS Classes:</strong> <span class="code">.light-theme</span> | <span class="code">.dark-theme</span><br>
+            <strong>Sync Method:</strong> Chrome storage change listener
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>📝 Test Results</h2>
+        <p>Record your test results here:</p>
+        <div class="test-step">
+            <strong>📝 Test Results</strong><br>
+            Record your test results here:<br>
+            <strong>Test 1 (Default):</strong> ☐ Pass ☐ Fail<br>
+            <strong>Test 2 (Light):</strong> ☐ Pass ☐ Fail<br>
+            <strong>Test 3 (Dark):</strong> ☐ Pass ☐ Fail<br>
+            <strong>Test 4 (Readability):</strong> ☐ Pass ☐ Fail<br>
+            <strong>Test 5 (Real-time):</strong> ☐ Pass ☐ Fail<br>
+            <strong>Test 6 (Persistence):</strong> ☐ Pass ☐ Fail<br>
+            <br>
+            <strong>🔍 Text Readability Check:</strong><br>
+            Open popup console and run: <br>
+            <span class="code">fetch('test-text-readability.js').then(r=>r.text()).then(eval)</span>
+        </div>
+    </div>
+
+    <script>
+        console.log("🎨 Theme Sync Test Page Loaded");
+        console.log("Check the extension popup theme synchronization using the test cases above.");
+        console.log("Current system preference:", window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    </script>
+</body>
+</html>

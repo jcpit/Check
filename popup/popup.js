@@ -119,6 +119,10 @@ class CheckPopup {
         this.brandingConfig = { companyName: "Check", productName: "Check" };
         this.applyBranding();
         console.log("Applying default branding");
+        
+        // Initialize theme even in fallback mode
+        await this.initializeTheme();
+        
         this.showNotification("Extension running in limited mode", "warning");
         this.hideLoading();
         return;
@@ -138,6 +142,9 @@ class CheckPopup {
 
       // Apply branding
       this.applyBranding();
+
+      // Initialize theme
+      await this.initializeTheme();
 
       // Load data
       await this.loadStatistics();
@@ -1080,6 +1087,61 @@ class CheckPopup {
 
   hideNotification() {
     this.elements.notificationToast.style.display = "none";
+  }
+
+  // Theme Management
+  async initializeTheme() {
+    try {
+      // Get stored theme preference from Chrome storage
+      const result = await chrome.storage.local.get(["themeMode"]);
+      const stored = result.themeMode;
+
+      let isDarkMode;
+
+      if (stored === "dark") {
+        isDarkMode = true;
+      } else if (stored === "light") {
+        isDarkMode = false;
+      } else {
+        // Default to system preference
+        isDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      }
+
+      this.applyTheme(isDarkMode);
+
+      // Listen for theme changes from the options page
+      chrome.storage.onChanged.addListener((changes, areaName) => {
+        if (areaName === "local" && changes.themeMode) {
+          const newTheme = changes.themeMode.newValue;
+          if (newTheme === "dark") {
+            this.applyTheme(true);
+          } else if (newTheme === "light") {
+            this.applyTheme(false);
+          } else {
+            // System preference
+            const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+            this.applyTheme(systemDark);
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Check: Failed to initialize theme:", error);
+      // Fallback to system preference
+      const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      this.applyTheme(systemDark);
+    }
+  }
+
+  applyTheme(isDarkMode) {
+    const html = document.documentElement;
+
+    if (isDarkMode) {
+      html.classList.add("dark-theme");
+      html.classList.remove("light-theme");
+    } else {
+      html.classList.remove("dark-theme");
+      html.classList.add("light-theme");
+    }
   }
 }
 
