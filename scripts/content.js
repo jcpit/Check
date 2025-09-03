@@ -1223,16 +1223,21 @@ function showWarningBanner(reason, analysisData) {
     }
 
     const bannerContent = `
-      <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
+      <div style="display: flex; align-items: center; justify-content: center; gap: 16px; position: relative; padding-right: 48px;">
         <span style="font-size: 24px;">${bannerIcon}</span>
         <div>
           <strong>${bannerTitle}</strong><br>
           <small>${reason}${detailsText}</small>
         </div>
-        <button onclick="this.parentElement.parentElement.remove();" style="
+        <button onclick="this.parentElement.parentElement.remove(); document.body.style.marginTop = '0';" title="Dismiss" style="
+          position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
           background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
-          color: white; padding: 8px 16px; border-radius: 4px; cursor: pointer;
-        ">Dismiss</button>
+          color: white; padding: 0; border-radius: 4px; cursor: pointer;
+          width: 24px; height: 24px; min-width: 24px; min-height: 24px; max-width: 24px; max-height: 24px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 14px; font-weight: bold; line-height: 1; box-sizing: border-box;
+          font-family: monospace;
+        ">×</button>
       </div>
     `;
 
@@ -1243,6 +1248,11 @@ function showWarningBanner(reason, analysisData) {
       // Update existing banner content and color
       banner.innerHTML = bannerContent;
       banner.style.background = bannerColor;
+      
+      // Ensure page content is still pushed down
+      const bannerHeight = banner.offsetHeight || 64;
+      document.body.style.marginTop = `${bannerHeight}px`;
+      
       logger.log("Warning banner updated with new analysis");
       return;
     }
@@ -1266,6 +1276,10 @@ function showWarningBanner(reason, analysisData) {
 
     banner.innerHTML = bannerContent;
     document.body.appendChild(banner);
+
+    // Push page content down to avoid covering login header
+    const bannerHeight = banner.offsetHeight || 64; // fallback height
+    document.body.style.marginTop = `${bannerHeight}px`;
 
     logger.log("Warning banner displayed");
   } catch (error) {

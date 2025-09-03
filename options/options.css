@@ -1958,22 +1958,22 @@ body {
   .logs-controls {
     padding: 16px;
   }
-  
+
   .logs-filters {
     flex-direction: column;
     gap: 12px;
     align-items: stretch;
   }
-  
+
   .logs-filters .setting-label {
     margin-bottom: 8px;
   }
-  
+
   .logs-filters .setting-select {
     margin-bottom: 12px;
     width: 100%;
   }
-  
+
   /* Button group for mobile */
   .logs-filters button {
     display: inline-block;
@@ -1983,12 +1983,12 @@ body {
     font-size: 13px;
     flex: 1 1 auto;
   }
-  
+
   /* Create horizontal button layout */
   .logs-filters button:first-of-type {
     margin-left: 0;
   }
-  
+
   .logs-filters button:last-of-type {
     margin-right: 0;
   }
