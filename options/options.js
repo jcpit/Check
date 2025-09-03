@@ -450,12 +450,13 @@ class CheckOptions {
   }
 
   populateFormFields() {
-    console.log('populateFormFields called with config:', this.config);
-    console.log('Config updateInterval values:', {
-      'detectionRules.updateInterval': this.config?.detectionRules?.updateInterval,
-      'updateInterval': this.config?.updateInterval
+    console.log("populateFormFields called with config:", this.config);
+    console.log("Config updateInterval values:", {
+      "detectionRules.updateInterval":
+        this.config?.detectionRules?.updateInterval,
+      updateInterval: this.config?.updateInterval,
     });
-    
+
     // Extension settings
     this.elements.enablePageBlocking =
       document.getElementById("enablePageBlocking");
@@ -496,30 +497,35 @@ class CheckOptions {
     if (this.config?.updateInterval) {
       // Legacy field takes precedence and is always in hours
       updateIntervalHours = this.config.updateInterval;
-      console.log('Got updateInterval from legacy field:', updateIntervalHours);
+      console.log("Got updateInterval from legacy field:", updateIntervalHours);
     } else if (this.config?.detectionRules?.updateInterval) {
       // If it's in the detectionRules object, it could be milliseconds or hours
       const interval = this.config.detectionRules.updateInterval;
       updateIntervalHours =
         interval > 1000 ? Math.round(interval / 3600000) : interval;
-      console.log('Got updateInterval from detectionRules:', interval, '-> hours:', updateIntervalHours);
+      console.log(
+        "Got updateInterval from detectionRules:",
+        interval,
+        "-> hours:",
+        updateIntervalHours
+      );
     } else {
-      console.log('Using default updateInterval:', updateIntervalHours);
+      console.log("Using default updateInterval:", updateIntervalHours);
     }
-    
+
     // Ensure the element exists before setting value
     if (this.elements.updateInterval) {
-      console.log('Setting updateInterval field to:', updateIntervalHours);
+      console.log("Setting updateInterval field to:", updateIntervalHours);
       this.elements.updateInterval.value = updateIntervalHours;
       // Force a refresh to ensure the value sticks
       setTimeout(() => {
         if (this.elements.updateInterval.value != updateIntervalHours) {
-          console.log('Value didn\'t stick, retrying...');
+          console.log("Value didn't stick, retrying...");
           this.elements.updateInterval.value = updateIntervalHours;
         }
       }, 100);
     } else {
-      console.log('updateInterval element not found!');
+      console.log("updateInterval element not found!");
     }
 
     // Logging settings

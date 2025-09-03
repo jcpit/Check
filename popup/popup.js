@@ -249,8 +249,7 @@ class CheckPopup {
       if (storageResult) {
         this.brandingConfig = {
           companyName: storageResult.companyName || "CyberDrain",
-          productName:
-            storageResult.productName || "Check",
+          productName: storageResult.productName || "Check",
           logoUrl: storageResult.logoUrl || "images/icon32.png",
           supportUrl:
             storageResult.supportUrl || "https://support.cyberdrain.com",
