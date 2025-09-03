@@ -1,4 +1,4 @@
-# Microsoft 365 Phishing Protection
+# Check
 
 An open-source, Manifest V3 browser extension for detecting phishing attacks that
 impersonate Microsoft 365 sign-in pages.

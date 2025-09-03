@@ -1,5 +1,5 @@
 /**
- * Microsoft 365 Phishing Protection - Final Rule-Driven Content Script
+ * Check - Final Rule-Driven Content Script
  * 100% rule-driven architecture - NO hardcoded detections
  *
  * Logic Flow (CORRECTED):
@@ -1143,7 +1143,7 @@ function showBlockingOverlay(reason, analysisData) {
             <p><strong>Microsoft 365 login page detected on suspicious domain.</strong></p>
             <p>This site may be attempting to steal your credentials and has been blocked for your protection.</p>
             <div class="reason">Reason: ${reason}</div>
-            <div class="reason">Blocked by: Microsoft 365 Phishing Protection</div>
+            <div class="reason">Blocked by: Check</div>
             <div class="reason">No override available - contact your administrator if this is incorrect</div>
           </div>
         </body>
@@ -1641,7 +1641,7 @@ async function applyBrandingColors() {
  */
 function initializeProtection() {
   try {
-    logger.log("Initializing Microsoft 365 phishing protection");
+    logger.log("Initializing Check");
 
     // Apply branding colors first
     applyBrandingColors();

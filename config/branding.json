@@ -1,38 +1,31 @@
 {
   "companyName": "CyberDrain",
-  "productName": "Microsoft 365 Phishing Protection",
+  "productName": "Check",
   "version": "1.0.0",
   "description": "Protect against phishing attacks targeting Microsoft 365 login pages with enterprise-grade detection",
-  
   "branding": {
     "primaryColor": "#F77F00",
     "primaryHover": "#E56F00",
     "primaryLight": "rgba(247, 127, 0, 0.1)",
     "primaryDark": "#D96800",
-    
     "secondaryColor": "#003049",
     "secondaryHover": "#004B73",
     "secondaryLight": "rgba(0, 48, 73, 0.1)",
     "secondaryDark": "#002236",
-    
     "accentColor": "#005C63",
     "successColor": "#005C63",
     "warningColor": "#F77F00",
     "errorColor": "#DC2626",
-    
     "textPrimary": "#FFFFFF",
     "textSecondary": "#9CA3AF",
     "textMuted": "#6B7280",
     "textInverse": "#003049",
-    
     "bgPrimary": "#003049",
     "bgSecondary": "rgba(255, 255, 255, 0.05)",
     "bgSurface": "rgba(255, 255, 255, 0.03)",
-    
     "border": "rgba(255, 255, 255, 0.1)",
     "borderHover": "rgba(247, 127, 0, 0.3)"
   },
-  
   "assets": {
     "logoUrl": "images/icon48.png",
     "iconUrl": "images/icon32.png",
@@ -44,7 +37,6 @@
       "images/screenshot3.png"
     ]
   },
-  
   "contact": {
     "supportEmail": "support@cyberdrain.com",
     "supportUrl": "https://support.cyberdrain.com",
@@ -53,14 +45,12 @@
     "websiteUrl": "https://cyberdrain.com",
     "documentationUrl": "https://docs.cyberdrain.com"
   },
-  
   "legal": {
     "privacyPolicyUrl": "https://cyberdrain.com/privacy",
     "termsOfServiceUrl": "https://cyberdrain.com/terms",
     "licenseUrl": "https://cyberdrain.com/license",
     "copyrightNotice": "© 2024 CyberDrain. All rights reserved."
   },
-  
   "customization": {
     "showCompanyBranding": true,
     "allowUserCustomization": true,
@@ -68,20 +58,18 @@
     "customCssEnabled": true,
     "customIconsEnabled": true
   },
-  
   "features": {
-    "welcomeMessage": "Welcome to CyberDrain's Microsoft 365 Phishing Protection - Safeguard Your Organization",
+    "welcomeMessage": "Welcome to Check, CyberDrain's Microsoft 365 Phishing Protection - Safeguard Your Organization",
     "tagline": "Advanced phishing detection for Microsoft 365 login pages by CyberDrain",
     "securityBadgeText": "Protected by CyberDrain",
     "blockedPageTitle": "Phishing Attempt Blocked by CyberDrain",
     "blockedPageMessage": "This page appears to be a phishing attempt targeting Microsoft 365 credentials. CyberDrain has blocked access to protect your organization."
   },
-  
   "customText": {
-    "extensionDescription": "Microsoft 365 Phishing Protection provides enterprise-grade detection and blocking of phishing attempts targeting Microsoft 365 login pages, with comprehensive policy management and audit capabilities.",
+    "extensionDescription": "Check provides enterprise-grade detection and blocking of phishing attempts targeting Microsoft 365 login pages, with comprehensive policy management and audit capabilities.",
     "securityFeatures": [
       "Real-time Microsoft 365 phishing detection",
-      "Advanced login page verification", 
+      "Advanced login page verification",
       "Cryptographic verification badges",
       "Enterprise policy enforcement",
       "Comprehensive security audit logging",
@@ -96,14 +84,12 @@
       "24/7 enterprise security support"
     ]
   },
-  
   "socialMedia": {
     "twitter": "https://twitter.com/cyberdrain",
     "linkedin": "https://linkedin.com/company/cyberdrain",
     "youtube": "https://youtube.com/c/cyberdrain",
     "github": "https://github.com/cyberdrain"
   },
-  
   "whiteLabel": {
     "enabled": true,
     "allowCustomColors": true,
@@ -122,7 +108,6 @@
       "custom_css"
     ]
   },
-  
   "licensing": {
     "licenseKey": "",
     "licensedTo": "",
@@ -138,7 +123,6 @@
       "api_access"
     ]
   },
-  
   "deployment": {
     "supportedPlatforms": [
       "Chrome",
@@ -156,7 +140,6 @@
       "Manual Installation"
     ]
   },
-  
   "support": {
     "documentationUrl": "https://docs.check.com/drain",
     "knowledgeBaseUrl": "https://support.check.com/kb",
@@ -171,7 +154,6 @@
       "ticket_system"
     ]
   },
-  
   "analytics": {
     "enabled": false,
     "trackingId": "",
@@ -184,14 +166,12 @@
     "anonymizeData": true,
     "respectDoNotTrack": true
   },
-  
   "updates": {
     "autoUpdateEnabled": true,
     "updateChannel": "stable",
     "updateCheckInterval": 86400000,
     "releaseNotesUrl": "https://releases.check.com/drain"
   },
-  
   "metadata": {
     "created": "2024-01-01T00:00:00Z",
     "modified": "2024-01-01T00:00:00Z",

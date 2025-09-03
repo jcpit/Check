@@ -11,7 +11,7 @@
       "title": "Extension Display Name",
       "description": "Name displayed in the extension popup and notifications",
       "type": "string",
-      "default": "Microsoft 365 Phishing Protection"
+      "default": "Check"
     },
     "BrandingImage": {
       "title": "Branding Logo URL",

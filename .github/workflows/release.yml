@@ -14,7 +14,7 @@ on:
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -39,7 +39,7 @@ jobs:
       run: |
         # Create directory for the package
         mkdir -p extension-build
-        
+
         # Copy all necessary files
         cp manifest.json extension-build/
         cp -r scripts/ extension-build/
@@ -51,12 +51,12 @@ jobs:
         cp -r images/ extension-build/
         cp blocked.html extension-build/
         cp README.md extension-build/
-        
+
         # Create the zip package
         cd extension-build
         zip -r "../CyberShield-Drain-v${{ steps.version.outputs.version }}.zip" .
         cd ..
-        
+
         echo "Package created: CyberShield-Drain-v${{ steps.version.outputs.version }}.zip"
 
     - name: Verify package
@@ -66,10 +66,10 @@ jobs:
           echo "Error: Package file not created"
           exit 1
         fi
-        
+
         SIZE=$(ls -lh "$PACKAGE_FILE" | awk '{print $5}')
         echo "Package size: $SIZE"
-        
+
         echo "Package contents:"
         unzip -l "$PACKAGE_FILE"
 
@@ -77,30 +77,30 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ github.ref_name || format('v{0}', steps.version.outputs.version) }}
-        name: Microsoft 365 Phishing Protection v${{ steps.version.outputs.version }}
+        name: Check v${{ steps.version.outputs.version }}
         body: |
-          ## CyberShield Drain v${{ steps.version.outputs.version }}
-          
-          ### 🛡️ Microsoft 365 Phishing Protection Extension
-          
+          ## Check v${{ steps.version.outputs.version }}
+
+          ### 🛡️ Check Extension
+
           **Installation Instructions:**
           1. Download the `CyberShield-Drain-v${{ steps.version.outputs.version }}.zip` file
           2. Extract the ZIP file to a folder
           3. Open Chrome and go to `chrome://extensions/`
-          4. Enable "Developer mode" 
+          4. Enable "Developer mode"
           5. Click "Load unpacked" and select the extracted folder
-          
+
           ### Features:
           - Real-time phishing detection for Microsoft 365 login pages
           - Enterprise policy support (GPO/Intune)
           - Customizable branding and configuration
           - Comprehensive logging and monitoring
           - Modern Manifest V3 architecture
-          
+
           ### Requirements:
           - Chrome/Chromium browser (version 88+)
           - Manifest V3 support
-          
+
           Built by **CyberDrain** | Released on $(date '+%Y-%m-%d')
         files: |
           CyberShield-Drain-v${{ steps.version.outputs.version }}.zip

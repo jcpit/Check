@@ -401,7 +401,7 @@ class CheckOptions {
       );
       this.brandingConfig = {
         companyName: "CyberDrain",
-        productName: "Microsoft 365 Phishing Protection",
+        productName: "Check",
         supportEmail: "support@cyberdrain.com",
         primaryColor: "#F77F00",
         logoUrl: "images/icon48.png",
@@ -415,7 +415,7 @@ class CheckOptions {
   applyBranding() {
     // Update sidebar branding
     document.getElementById("sidebarTitle").textContent =
-      this.brandingConfig?.productName || "Microsoft 365 Phishing Protection";
+      this.brandingConfig?.productName || "Check";
 
     // Update sidebar logo
     const sidebarLogo = document.getElementById("sidebarLogo");
@@ -539,8 +539,7 @@ class CheckOptions {
       },
       detection: {
         title: "Detection Rules",
-        subtitle:
-          "Configure Microsoft 365 phishing detection patterns and configuration source",
+        subtitle: "Load custom detection rules for phishing protection",
       },
       logs: {
         title: "Activity Logs",

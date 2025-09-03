@@ -119,10 +119,10 @@ class CheckPopup {
         this.brandingConfig = { companyName: "Check", productName: "Check" };
         this.applyBranding();
         console.log("Applying default branding");
-        
+
         // Initialize theme even in fallback mode
         await this.initializeTheme();
-        
+
         this.showNotification("Extension running in limited mode", "warning");
         this.hideLoading();
         return;
@@ -250,7 +250,7 @@ class CheckPopup {
         this.brandingConfig = {
           companyName: storageResult.companyName || "CyberDrain",
           productName:
-            storageResult.productName || "Microsoft 365 Phishing Protection",
+            storageResult.productName || "Check",
           logoUrl: storageResult.logoUrl || "images/icon32.png",
           supportUrl:
             storageResult.supportUrl || "https://support.cyberdrain.com",
@@ -283,7 +283,7 @@ class CheckPopup {
       console.log("Using default branding configuration");
       this.brandingConfig = {
         companyName: "CyberDrain",
-        productName: "Microsoft 365 Phishing Protection",
+        productName: "Check",
         logoUrl: "images/icon32.png",
         supportUrl: "https://support.cyberdrain.com",
         privacyPolicyUrl: "https://cyberdrain.com/privacy",
@@ -297,7 +297,7 @@ class CheckPopup {
 
     // Update title
     this.elements.brandingTitle.textContent =
-      this.brandingConfig.productName || "Microsoft 365 Phishing Protection";
+      this.brandingConfig.productName || "Check";
 
     // Update logo with fallback handling
     if (this.brandingConfig.logoUrl) {
@@ -469,17 +469,20 @@ class CheckPopup {
             this.stats.scannedPages.toLocaleString();
           this.elements.securityEvents.textContent =
             this.stats.securityEvents.toLocaleString();
-          
+
           console.log("Statistics loaded from background script:", this.stats);
           return;
         }
       } catch (backgroundError) {
-        console.warn("Failed to get statistics from background script:", backgroundError);
+        console.warn(
+          "Failed to get statistics from background script:",
+          backgroundError
+        );
       }
 
       // Fallback: calculate statistics from storage directly
       console.log("Using fallback statistics calculation");
-      
+
       // Safe wrapper for chrome.* operations
       const safe = async (promise) => {
         try {
@@ -512,7 +515,8 @@ class CheckPopup {
           event.type === "threat_detected" ||
           event.type === "content_threat_detected" ||
           (event.action && event.action.includes("blocked")) ||
-          (event.threatLevel && ["high", "critical"].includes(event.threatLevel))
+          (event.threatLevel &&
+            ["high", "critical"].includes(event.threatLevel))
         ) {
           blockedThreats++;
         }
@@ -547,7 +551,7 @@ class CheckPopup {
         this.stats.scannedPages.toLocaleString();
       this.elements.securityEvents.textContent =
         this.stats.securityEvents.toLocaleString();
-        
+
       console.log("Statistics calculated from fallback method:", this.stats);
     } catch (error) {
       console.error("Failed to load statistics:", error);
@@ -1119,7 +1123,9 @@ class CheckPopup {
             this.applyTheme(false);
           } else {
             // System preference
-            const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+            const systemDark = window.matchMedia(
+              "(prefers-color-scheme: dark)"
+            ).matches;
             this.applyTheme(systemDark);
           }
         }
@@ -1127,7 +1133,9 @@ class CheckPopup {
     } catch (error) {
       console.error("Check: Failed to initialize theme:", error);
       // Fallback to system preference
-      const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const systemDark = window.matchMedia(
+        "(prefers-color-scheme: dark)"
+      ).matches;
       this.applyTheme(systemDark);
     }
   }

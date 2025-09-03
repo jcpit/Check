@@ -1,7 +1,7 @@
 /**
  * Check - Background Service Worker
  * Handles core extension functionality, policy enforcement, and threat detection
- * Enhanced with CyberDrain Microsoft 365 phishing detection
+ * Enhanced with Check, CyberDrain's Microsoft 365 phishing detection
  */
 
 import { ConfigManager } from "./modules/config-manager.js";
@@ -2052,7 +2052,8 @@ class CheckBackground {
           event.type === "threat_detected" ||
           event.type === "content_threat_detected" ||
           (event.action && event.action.includes("blocked")) ||
-          (event.threatLevel && ["high", "critical"].includes(event.threatLevel))
+          (event.threatLevel &&
+            ["high", "critical"].includes(event.threatLevel))
         ) {
           blockedThreats++;
         }
