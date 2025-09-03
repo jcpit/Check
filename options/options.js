@@ -80,7 +80,8 @@ class CheckOptions {
     this.elements.previewButton = document.getElementById("previewButton");
 
     // About section
-    this.elements.extensionVersion = document.getElementById("extensionVersion");
+    this.elements.extensionVersion =
+      document.getElementById("extensionVersion");
     this.elements.rulesVersion = document.getElementById("rulesVersion");
     this.elements.lastUpdated = document.getElementById("lastUpdated");
 
@@ -2138,9 +2139,14 @@ class CheckOptions {
 
       // Get detection rules version from cache
       try {
-        const result = await chrome.storage.local.get(["detection_rules_cache"]);
+        const result = await chrome.storage.local.get([
+          "detection_rules_cache",
+        ]);
 
-        if (result.detection_rules_cache && result.detection_rules_cache.rules) {
+        if (
+          result.detection_rules_cache &&
+          result.detection_rules_cache.rules
+        ) {
           const cachedRules = result.detection_rules_cache.rules;
           const lastUpdate = result.detection_rules_cache.lastUpdate;
 
