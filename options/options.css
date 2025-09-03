@@ -101,7 +101,9 @@ body {
   line-height: 1.5;
   color: var(--text-primary);
   background: var(--background-color);
-  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; /* Prevent horizontal scrolling */
 }
 
 /* Layout */
@@ -217,6 +219,13 @@ body {
   align-items: center;
   width: 100%;
   box-sizing: border-box;
+  gap: 16px;
+}
+
+.header-mobile-toggle {
+  display: none;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .header-title-section {
@@ -224,6 +233,8 @@ body {
   flex-direction: column;
   align-items: flex-start;
   gap: 4px;
+  flex: 1;
+  min-width: 0;
 }
 
 .content-header h1 {
@@ -303,6 +314,111 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: 32px;
+}
+
+/* Ensure cards don't overflow on smaller screens */
+@media (max-width: 480px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Additional fixes for very small screens */
+  .setting-group {
+    margin: 0;
+    padding: 12px;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .setting-item {
+    max-width: 100%;
+    overflow-wrap: break-word;
+  }
+
+  /* Force all text content to wrap */
+  .setting-label,
+  .setting-description {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+
+  /* Ensure all inputs fit properly */
+  .setting-input,
+  .setting-select,
+  .setting-textarea {
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  /* Fix code blocks and pre-formatted text */
+  .config-raw-json,
+  pre,
+  code {
+    max-width: 100%;
+    overflow-x: auto;
+    word-break: break-all;
+    white-space: pre-wrap;
+    font-size: 10px !important;
+  }
+
+  /* Mobile logs controls */
+  .logs-controls {
+    padding: 12px;
+    margin-bottom: 16px;
+  }
+
+  .logs-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .logs-filters label {
+    margin-bottom: 8px;
+  }
+
+  .logs-filters select {
+    margin-bottom: 12px;
+  }
+
+  /* Horizontal button layout for mobile */
+  .logs-filters .btn {
+    padding: 8px 12px;
+    font-size: 12px;
+    margin-bottom: 0;
+    margin-right: 6px;
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+  }
+
+  /* Create a button row container */
+  .logs-filters > *:not(label):not(select) {
+    display: inline-flex;
+  }
+
+  /* Group buttons together horizontally */
+  .logs-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .logs-filters > :last-child {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
+  /* Ensure log cards are properly positioned */
+  .log-entry {
+    position: relative;
+  }
 }
 
 .setting-group {
@@ -419,6 +535,8 @@ body {
   overflow-x: auto;
   max-height: 500px;
   overflow-y: auto;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .setting-label {
@@ -1414,6 +1532,53 @@ body {
   gap: 12px;
 }
 
+/* Mobile Title Section (hidden on desktop) */
+.mobile-title-section {
+  display: none;
+}
+
+/* Mobile Menu Toggle */
+.mobile-menu-toggle {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+}
+
+.mobile-menu-toggle:hover {
+  background-color: var(--primary-color-light);
+}
+
+.mobile-menu-toggle .material-icons {
+  font-size: 24px;
+}
+
+/* Mobile Logo */
+.header-mobile-logo {
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+.mobile-logo-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .sidebar {
@@ -1431,13 +1596,36 @@ body {
 }
 
 @media (max-width: 768px) {
+  .header-mobile-toggle {
+    display: flex;
+    align-items: center;
+  }
+
+  .header-mobile-logo {
+    display: flex;
+  }
+
   .sidebar {
     transform: translateX(-100%);
     transition: transform 0.3s ease;
+    z-index: 1000;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
   }
 
   .sidebar.mobile-open {
     transform: translateX(0);
+  }
+
+  .sidebar.mobile-open::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 260px;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.3);
+    z-index: -1;
+    pointer-events: none;
   }
 
   .main-content {
@@ -1446,28 +1634,363 @@ body {
   }
 
   .content-header {
-    padding: 16px 20px;
+    padding: 12px 16px;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
   }
 
-  .content-header h1 {
-    font-size: 20px;
+  /* Hide title section in header on mobile */
+  .header-title-section {
+    display: none;
   }
 
   .header-actions {
-    flex-direction: column;
-    gap: 8px;
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 6px;
+    order: 2;
+  }
+
+  .header-actions .btn {
+    padding: 6px 10px;
+    font-size: 13px;
+    min-height: 32px;
+    border-radius: 6px;
+  }
+
+  .header-actions .btn .material-icons {
+    font-size: 16px;
+  }
+
+  /* Add mobile title section to content */
+  .mobile-title-section {
+    display: block;
+    padding: 16px 16px 20px 16px;
+    background: var(--surface-color);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .mobile-title-section h1 {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+  }
+
+  .mobile-title-section .header-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.4;
   }
 
   .settings-section {
-    padding: 20px;
+    padding: 16px;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  /* Ensure all content stays within viewport */
+  .main-content {
+    margin-left: 0;
+    width: 100vw;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  /* Make sure configuration display doesn't overflow */
+  .config-display {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .config-raw-json {
+    max-width: 100%;
+    word-break: break-all;
+    white-space: pre-wrap;
+    font-size: 10px;
+    padding: 12px;
+    overflow-x: auto;
+  }
+
+  /* Fix input field overflow issues */
+  .setting-input,
+  .setting-select,
+  .setting-textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+    max-width: 100%;
+    box-sizing: border-box;
+    min-width: 0; /* Allow shrinking below content size */
+    width: 100%;
+  }
+
+  /* Specific fixes for URL inputs that tend to overflow */
+  input[type="url"],
+  input[type="text"] {
+    word-break: break-all;
+    overflow-wrap: break-word;
+  }
+
+  /* Fix config sections and items */
+  .config-section {
+    max-width: 100%;
+    overflow-wrap: break-word;
+  }
+
+  .config-item {
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  .config-value {
+    max-width: 100%;
+    word-break: break-all;
+    overflow-wrap: break-word;
+    font-size: 10px;
+  }
+
+  /* Mobile-friendly activity logs */
+  .logs-container {
+    border-radius: var(--radius);
+    overflow: visible;
+  }
+
+  .logs-header {
+    display: none; /* Hide the grid header on mobile */
+  }
+
+  .logs-list {
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .log-entry {
+    padding: 12px;
+    margin-bottom: 8px;
+    background: var(--surface-color);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+  }
+
+  .log-entry:hover {
+    background: var(--background-color);
+    border-color: var(--border-hover);
+  }
+
+  .log-entry.expanded {
+    background: var(--background-color);
+    border-color: var(--primary-color);
+  }
+
+  .log-entry-main {
+    display: block; /* Stack vertically instead of grid */
+    grid-template-columns: none;
+    gap: 8px;
+  }
+
+  .log-column {
+    white-space: normal;
+    text-overflow: initial;
+    overflow: visible;
+    margin-bottom: 6px;
+  }
+
+  .log-column:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Mobile log entry styling */
+  .log-column.timestamp {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+
+  .log-column.event-type {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    max-width: none;
+    width: auto;
+  }
+
+  .log-column.threat-level {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    background: var(--input-bg);
+    margin-left: 8px;
+    text-align: center;
+    min-width: 50px;
+  }
+
+  /* Create a metadata row for event type and threat level */
+  .log-column.event-type::after {
+    content: '';
+    display: block;
+    clear: both;
+  }
+
+  .log-column.url {
+    font-size: 11px;
+    word-break: break-all;
+    background: var(--input-bg);
+    padding: 6px 8px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+
+  .log-column.action {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    background: var(--background-color);
+    border: 1px solid var(--border-color);
+    margin-bottom: 8px;
+    text-align: center;
+    min-width: 60px;
+  }
+
+  .log-column.details {
+    font-size: 12px;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    padding: 6px 8px;
+    background: var(--input-bg);
+    border-radius: 4px;
+  }
+
+  .log-expand-icon {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 18px;
+    width: 24px;
+    height: 24px;
+    background: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Mobile log details */
+  .log-entry-details {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: var(--radius);
+    grid-column: auto;
+  }
+
+  .log-details-grid {
+    display: block !important;
+    gap: 0;
+  }
+
+  .log-details-field {
+    margin-bottom: 8px;
+    grid-column: auto !important;
+  }
+
+  .log-details-field-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+  }
+
+  .log-details-field-value {
+    font-size: 12px;
+    word-break: break-all;
+    padding: 4px 6px;
+    background: var(--background-color);
+    border-radius: 4px;
+  }
+
+  .log-details-content {
+    font-size: 10px;
+    word-break: break-all;
+    white-space: pre-wrap;
+    padding: 8px;
+    max-height: 200px;
+    overflow-y: auto;
   }
 
   .settings-grid {
-    gap: 20px;
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 
   .setting-group {
-    padding: 20px;
+    padding: 16px;
+    margin: 0; /* Remove any margin that might cause overflow */
+  }
+
+  /* Ensure content doesn't overflow horizontally */
+  .setting-item {
+    max-width: 100%;
+    overflow-wrap: break-word;
+  }
+
+  .setting-input,
+  .setting-select,
+  .setting-textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Mobile logs controls */
+  .logs-controls {
+    padding: 16px;
+  }
+  
+  .logs-filters {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .logs-filters .setting-label {
+    margin-bottom: 8px;
+  }
+  
+  .logs-filters .setting-select {
+    margin-bottom: 12px;
+    width: 100%;
+  }
+  
+  /* Button group for mobile */
+  .logs-filters button {
+    display: inline-block;
+    margin: 2px;
+    padding: 10px 12px;
+    min-width: 70px;
+    font-size: 13px;
+    flex: 1 1 auto;
+  }
+  
+  /* Create horizontal button layout */
+  .logs-filters button:first-of-type {
+    margin-left: 0;
+  }
+  
+  .logs-filters button:last-of-type {
+    margin-right: 0;
   }
 }
 
@@ -1621,6 +2144,53 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 12px;
+}
+
+/* Ensure link cards don't overflow on very small screens */
+@media (max-width: 320px) {
+  .links-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  /* Extra small screen fixes */
+  body {
+    font-size: 13px;
+  }
+
+  .setting-group {
+    padding: 8px;
+  }
+
+  .setting-input,
+  .setting-select,
+  .setting-textarea {
+    font-size: 14px;
+    padding: 8px 10px;
+  }
+
+  .config-raw-json {
+    font-size: 9px;
+    padding: 8px;
+  }
+
+  .config-value {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+
+  /* Ensure no horizontal overflow */
+  * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .main-content,
+  .settings-section,
+  .setting-group,
+  .setting-item {
+    overflow-x: hidden;
+  }
 }
 
 .link-card {

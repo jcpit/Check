@@ -46,6 +46,15 @@
         <main class="main-content">
             <!-- Header -->
             <header class="content-header">
+                <div class="header-mobile-toggle">
+                    <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle navigation menu">
+                        <span class="material-icons">menu</span>
+                    </button>
+                    <div class="header-mobile-logo">
+                        <img src="../images/icon48.png" alt="Check Logo" class="mobile-logo" id="mobileLogo">
+                        <span class="mobile-logo-text" id="mobileLogoText">Check</span>
+                    </div>
+                </div>
                 <div class="header-title-section">
                     <h1 id="pageTitle">General Settings</h1>
                     <p class="header-subtitle" id="pageSubtitle">Configure basic phishing protection behavior and detection features</p>
@@ -63,6 +72,12 @@
                     <button class="btn btn-primary" id="saveSettings">Save Settings</button>
                 </div>
             </header>
+
+            <!-- Mobile Title Section (visible only on mobile) -->
+            <div class="mobile-title-section">
+                <h1 id="mobileTitleText">General Settings</h1>
+                <p class="header-subtitle" id="mobileSubtitleText">Configure basic phishing protection behavior and detection features</p>
+            </div>
 
             <!-- General Section -->
             <section id="general-section" class="settings-section active">

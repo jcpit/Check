@@ -25,6 +25,12 @@ class CheckOptions {
     this.elements.sections = document.querySelectorAll(".settings-section");
     this.elements.pageTitle = document.getElementById("pageTitle");
     this.elements.policyBadge = document.getElementById("policyBadge");
+    this.elements.sidebar = document.querySelector(".sidebar");
+    this.elements.mobileMenuToggle =
+      document.getElementById("mobileMenuToggle");
+    this.elements.mobileTitleText = document.getElementById("mobileTitleText");
+    this.elements.mobileSubtitleText =
+      document.getElementById("mobileSubtitleText");
 
     // Header actions
     this.elements.saveSettings = document.getElementById("saveSettings");
@@ -103,6 +109,10 @@ class CheckOptions {
         e.preventDefault();
         const section = item.dataset.section;
         this.switchSection(section);
+        // Close mobile menu when navigation item is clicked
+        if (this.elements.sidebar?.classList.contains("mobile-open")) {
+          this.toggleMobileMenu();
+        }
       });
     });
 
@@ -118,6 +128,11 @@ class CheckOptions {
     );
     this.elements.darkModeToggle.addEventListener("click", () =>
       this.toggleDarkMode()
+    );
+
+    // Mobile menu toggle
+    this.elements.mobileMenuToggle?.addEventListener("click", () =>
+      this.toggleMobileMenu()
     );
 
     // Logs actions
@@ -166,6 +181,17 @@ class CheckOptions {
 
     // Change tracking
     this.setupChangeTracking();
+
+    // Mobile menu outside click handler
+    document.addEventListener("click", (e) => {
+      if (
+        this.elements.sidebar?.classList.contains("mobile-open") &&
+        !this.elements.sidebar.contains(e.target) &&
+        !this.elements.mobileMenuToggle?.contains(e.target)
+      ) {
+        this.toggleMobileMenu();
+      }
+    });
 
     // Handle URL hash changes
     window.addEventListener("hashchange", () => this.handleHashChange());
@@ -404,10 +430,22 @@ class CheckOptions {
     document.getElementById("sidebarTitle").textContent =
       this.brandingConfig?.productName || "Check";
 
-    // Update sidebar logo
-    const sidebarLogo = document.getElementById("sidebarLogo");
-    if (sidebarLogo && this.brandingConfig?.logoUrl) {
-      console.log("Setting sidebar logo:", this.brandingConfig.logoUrl);
+    // Update mobile logo text
+    const mobileLogoText = document.getElementById("mobileLogoText");
+    if (mobileLogoText) {
+      mobileLogoText.textContent = this.brandingConfig?.productName || "Check";
+    }
+
+    // Function to set logo src with fallback
+    const setLogoSrc = (logoElement, fallbackSrc) => {
+      if (!logoElement || !this.brandingConfig?.logoUrl) {
+        if (logoElement) {
+          logoElement.src = fallbackSrc;
+        }
+        return;
+      }
+
+      console.log("Setting logo:", this.brandingConfig.logoUrl);
 
       // Handle both relative and absolute URLs
       const logoSrc = this.brandingConfig.logoUrl.startsWith("http")
@@ -417,18 +455,23 @@ class CheckOptions {
       // Test if logo loads, fallback to default if it fails
       const testImg = new Image();
       testImg.onload = () => {
-        console.log("Sidebar logo loaded successfully");
-        sidebarLogo.src = logoSrc;
+        console.log("Logo loaded successfully");
+        logoElement.src = logoSrc;
       };
       testImg.onerror = () => {
-        console.warn("Failed to load sidebar logo, using default");
-        sidebarLogo.src = chrome.runtime.getURL("images/icon48.png");
+        console.warn("Failed to load logo, using default");
+        logoElement.src = fallbackSrc;
       };
       testImg.src = logoSrc;
-    } else if (sidebarLogo) {
-      console.log("No custom logo, using default sidebar logo");
-      sidebarLogo.src = chrome.runtime.getURL("images/icon48.png");
-    }
+    };
+
+    // Update sidebar logo
+    const sidebarLogo = document.getElementById("sidebarLogo");
+    setLogoSrc(sidebarLogo, chrome.runtime.getURL("images/icon48.png"));
+
+    // Update mobile logo
+    const mobileLogo = document.getElementById("mobileLogo");
+    setLogoSrc(mobileLogo, chrome.runtime.getURL("images/icon48.png"));
 
     // Apply primary color to the options page
     if (this.brandingConfig?.primaryColor) {
@@ -554,6 +597,14 @@ class CheckOptions {
     const pageSubtitle = document.getElementById("pageSubtitle");
     if (pageSubtitle) {
       pageSubtitle.textContent = info.subtitle;
+    }
+
+    // Update mobile title elements
+    if (this.elements.mobileTitleText) {
+      this.elements.mobileTitleText.textContent = info.title;
+    }
+    if (this.elements.mobileSubtitleText) {
+      this.elements.mobileSubtitleText.textContent = info.subtitle;
     }
 
     this.currentSection = sectionName;
@@ -1021,6 +1072,18 @@ class CheckOptions {
 
     // Update display
     this.updateConfigDisplay();
+  }
+
+  toggleMobileMenu() {
+    if (this.elements.sidebar) {
+      const isOpen = this.elements.sidebar.classList.contains("mobile-open");
+      this.elements.sidebar.classList.toggle("mobile-open", !isOpen);
+
+      // Update aria-expanded attribute for accessibility
+      if (this.elements.mobileMenuToggle) {
+        this.elements.mobileMenuToggle.setAttribute("aria-expanded", !isOpen);
+      }
+    }
   }
 
   updateConfigDisplay() {
