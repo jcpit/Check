@@ -1250,6 +1250,35 @@ class CheckBackground {
           }
           break;
 
+        case "GET_POLICIES":
+          try {
+            // Test managed storage directly
+            const managedPolicies = await new Promise((resolve, reject) => {
+              chrome.storage.managed.get(null, (result) => {
+                if (chrome.runtime.lastError) {
+                  reject(new Error(chrome.runtime.lastError.message));
+                } else {
+                  resolve(result);
+                }
+              });
+            });
+
+            // Also get enterprise config from config manager
+            const enterpriseConfig =
+              await this.configManager.loadEnterpriseConfig();
+
+            sendResponse({
+              success: true,
+              managedPolicies,
+              enterpriseConfig,
+              isManaged: Object.keys(managedPolicies).length > 0,
+            });
+          } catch (error) {
+            logger.error("Check: Failed to get policies:", error);
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
         case "GET_STATISTICS":
           try {
             const statistics = await this.getStatistics();

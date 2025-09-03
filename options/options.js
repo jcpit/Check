@@ -12,6 +12,7 @@ class CheckOptions {
     this.currentSection = "general";
     this.configViewMode = "formatted"; // "formatted" or "raw"
     this.currentConfigData = null;
+    this.isEnterpriseManaged = false; // Track enterprise management state
 
     this.elements = {};
     this.bindElements();
@@ -34,8 +35,6 @@ class CheckOptions {
 
     // Header actions
     this.elements.saveSettings = document.getElementById("saveSettings");
-    this.elements.exportConfig = document.getElementById("exportConfig");
-    this.elements.importConfig = document.getElementById("importConfig");
     this.elements.darkModeToggle = document.getElementById("darkModeToggle");
 
     // General settings
@@ -119,12 +118,6 @@ class CheckOptions {
     // Header actions
     this.elements.saveSettings.addEventListener("click", () =>
       this.saveSettings()
-    );
-    this.elements.exportConfig.addEventListener("click", () =>
-      this.exportConfiguration()
-    );
-    this.elements.importConfig.addEventListener("click", () =>
-      this.importConfiguration()
     );
     this.elements.darkModeToggle.addEventListener("click", () =>
       this.toggleDarkMode()
@@ -222,6 +215,8 @@ class CheckOptions {
       // Load configurations
       await this.loadConfiguration();
       await this.loadBrandingConfiguration();
+      // Load policy info and apply enterprise restrictions
+      await this.loadPolicyInfo();
       // Initialize dark mode
       await this.initializeDarkMode();
       // Apply branding
@@ -726,69 +721,6 @@ class CheckOptions {
     } catch (_) {
       return false;
     }
-  }
-
-  async exportConfiguration() {
-    try {
-      const config = this.gatherFormData();
-      const branding = this.gatherBrandingData();
-
-      const exportData = {
-        config,
-        branding,
-        timestamp: new Date().toISOString(),
-        version: chrome.runtime.getManifest().version,
-      };
-
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-        type: "application/json",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `check-config-${
-        new Date().toISOString().split("T")[0]
-      }.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      this.showToast("Configuration exported successfully", "success");
-    } catch (error) {
-      console.error("Failed to export configuration:", error);
-      this.showToast("Failed to export configuration", "error");
-    }
-  }
-
-  async importConfiguration() {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".json";
-
-    input.onchange = async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      try {
-        const text = await file.text();
-        const importData = JSON.parse(text);
-
-        if (importData.config) {
-          this.config = { ...this.config, ...importData.config };
-          this.populateFormFields();
-          this.markUnsavedChanges();
-          this.showToast("Configuration imported successfully", "success");
-        } else {
-          throw new Error("Invalid configuration file");
-        }
-      } catch (error) {
-        console.error("Failed to import configuration:", error);
-        this.showToast("Failed to import configuration", "error");
-      }
-    };
-
-    input.click();
   }
 
   gatherBrandingData() {
@@ -1405,28 +1337,70 @@ class CheckOptions {
 
   async loadPolicyInfo() {
     try {
-      // Safe wrapper for chrome.* operations
-      const safe = async (promise) => {
-        try {
-          return await promise;
-        } catch (_) {
-          return {};
-        }
-      };
+      // Development mode flag - set to true for sideloaded extension testing
+      const DEVELOPMENT_MODE = false; // Set to false for production
 
-      // Check if extension is managed
-      const policies = await safe(chrome.storage.managed.get(null));
-      const isManaged = policies && Object.keys(policies).length > 0;
+      let policies = {};
+      let isManaged = false;
+
+      if (DEVELOPMENT_MODE) {
+        // Mock managed policies for development testing
+        console.log("🔧 Development mode: Using mock managed policies");
+
+        policies = {
+          // Extension configuration
+          showNotifications: true,
+          enableValidPageBadge: true,
+          enablePageBlocking: true,
+          enableCippReporting: false,
+          cippServerUrl: "",
+          customRulesUrl:
+            "https://raw.githubusercontent.com/CyberDrain/ProjectX/refs/heads/main/rules/detection-rules.json",
+          updateInterval: 24,
+          enableDebugLogging: false,
+
+          // Custom branding (matches managed_schema.json structure)
+          customBranding: {
+            companyName: "CyberDrain",
+            productName: "Check Enterprise",
+            supportEmail: "support@cyberdrain.com",
+            primaryColor: "#F77F00",
+            logoUrl: "https://cyberdrain.com/logo.png",
+          },
+        };
+
+        isManaged = true;
+        this.showDevelopmentNotice();
+      } else {
+        // Production mode: Use actual managed storage
+        const safe = async (promise) => {
+          try {
+            return await promise;
+          } catch (_) {
+            return {};
+          }
+        };
+
+        policies = await safe(chrome.storage.managed.get(null));
+        isManaged = policies && Object.keys(policies).length > 0;
+      }
 
       if (isManaged) {
+        console.log("📋 Managed policies active:", policies);
+
         // Show policy badge
         if (this.elements.policyBadge) {
           this.elements.policyBadge.style.display = "flex";
         }
 
+        // Apply enterprise restrictions
+        this.applyEnterpriseRestrictions(policies);
+
         // Disable policy-managed fields
         this.disablePolicyManagedFields(policies);
       } else {
+        console.log("👤 No managed policies found - user mode");
+
         // Hide policy badge
         if (this.elements.policyBadge) {
           this.elements.policyBadge.style.display = "none";
@@ -1443,33 +1417,196 @@ class CheckOptions {
     }
   }
 
+  showDevelopmentNotice() {
+    // Find the settings container
+    const container =
+      document.querySelector(".settings-container") ||
+      document.querySelector("main") ||
+      document.body;
+
+    if (!container) return;
+
+    // Remove existing development notice
+    const existingNotice = document.querySelector(".development-notice");
+    if (existingNotice) {
+      existingNotice.remove();
+    }
+
+    // Create development notice
+    const notice = document.createElement("div");
+    notice.className = "development-notice";
+    notice.style.cssText = `
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 20px;
+      position: relative;
+    `;
+
+    notice.innerHTML = `
+      <div style="display: flex; align-items: flex-start; gap: 12px;">
+        <span style="font-size: 20px; line-height: 1;">🔧</span>
+        <div style="flex: 1;">
+          <div style="font-weight: 600; color: #856404; margin-bottom: 6px;">
+            Development Mode Active
+          </div>
+          <div style="font-size: 14px; color: #856404; line-height: 1.4;">
+            Using mock managed policies for testing. Sideloaded extensions don't support real managed storage.
+            <br><strong>Set DEVELOPMENT_MODE = false in options.js for production testing.</strong>
+          </div>
+        </div>
+        <button onclick="this.parentElement.parentElement.remove()" style="
+          background: none;
+          border: none;
+          font-size: 16px;
+          cursor: pointer;
+          color: #856404;
+          padding: 0;
+          line-height: 1;
+        ">×</button>
+      </div>
+    `;
+
+    // Insert at the beginning of the container
+    container.insertBefore(notice, container.firstChild);
+  }
+
   disablePolicyManagedFields(policies) {
     const policyFieldMap = {
+      showNotifications: this.elements.showNotifications,
+      enableValidPageBadge: this.elements.enableValidPageBadge,
       enablePageBlocking: this.elements.enablePageBlocking,
       enableCippReporting: this.elements.enableCippReporting,
+      cippServerUrl: this.elements.cippServerUrl,
+      customRulesUrl: this.elements.customRulesUrl,
+      updateInterval: this.elements.updateInterval,
       enableDebugLogging: this.elements.enableDebugLogging,
+      // Branding fields (if customBranding policy is present)
+      companyName: this.elements.companyName,
+      productName: this.elements.productName,
+      supportEmail: this.elements.supportEmail,
+      primaryColor: this.elements.primaryColor,
+      logoUrl: this.elements.logoUrl,
     };
 
     Object.keys(policies).forEach((policyKey) => {
-      const element = policyFieldMap[policyKey];
-      if (element) {
-        element.disabled = true;
-        element.title = "This setting is managed by your organization's policy";
-
-        // Add visual indicator
-        element.classList.add("policy-managed");
-
-        // Add a small lock icon next to the field
-        const lockIcon = document.createElement("span");
-        lockIcon.className = "material-icons policy-lock";
-        lockIcon.textContent = "lock";
-        lockIcon.title = "Managed by policy";
-
-        if (element.parentNode) {
-          element.parentNode.appendChild(lockIcon);
+      if (policyKey === "customBranding" && policies.customBranding) {
+        // Handle nested branding policies
+        Object.keys(policies.customBranding).forEach((brandingKey) => {
+          const element = policyFieldMap[brandingKey];
+          if (element) {
+            this.disableFieldWithPolicy(
+              element,
+              `customBranding.${brandingKey}`
+            );
+          }
+        });
+      } else {
+        // Handle top-level policies
+        const element = policyFieldMap[policyKey];
+        if (element) {
+          this.disableFieldWithPolicy(element, policyKey);
         }
       }
     });
+  }
+
+  disableFieldWithPolicy(element, policyPath) {
+    if (!element) return;
+
+    element.disabled = true;
+    element.title = `This setting is managed by your organization's policy (${policyPath})`;
+
+    // Add visual indicator
+    element.classList.add("policy-managed");
+
+    // Add a small lock icon next to the field (avoid duplicates)
+    if (!element.parentNode?.querySelector(".policy-lock")) {
+      const lockIcon = document.createElement("span");
+      lockIcon.className = "material-icons policy-lock";
+      lockIcon.textContent = "lock";
+      lockIcon.title = "Managed by policy";
+      lockIcon.style.cssText = `
+        font-size: 16px;
+        margin-left: 8px;
+        color: #666;
+        vertical-align: middle;
+      `;
+
+      if (element.parentNode) {
+        element.parentNode.appendChild(lockIcon);
+      }
+    }
+  }
+
+  applyEnterpriseRestrictions(policies) {
+    // Set enterprise managed flag
+    this.isEnterpriseManaged = true;
+
+    // Hide enterprise-managed tabs from navigation
+    const restrictedTabs = ["general", "detection", "branding"];
+
+    restrictedTabs.forEach((tabName) => {
+      const menuItem = document.querySelector(`[data-section="${tabName}"]`);
+      if (menuItem) {
+        const listItem = menuItem.closest("li");
+        if (listItem) {
+          listItem.style.display = "none";
+        }
+      }
+    });
+
+    // Disable the save button
+    if (this.elements.saveSettings) {
+      this.elements.saveSettings.disabled = true;
+      this.elements.saveSettings.title =
+        "Settings are managed by your organization and cannot be modified";
+      this.elements.saveSettings.textContent = "Managed by Policy";
+      this.elements.saveSettings.classList.add("policy-managed");
+    }
+
+    // Disable the debug logging checkbox specifically
+    if (this.elements.enableDebugLogging) {
+      this.elements.enableDebugLogging.disabled = true;
+      this.elements.enableDebugLogging.title =
+        "Debug logging is managed by your organization's policy";
+      this.elements.enableDebugLogging.classList.add("policy-managed");
+    }
+
+    // If currently on a restricted tab, switch to logs tab
+    if (restrictedTabs.includes(this.currentSection)) {
+      this.switchSection("logs");
+    }
+
+    // Add enterprise notice to the interface
+    this.addEnterpriseNotice();
+  }
+
+  addEnterpriseNotice() {
+    // Check if notice already exists
+    if (document.querySelector(".enterprise-notice")) {
+      return;
+    }
+
+    // Create enterprise management notice
+    const notice = document.createElement("div");
+    notice.className = "enterprise-notice";
+    notice.innerHTML = `
+      <div class="notice-content">
+        <span class="material-icons notice-icon">admin_panel_settings</span>
+        <div class="notice-text">
+          <strong>Enterprise Managed</strong>
+          <p>This extension is managed by your organization. Most settings cannot be modified.</p>
+        </div>
+      </div>
+    `;
+
+    // Insert after the header
+    const contentHeader = document.querySelector(".content-header");
+    if (contentHeader) {
+      contentHeader.insertAdjacentElement("afterend", notice);
+    }
   }
 
   getEventTypeDisplay(log) {

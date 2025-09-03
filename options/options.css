@@ -2319,3 +2319,78 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Enterprise Management Styles */
+.enterprise-notice {
+  background: linear-gradient(135deg, #FFF3CD 0%, #FFF8E1 100%);
+  border: 1px solid #D6AF47;
+  border-radius: var(--radius);
+  margin: 16px 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.enterprise-notice .notice-content {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  gap: 12px;
+}
+
+.enterprise-notice .notice-icon {
+  color: #B7791F;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.enterprise-notice .notice-text strong {
+  color: #744210;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.enterprise-notice .notice-text p {
+  color: #8D6E1E;
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Policy-managed elements */
+.policy-managed {
+  opacity: 0.6;
+  position: relative;
+}
+
+.policy-managed:disabled {
+  cursor: not-allowed;
+  background-color: var(--border-color) !important;
+}
+
+.policy-lock {
+  color: #B7791F;
+  font-size: 16px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* Dark theme enterprise styles */
+:root.dark-theme .enterprise-notice {
+  background: linear-gradient(135deg, #2D1B0E 0%, #3A2317 100%);
+  border-color: #8D6E1E;
+}
+
+:root.dark-theme .enterprise-notice .notice-icon {
+  color: #D4AF37;
+}
+
+:root.dark-theme .enterprise-notice .notice-text strong {
+  color: #F4E19C;
+}
+
+:root.dark-theme .enterprise-notice .notice-text p {
+  color: #D4AF37;
+}
+
+:root.dark-theme .policy-lock {
+  color: #D4AF37;
+}
