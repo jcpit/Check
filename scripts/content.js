@@ -1299,31 +1299,80 @@ function showValidBadge() {
       return;
     }
 
+    // Check if mobile using media query (more conservative breakpoint)
+    const isMobile = window.matchMedia("(max-width: 480px)").matches;
+    
+    console.log("Screen width:", window.innerWidth, "Media query matches:", isMobile); // Debug log
+
     const badge = document.createElement("div");
     badge.id = "ms365-valid-badge";
-    badge.style.cssText = `
-      position: fixed !important;
-      top: 20px !important;
-      right: 20px !important;
-      background: linear-gradient(135deg, #4caf50, #2e7d32) !important;
-      color: white !important;
-      padding: 12px 16px !important;
-      border-radius: 8px !important;
-      z-index: 2147483646 !important;
-      font-family: system-ui, -apple-system, sans-serif !important;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
-      font-size: 14px !important;
-      font-weight: 500 !important;
-    `;
+    
+    if (isMobile) {
+      // Mobile: Banner style
+      badge.style.cssText = `
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        background: linear-gradient(135deg, #4caf50, #2e7d32) !important;
+        color: white !important;
+        padding: 16px !important;
+        z-index: 2147483646 !important;
+        font-family: system-ui, -apple-system, sans-serif !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+        text-align: center !important;
+      `;
 
-    badge.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 16px;">✅</span>
-        <span>Verified Microsoft Domain</span>
-      </div>
-    `;
+      badge.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: center; gap: 16px; position: relative; padding-right: 48px;">
+          <span style="font-size: 24px;">✅</span>
+          <div>
+            <strong>Verified Microsoft Domain</strong><br>
+            <small>This is an authentic Microsoft login page</small>
+          </div>
+          <button onclick="this.parentElement.parentElement.remove(); document.body.style.marginTop = '0';" title="Dismiss" style="
+            position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+            background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+            color: white; padding: 0; border-radius: 4px; cursor: pointer;
+            width: 24px; height: 24px; min-width: 24px; min-height: 24px; max-width: 24px; max-height: 24px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; font-weight: bold; line-height: 1; box-sizing: border-box;
+            font-family: monospace;
+          ">×</button>
+        </div>
+      `;
 
-    document.body.appendChild(badge);
+      // Push page content down
+      document.body.appendChild(badge);
+      const bannerHeight = badge.offsetHeight || 64;
+      document.body.style.marginTop = `${bannerHeight}px`;
+      
+    } else {
+      // Desktop: Badge style (original)
+      badge.style.cssText = `
+        position: fixed !important;
+        top: 20px !important;
+        right: 20px !important;
+        background: linear-gradient(135deg, #4caf50, #2e7d32) !important;
+        color: white !important;
+        padding: 12px 16px !important;
+        border-radius: 8px !important;
+        z-index: 2147483646 !important;
+        font-family: system-ui, -apple-system, sans-serif !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+      `;
+
+      badge.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 16px;">✅</span>
+          <span>Verified Microsoft Domain</span>
+        </div>
+      `;
+      
+      document.body.appendChild(badge);
+    }
 
     logger.log("Valid badge displayed");
   } catch (error) {
