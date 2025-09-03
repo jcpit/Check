@@ -43,12 +43,6 @@ class CheckOptions {
     );
     this.elements.showNotifications =
       document.getElementById("showNotifications");
-    this.elements.notificationDuration = document.getElementById(
-      "notificationDuration"
-    );
-    this.elements.notificationDurationValue = document.getElementById(
-      "notificationDurationValue"
-    );
     this.elements.enableValidPageBadge = document.getElementById(
       "enableValidPageBadge"
     );
@@ -119,18 +113,6 @@ class CheckOptions {
     this.elements.darkModeToggle.addEventListener("click", () =>
       this.toggleDarkMode()
     );
-
-    // Range slider
-    if (this.elements.notificationDuration) {
-      this.elements.notificationDuration.addEventListener("input", (e) => {
-        this.elements.notificationDurationValue.textContent =
-          e.target.value / 1000 + "s";
-        this.updateSliderProgress(e.target);
-      });
-
-      // Initialize slider progress
-      this.updateSliderProgress(this.elements.notificationDuration);
-    }
 
     // Logs actions
     this.elements.logFilter?.addEventListener("change", () => this.loadLogs());
@@ -308,7 +290,6 @@ class CheckOptions {
         enableContentManipulation: true,
         enableUrlMonitoring: true,
         showNotifications: true,
-        notificationDuration: 5000,
         enableValidPageBadge: false,
         customRulesUrl:
           "https://raw.githubusercontent.com/CyberDrain/ProjectX/refs/heads/main/rules/detection-rules.json",
@@ -450,13 +431,6 @@ class CheckOptions {
   }
 
   populateFormFields() {
-    console.log("populateFormFields called with config:", this.config);
-    console.log("Config updateInterval values:", {
-      "detectionRules.updateInterval":
-        this.config?.detectionRules?.updateInterval,
-      updateInterval: this.config?.updateInterval,
-    });
-
     // Extension settings
     this.elements.enablePageBlocking =
       document.getElementById("enablePageBlocking");
@@ -479,10 +453,6 @@ class CheckOptions {
 
     // UI settings
     this.elements.showNotifications.checked = this.config?.showNotifications;
-    this.elements.notificationDuration.value =
-      this.config?.notificationDuration;
-    this.elements.notificationDurationValue.textContent =
-      this.config.notificationDuration / 1000 + "s";
     this.elements.enableValidPageBadge.checked =
       this.config.enableValidPageBadge || false;
 
@@ -497,35 +467,22 @@ class CheckOptions {
     if (this.config?.updateInterval) {
       // Legacy field takes precedence and is always in hours
       updateIntervalHours = this.config.updateInterval;
-      console.log("Got updateInterval from legacy field:", updateIntervalHours);
     } else if (this.config?.detectionRules?.updateInterval) {
       // If it's in the detectionRules object, it could be milliseconds or hours
       const interval = this.config.detectionRules.updateInterval;
       updateIntervalHours =
         interval > 1000 ? Math.round(interval / 3600000) : interval;
-      console.log(
-        "Got updateInterval from detectionRules:",
-        interval,
-        "-> hours:",
-        updateIntervalHours
-      );
-    } else {
-      console.log("Using default updateInterval:", updateIntervalHours);
     }
 
     // Ensure the element exists before setting value
     if (this.elements.updateInterval) {
-      console.log("Setting updateInterval field to:", updateIntervalHours);
       this.elements.updateInterval.value = updateIntervalHours;
       // Force a refresh to ensure the value sticks
       setTimeout(() => {
         if (this.elements.updateInterval.value != updateIntervalHours) {
-          console.log("Value didn't stick, retrying...");
           this.elements.updateInterval.value = updateIntervalHours;
         }
       }, 100);
-    } else {
-      console.log("updateInterval element not found!");
     }
 
     // Logging settings
@@ -539,11 +496,6 @@ class CheckOptions {
     this.elements.primaryColor.value =
       this.brandingConfig?.primaryColor || "#F77F00";
     this.elements.logoUrl.value = this.brandingConfig?.logoUrl || "";
-
-    // Update slider progress
-    if (this.elements.notificationDuration) {
-      this.updateSliderProgress(this.elements.notificationDuration);
-    }
   }
 
   switchSection(sectionName) {
@@ -681,9 +633,6 @@ class CheckOptions {
 
       // UI settings
       showNotifications: this.elements.showNotifications?.checked || false,
-      notificationDuration: parseInt(
-        this.elements.notificationDuration?.value || 5000
-      ),
       enableValidPageBadge:
         this.elements.enableValidPageBadge?.checked || false,
 
@@ -698,16 +647,6 @@ class CheckOptions {
 
   validateConfiguration(config) {
     // Basic validation
-    if (
-      config.notificationDuration < 1000 ||
-      config.notificationDuration > 10000
-    ) {
-      return {
-        valid: false,
-        message: "Notification duration must be between 1-10 seconds",
-      };
-    }
-
     if (config.updateInterval < 1 || config.updateInterval > 168) {
       return {
         valid: false,
@@ -2006,11 +1945,6 @@ class CheckOptions {
 
     // Apply primary color to the options page interface itself
     this.applyPrimaryColorToOptionsPage(primaryColor);
-
-    // Update slider progress with new primary color
-    if (this.elements.notificationDuration) {
-      this.updateSliderProgress(this.elements.notificationDuration);
-    }
   }
 
   applyPrimaryColorToOptionsPage(primaryColor) {
@@ -2105,27 +2039,6 @@ class CheckOptions {
       this.elements.saveSettings.textContent = "Save Settings";
       this.elements.saveSettings.classList.remove("unsaved");
     }
-  }
-
-  updateSliderProgress(slider) {
-    if (!slider) return;
-
-    const value = slider.value;
-    const min = slider.min || 0;
-    const max = slider.max || 100;
-    const percentage = ((value - min) / (max - min)) * 100;
-
-    // Get the current primary color
-    const primaryColor =
-      this.elements.primaryColor?.value ||
-      this.brandingConfig?.primaryColor ||
-      "#F77F00";
-
-    // Update the track background with filled progress
-    const trackBackground = `linear-gradient(to right, ${primaryColor} 0%, ${primaryColor} ${percentage}%, var(--border-color) ${percentage}%, var(--border-color) 100%)`;
-
-    // Apply the style directly to the slider
-    slider.style.background = trackBackground;
   }
 
   async sendMessage(message) {
