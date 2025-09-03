@@ -1,0 +1,8 @@
+Windows Registry Editor Version 5.00
+
+; Chrome Web Store Extension Management
+; Replace CHROME_EXTENSION_ID with actual ID after Chrome Web Store publication
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\ExtensionSettings\CHROME_EXTENSION_ID]
+"installation_mode"="force_installed"
+"update_url"="https://clients2.google.com/service/update2/crx"
+"policy"="{\"showNotifications\":true,\"enableValidPageBadge\":true,\"enablePageBlocking\":true,\"enableCippReporting\":false,\"cippServerUrl\":\"\",\"customRulesUrl\":\"https://raw.githubusercontent.com/CyberDrain/ProjectX/refs/heads/main/rules/detection-rules.json\",\"updateInterval\":24,\"enableDebugLogging\":false,\"customBranding\":{\"companyName\":\"CyberDrain\",\"productName\":\"Check Enterprise\",\"supportEmail\":\"support@cyberdrain.com\",\"primaryColor\":\"#F77F00\",\"logoUrl\":\"https://cyberdrain.com/logo.png\"}}"
