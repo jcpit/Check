@@ -79,6 +79,11 @@ class CheckOptions {
     this.elements.previewTitle = document.getElementById("previewTitle");
     this.elements.previewButton = document.getElementById("previewButton");
 
+    // About section
+    this.elements.extensionVersion = document.getElementById("extensionVersion");
+    this.elements.rulesVersion = document.getElementById("rulesVersion");
+    this.elements.lastUpdated = document.getElementById("lastUpdated");
+
     // Modal
     this.elements.modalOverlay = document.getElementById("modalOverlay");
     this.elements.modalTitle = document.getElementById("modalTitle");
@@ -2127,41 +2132,61 @@ class CheckOptions {
     try {
       // Get extension manifest for version info
       const manifest = chrome.runtime.getManifest();
-      const extensionVersionElement =
-        document.getElementById("extensionVersion");
-      if (extensionVersionElement) {
-        extensionVersionElement.textContent = manifest.version;
+      if (this.elements.extensionVersion) {
+        this.elements.extensionVersion.textContent = manifest.version;
       }
 
-      // Get detection rules version from storage
-      const rulesVersionElement = document.getElementById("rulesVersion");
-      const lastUpdatedElement = document.getElementById("lastUpdated");
-
+      // Get detection rules version from cache
       try {
-        const result = await chrome.storage.local.get([
-          "detectionRules",
-          "detectionRulesLastUpdated",
-        ]);
+        const result = await chrome.storage.local.get(["detection_rules_cache"]);
 
-        if (result.detectionRules && result.detectionRules.version) {
-          rulesVersionElement.textContent = result.detectionRules.version;
-        } else {
-          rulesVersionElement.textContent = "Not available";
-        }
+        if (result.detection_rules_cache && result.detection_rules_cache.rules) {
+          const cachedRules = result.detection_rules_cache.rules;
+          const lastUpdate = result.detection_rules_cache.lastUpdate;
 
-        if (result.detectionRulesLastUpdated) {
-          const lastUpdated = new Date(result.detectionRulesLastUpdated);
-          lastUpdatedElement.textContent =
-            lastUpdated.toLocaleDateString() +
-            " " +
-            lastUpdated.toLocaleTimeString();
+          // Extract version from cached rules
+          if (cachedRules.version && this.elements.rulesVersion) {
+            this.elements.rulesVersion.textContent = cachedRules.version;
+          } else if (this.elements.rulesVersion) {
+            this.elements.rulesVersion.textContent = "Not available";
+          }
+
+          // Format last updated timestamp (prefer rules lastUpdated if available, otherwise use cache timestamp)
+          if (this.elements.lastUpdated) {
+            let displayDate;
+            if (cachedRules.lastUpdated) {
+              // Use the lastUpdated from the rules file itself
+              displayDate = new Date(cachedRules.lastUpdated);
+            } else if (lastUpdate) {
+              // Fallback to cache timestamp
+              displayDate = new Date(lastUpdate);
+            }
+
+            if (displayDate) {
+              this.elements.lastUpdated.textContent =
+                displayDate.toLocaleDateString() +
+                " " +
+                displayDate.toLocaleTimeString();
+            } else {
+              this.elements.lastUpdated.textContent = "Never";
+            }
+          }
         } else {
-          lastUpdatedElement.textContent = "Never";
+          if (this.elements.rulesVersion) {
+            this.elements.rulesVersion.textContent = "Not cached";
+          }
+          if (this.elements.lastUpdated) {
+            this.elements.lastUpdated.textContent = "Never";
+          }
         }
       } catch (error) {
         console.error("Error loading detection rules info:", error);
-        rulesVersionElement.textContent = "Error loading";
-        lastUpdatedElement.textContent = "Error loading";
+        if (this.elements.rulesVersion) {
+          this.elements.rulesVersion.textContent = "Error loading";
+        }
+        if (this.elements.lastUpdated) {
+          this.elements.lastUpdated.textContent = "Error loading";
+        }
       }
     } catch (error) {
       console.error("Error loading about section:", error);
