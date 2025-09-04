@@ -1165,10 +1165,20 @@ class CheckOptions {
       item.appendChild(mainRow);
       item.appendChild(detailsSection);
 
-      // Add click event to toggle expansion
-      item.addEventListener("click", (e) => {
+      // Add click event to main row only to toggle expansion
+      mainRow.addEventListener("click", (e) => {
         e.stopPropagation();
         this.toggleLogEntry(item);
+      });
+
+      // Add copy button event listeners
+      const copyButtons = detailsSection.querySelectorAll(".copy-button");
+      copyButtons.forEach((button) => {
+        button.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const copyValue = button.getAttribute("data-copy-value");
+          this.copyToClipboard(copyValue, button);
+        });
       });
 
       this.elements.logsList.appendChild(item);
@@ -1198,32 +1208,59 @@ class CheckOptions {
       <div class="log-details-grid">`;
 
     if (log.timestamp) {
+      const timestampValue = new Date(log.timestamp).toISOString();
       html += `<div class="log-details-field">
         <div class="log-details-field-label">Timestamp</div>
-        <div class="log-details-field-value">${new Date(
-          log.timestamp
-        ).toISOString()}</div>
+        <div class="log-details-field-value-container">
+          <div class="log-details-field-value">${timestampValue}</div>
+          <button class="copy-button" title="Copy timestamp" data-copy-value="${this.escapeHtml(
+            timestampValue
+          )}">
+            <span class="material-icons" style="font-size: 14px;">content_copy</span>
+          </button>
+        </div>
       </div>`;
     }
 
     if (log.category) {
       html += `<div class="log-details-field">
         <div class="log-details-field-label">Category</div>
-        <div class="log-details-field-value">${log.category}</div>
+        <div class="log-details-field-value-container">
+          <div class="log-details-field-value">${log.category}</div>
+          <button class="copy-button" title="Copy category" data-copy-value="${this.escapeHtml(
+            log.category
+          )}">
+            <span class="material-icons" style="font-size: 14px;">content_copy</span>
+          </button>
+        </div>
       </div>`;
     }
 
     if (log.level) {
       html += `<div class="log-details-field">
         <div class="log-details-field-label">Level</div>
-        <div class="log-details-field-value">${log.level}</div>
+        <div class="log-details-field-value-container">
+          <div class="log-details-field-value">${log.level}</div>
+          <button class="copy-button" title="Copy level" data-copy-value="${this.escapeHtml(
+            log.level
+          )}">
+            <span class="material-icons" style="font-size: 14px;">content_copy</span>
+          </button>
+        </div>
       </div>`;
     }
 
     if (log.source) {
       html += `<div class="log-details-field">
         <div class="log-details-field-label">Source</div>
-        <div class="log-details-field-value">${log.source}</div>
+        <div class="log-details-field-value-container">
+          <div class="log-details-field-value">${log.source}</div>
+          <button class="copy-button" title="Copy source" data-copy-value="${this.escapeHtml(
+            log.source
+          )}">
+            <span class="material-icons" style="font-size: 14px;">content_copy</span>
+          </button>
+        </div>
       </div>`;
     }
 
@@ -1237,20 +1274,30 @@ class CheckOptions {
 
       Object.entries(log.event).forEach(([key, value]) => {
         if (typeof value === "object" && value !== null) {
+          const jsonValue = JSON.stringify(value, null, 2);
           html += `<div class="log-details-field" style="grid-column: 1 / -1;">
             <div class="log-details-field-label">${key}</div>
-            <div class="log-details-content">${JSON.stringify(
-              value,
-              null,
-              2
-            )}</div>
+            <div class="log-details-content-container">
+              <div class="log-details-content">${this.escapeHtml(
+                jsonValue
+              )}</div>
+              <button class="copy-button" title="Copy ${key}" data-copy-value="${this.escapeHtml(
+            jsonValue
+          )}">
+                <span class="material-icons" style="font-size: 14px;">content_copy</span>
+              </button>
+            </div>
           </div>`;
         } else {
+          const valueStr = this.escapeHtml(String(value));
           html += `<div class="log-details-field">
             <div class="log-details-field-label">${key}</div>
-            <div class="log-details-field-value">${this.escapeHtml(
-              String(value)
-            )}</div>
+            <div class="log-details-field-value-container">
+              <div class="log-details-field-value">${valueStr}</div>
+              <button class="copy-button" title="Copy ${key}" data-copy-value="${valueStr}">
+                <span class="material-icons" style="font-size: 14px;">content_copy</span>
+              </button>
+            </div>
           </div>`;
         }
       });
@@ -1273,20 +1320,30 @@ class CheckOptions {
 
       Object.entries(additionalProps).forEach(([key, value]) => {
         if (typeof value === "object" && value !== null) {
+          const jsonValue = JSON.stringify(value, null, 2);
           html += `<div class="log-details-field" style="grid-column: 1 / -1;">
             <div class="log-details-field-label">${key}</div>
-            <div class="log-details-content">${JSON.stringify(
-              value,
-              null,
-              2
-            )}</div>
+            <div class="log-details-content-container">
+              <div class="log-details-content">${this.escapeHtml(
+                jsonValue
+              )}</div>
+              <button class="copy-button" title="Copy ${key}" data-copy-value="${this.escapeHtml(
+            jsonValue
+          )}">
+                <span class="material-icons" style="font-size: 14px;">content_copy</span>
+              </button>
+            </div>
           </div>`;
         } else {
+          const valueStr = this.escapeHtml(String(value));
           html += `<div class="log-details-field">
             <div class="log-details-field-label">${key}</div>
-            <div class="log-details-field-value">${this.escapeHtml(
-              String(value)
-            )}</div>
+            <div class="log-details-field-value-container">
+              <div class="log-details-field-value">${valueStr}</div>
+              <button class="copy-button" title="Copy ${key}" data-copy-value="${valueStr}">
+                <span class="material-icons" style="font-size: 14px;">content_copy</span>
+              </button>
+            </div>
           </div>`;
         }
       });
@@ -1295,9 +1352,17 @@ class CheckOptions {
     }
 
     // Raw Data Section
+    const rawJson = JSON.stringify(log, null, 2);
     html += `<div class="log-details-section">
       <div class="log-details-title">Raw Data</div>
-      <div class="log-details-content">${JSON.stringify(log, null, 2)}</div>
+      <div class="log-details-content-container">
+        <div class="log-details-content">${this.escapeHtml(rawJson)}</div>
+        <button class="copy-button" title="Copy raw JSON" data-copy-value="${this.escapeHtml(
+          rawJson
+        )}">
+          <span class="material-icons" style="font-size: 14px;">content_copy</span>
+        </button>
+      </div>
     </div>`;
 
     return html;
@@ -1314,6 +1379,67 @@ class CheckOptions {
     return text.replace(/[&<>"']/g, function (m) {
       return map[m];
     });
+  }
+
+  // Escape text for safe inclusion in JavaScript strings
+  escapeForJS(text) {
+    return text
+      .replace(/\\/g, "\\\\")
+      .replace(/'/g, "\\'")
+      .replace(/"/g, '\\"')
+      .replace(/\n/g, "\\n")
+      .replace(/\r/g, "\\r");
+  }
+
+  // Copy to clipboard helper function
+  async copyToClipboard(text, button) {
+    try {
+      // Decode HTML entities back to original text
+      const decodedText = this.decodeHtml(text);
+      await navigator.clipboard.writeText(decodedText);
+
+      // Visual feedback
+      const originalText = button.innerHTML;
+      button.innerHTML =
+        '<span class="material-icons" style="font-size: 14px;">check</span>';
+      button.classList.add("copied");
+
+      setTimeout(() => {
+        button.innerHTML = originalText;
+        button.classList.remove("copied");
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to copy to clipboard:", err);
+
+      // Fallback for older browsers
+      const decodedText = this.decodeHtml(text);
+      const textArea = document.createElement("textarea");
+      textArea.value = decodedText;
+      textArea.style.position = "fixed";
+      textArea.style.opacity = "0";
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+
+      // Visual feedback
+      const originalText = button.innerHTML;
+      button.innerHTML =
+        '<span class="material-icons" style="font-size: 14px;">check</span>';
+      button.classList.add("copied");
+
+      setTimeout(() => {
+        button.innerHTML = originalText;
+        button.classList.remove("copied");
+      }, 2000);
+    }
+  }
+
+  // Decode HTML entities back to original text
+  decodeHtml(html) {
+    const txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    return txt.value;
   }
 
   filterLogsForDisplay(logs) {
@@ -2451,5 +2577,5 @@ class CheckOptions {
 
 // Initialize options page when DOM is loaded
 document.addEventListener("DOMContentLoaded", () => {
-  new CheckOptions();
+  window.checkOptions = new CheckOptions();
 });

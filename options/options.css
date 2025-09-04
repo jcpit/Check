@@ -1191,6 +1191,82 @@ body {
   word-break: break-word;
 }
 
+/* Copy button containers */
+.log-details-field-value-container,
+.log-details-content-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  position: relative;
+}
+
+.log-details-field-value-container .log-details-field-value {
+  flex: 1;
+}
+
+.log-details-content-container .log-details-content {
+  flex: 1;
+}
+
+/* Copy button styles */
+.copy-button {
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 4px 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.8);
+}
+
+/* Show copy buttons on field hover */
+.log-details-field:hover .copy-button {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+}
+
+/* Show copy button for raw data section on hover */
+.log-details-section:hover > .log-details-content-container .copy-button {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+}
+
+.copy-button:hover {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  transform: scale(1.05);
+}
+
+.copy-button:active {
+  transform: scale(0.95);
+}
+
+.copy-button.copied {
+  background: var(--success-color);
+  color: white;
+  border-color: var(--success-color);
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+}
+
+.copy-button .material-icons {
+  font-size: 14px !important;
+  line-height: 1;
+}
+
 /* Legacy log styles for backward compatibility */
 .log-time {
   color: var(--text-muted);
