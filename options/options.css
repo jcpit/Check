@@ -1321,12 +1321,12 @@ body {
   .copy-button {
     display: none !important;
   }
-  
+
   .log-details-field-value-container,
   .log-details-content-container {
     display: block;
   }
-  
+
   .mobile-copy-hint {
     display: inline;
   }
@@ -1337,13 +1337,13 @@ body {
   .mobile-copy-hint {
     display: none;
   }
-  
+
   .mobile-copyable {
     cursor: default;
     padding: 0;
     border: none;
   }
-  
+
   .mobile-copyable:hover,
   .mobile-copyable:active {
     background: inherit;

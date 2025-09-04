@@ -41,7 +41,17 @@ async function loadDetectionRules() {
 
       if (response && response.success && response.rules) {
         logger.log("Loaded detection rules from background script cache");
-        return response.rules;
+        
+        // Set up trusted origins from cached rules
+        const rules = response.rules;
+        if (rules.trusted_origins && Array.isArray(rules.trusted_origins)) {
+          trustedOrigins = new Set(
+            rules.trusted_origins.map((origin) => origin.toLowerCase())
+          );
+          logger.debug(`Set up ${trustedOrigins.size} trusted origins from cache`);
+        }
+        
+        return rules;
       }
     } catch (error) {
       logger.warn("Failed to get rules from background script:", error.message);
@@ -66,6 +76,9 @@ async function loadDetectionRules() {
       trustedOrigins = new Set(
         rules.trusted_origins.map((origin) => origin.toLowerCase())
       );
+      logger.debug(`Set up ${trustedOrigins.size} trusted origins from direct load`);
+    } else {
+      logger.error("No trusted_origins found in rules or not an array:", rules.trusted_origins);
     }
 
     logger.log(
@@ -423,8 +436,26 @@ async function runProtection(isRerun = false) {
       detectionRules = await loadDetectionRules();
     }
 
+    // Safety check: Ensure trusted origins are properly loaded
+    if (trustedOrigins.size === 0) {
+      logger.warn("Trusted origins not loaded, reloading detection rules...");
+      detectionRules = await loadDetectionRules();
+      if (trustedOrigins.size === 0) {
+        logger.error("CRITICAL: Failed to load trusted origins after reload!");
+        logger.error("This will cause all Microsoft domains to be flagged as non-trusted");
+      } else {
+        logger.log(`✅ Successfully loaded ${trustedOrigins.size} trusted origins on retry`);
+      }
+    }
+
     // Step 2: FIRST CHECK - trusted origins (immediate exit if trusted)
     const currentOrigin = location.origin.toLowerCase();
+    
+    // Debug logging for trusted domain detection
+    logger.debug(`Checking origin: "${currentOrigin}"`);
+    logger.debug(`Trusted origins:`, Array.from(trustedOrigins));
+    logger.debug(`Is trusted: ${trustedOrigins.has(currentOrigin)}`);
+    
     if (trustedOrigins.has(currentOrigin)) {
       logger.log(
         "✅ TRUSTED ORIGIN - No phishing possible, exiting immediately"
@@ -573,6 +604,9 @@ async function runProtection(isRerun = false) {
     }
 
     logger.log("❌ NON-TRUSTED ORIGIN - Continuing analysis");
+    logger.debug(`Origin "${currentOrigin}" not found in trusted origins list`);
+    logger.debug(`Expected to find: "https://login.microsoftonline.com"`);
+    logger.debug(`Trusted origins loaded: ${trustedOrigins.size > 0 ? 'YES' : 'NO'}`);
 
     // Step 3: Check if page is an MS logon page (using rule file requirements)
     const isMSLogon = isMicrosoftLogonPage();
