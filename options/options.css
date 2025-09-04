@@ -1267,6 +1267,91 @@ body {
   line-height: 1;
 }
 
+/* Mobile copy functionality */
+.mobile-copy-hint {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-weight: normal;
+}
+
+.mobile-copyable {
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.mobile-copyable:hover,
+.mobile-copyable:active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+/* Mobile toast notification */
+.mobile-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--primary-dark);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 10000;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.mobile-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Hide copy buttons on mobile devices */
+@media (max-width: 768px), (hover: none) {
+  .copy-button {
+    display: none !important;
+  }
+  
+  .log-details-field-value-container,
+  .log-details-content-container {
+    display: block;
+  }
+  
+  .mobile-copy-hint {
+    display: inline;
+  }
+}
+
+/* Show copy buttons on desktop */
+@media (min-width: 769px) and (hover: hover) {
+  .mobile-copy-hint {
+    display: none;
+  }
+  
+  .mobile-copyable {
+    cursor: default;
+    padding: 0;
+    border: none;
+  }
+  
+  .mobile-copyable:hover,
+  .mobile-copyable:active {
+    background: inherit;
+    color: inherit;
+    border-color: transparent;
+  }
+}
+
 /* Legacy log styles for backward compatibility */
 .log-time {
   color: var(--text-muted);

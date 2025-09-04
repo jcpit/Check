@@ -1181,6 +1181,29 @@ class CheckOptions {
         });
       });
 
+      // Add mobile tap-to-copy event listeners
+      const mobileCopyableElements = detailsSection.querySelectorAll(".mobile-copyable");
+      mobileCopyableElements.forEach((element) => {
+        element.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const copyValue = element.getAttribute("data-copy-value");
+          this.copyToClipboardMobile(copyValue, element);
+        });
+        
+        // Add visual feedback for touch
+        element.addEventListener("touchstart", (e) => {
+          element.style.backgroundColor = "var(--primary-color)";
+          element.style.color = "white";
+        });
+        
+        element.addEventListener("touchend", (e) => {
+          setTimeout(() => {
+            element.style.backgroundColor = "";
+            element.style.color = "";
+          }, 200);
+        });
+      });
+
       this.elements.logsList.appendChild(item);
     });
   }
@@ -1201,6 +1224,7 @@ class CheckOptions {
 
   createLogDetailsHTML(log) {
     let html = "";
+    const isMobile = this.isMobileDevice();
 
     // Basic Information Section
     html += `<div class="log-details-section">
@@ -1209,59 +1233,87 @@ class CheckOptions {
 
     if (log.timestamp) {
       const timestampValue = new Date(log.timestamp).toISOString();
-      html += `<div class="log-details-field">
-        <div class="log-details-field-label">Timestamp</div>
-        <div class="log-details-field-value-container">
-          <div class="log-details-field-value">${timestampValue}</div>
-          <button class="copy-button" title="Copy timestamp" data-copy-value="${this.escapeHtml(
-            timestampValue
-          )}">
-            <span class="material-icons" style="font-size: 14px;">content_copy</span>
-          </button>
-        </div>
-      </div>`;
+      if (isMobile) {
+        html += `<div class="log-details-field">
+          <div class="log-details-field-label">Timestamp <span class="mobile-copy-hint">(tap to copy)</span></div>
+          <div class="log-details-field-value mobile-copyable" data-copy-value="${this.escapeHtml(timestampValue)}">${timestampValue}</div>
+        </div>`;
+      } else {
+        html += `<div class="log-details-field">
+          <div class="log-details-field-label">Timestamp</div>
+          <div class="log-details-field-value-container">
+            <div class="log-details-field-value">${timestampValue}</div>
+            <button class="copy-button" title="Copy timestamp" data-copy-value="${this.escapeHtml(
+              timestampValue
+            )}">
+              <span class="material-icons" style="font-size: 14px;">content_copy</span>
+            </button>
+          </div>
+        </div>`;
+      }
     }
 
     if (log.category) {
-      html += `<div class="log-details-field">
-        <div class="log-details-field-label">Category</div>
-        <div class="log-details-field-value-container">
-          <div class="log-details-field-value">${log.category}</div>
-          <button class="copy-button" title="Copy category" data-copy-value="${this.escapeHtml(
-            log.category
-          )}">
-            <span class="material-icons" style="font-size: 14px;">content_copy</span>
-          </button>
-        </div>
-      </div>`;
+      if (isMobile) {
+        html += `<div class="log-details-field">
+          <div class="log-details-field-label">Category <span class="mobile-copy-hint">(tap to copy)</span></div>
+          <div class="log-details-field-value mobile-copyable" data-copy-value="${this.escapeHtml(log.category)}">${log.category}</div>
+        </div>`;
+      } else {
+        html += `<div class="log-details-field">
+          <div class="log-details-field-label">Category</div>
+          <div class="log-details-field-value-container">
+            <div class="log-details-field-value">${log.category}</div>
+            <button class="copy-button" title="Copy category" data-copy-value="${this.escapeHtml(
+              log.category
+            )}">
+              <span class="material-icons" style="font-size: 14px;">content_copy</span>
+            </button>
+          </div>
+        </div>`;
+      }
     }
 
     if (log.level) {
-      html += `<div class="log-details-field">
-        <div class="log-details-field-label">Level</div>
-        <div class="log-details-field-value-container">
-          <div class="log-details-field-value">${log.level}</div>
-          <button class="copy-button" title="Copy level" data-copy-value="${this.escapeHtml(
-            log.level
-          )}">
-            <span class="material-icons" style="font-size: 14px;">content_copy</span>
-          </button>
-        </div>
-      </div>`;
+      if (isMobile) {
+        html += `<div class="log-details-field">
+          <div class="log-details-field-label">Level <span class="mobile-copy-hint">(tap to copy)</span></div>
+          <div class="log-details-field-value mobile-copyable" data-copy-value="${this.escapeHtml(log.level)}">${log.level}</div>
+        </div>`;
+      } else {
+        html += `<div class="log-details-field">
+          <div class="log-details-field-label">Level</div>
+          <div class="log-details-field-value-container">
+            <div class="log-details-field-value">${log.level}</div>
+            <button class="copy-button" title="Copy level" data-copy-value="${this.escapeHtml(
+              log.level
+            )}">
+              <span class="material-icons" style="font-size: 14px;">content_copy</span>
+            </button>
+          </div>
+        </div>`;
+      }
     }
 
     if (log.source) {
-      html += `<div class="log-details-field">
-        <div class="log-details-field-label">Source</div>
-        <div class="log-details-field-value-container">
-          <div class="log-details-field-value">${log.source}</div>
-          <button class="copy-button" title="Copy source" data-copy-value="${this.escapeHtml(
-            log.source
-          )}">
-            <span class="material-icons" style="font-size: 14px;">content_copy</span>
-          </button>
-        </div>
-      </div>`;
+      if (isMobile) {
+        html += `<div class="log-details-field">
+          <div class="log-details-field-label">Source <span class="mobile-copy-hint">(tap to copy)</span></div>
+          <div class="log-details-field-value mobile-copyable" data-copy-value="${this.escapeHtml(log.source)}">${log.source}</div>
+        </div>`;
+      } else {
+        html += `<div class="log-details-field">
+          <div class="log-details-field-label">Source</div>
+          <div class="log-details-field-value-container">
+            <div class="log-details-field-value">${log.source}</div>
+            <button class="copy-button" title="Copy source" data-copy-value="${this.escapeHtml(
+              log.source
+            )}">
+              <span class="material-icons" style="font-size: 14px;">content_copy</span>
+            </button>
+          </div>
+        </div>`;
+      }
     }
 
     html += "</div></div>";
@@ -1275,30 +1327,40 @@ class CheckOptions {
       Object.entries(log.event).forEach(([key, value]) => {
         if (typeof value === "object" && value !== null) {
           const jsonValue = JSON.stringify(value, null, 2);
-          html += `<div class="log-details-field" style="grid-column: 1 / -1;">
-            <div class="log-details-field-label">${key}</div>
-            <div class="log-details-content-container">
-              <div class="log-details-content">${this.escapeHtml(
-                jsonValue
-              )}</div>
-              <button class="copy-button" title="Copy ${key}" data-copy-value="${this.escapeHtml(
-            jsonValue
-          )}">
-                <span class="material-icons" style="font-size: 14px;">content_copy</span>
-              </button>
-            </div>
-          </div>`;
+          if (isMobile) {
+            html += `<div class="log-details-field" style="grid-column: 1 / -1;">
+              <div class="log-details-field-label">${key} <span class="mobile-copy-hint">(tap to copy)</span></div>
+              <div class="log-details-content mobile-copyable" data-copy-value="${this.escapeHtml(jsonValue)}">${this.escapeHtml(jsonValue)}</div>
+            </div>`;
+          } else {
+            html += `<div class="log-details-field" style="grid-column: 1 / -1;">
+              <div class="log-details-field-label">${key}</div>
+              <div class="log-details-content-container">
+                <div class="log-details-content">${this.escapeHtml(jsonValue)}</div>
+                <button class="copy-button" title="Copy ${key}" data-copy-value="${this.escapeHtml(jsonValue)}">
+                  <span class="material-icons" style="font-size: 14px;">content_copy</span>
+                </button>
+              </div>
+            </div>`;
+          }
         } else {
           const valueStr = this.escapeHtml(String(value));
-          html += `<div class="log-details-field">
-            <div class="log-details-field-label">${key}</div>
-            <div class="log-details-field-value-container">
-              <div class="log-details-field-value">${valueStr}</div>
-              <button class="copy-button" title="Copy ${key}" data-copy-value="${valueStr}">
-                <span class="material-icons" style="font-size: 14px;">content_copy</span>
-              </button>
-            </div>
-          </div>`;
+          if (isMobile) {
+            html += `<div class="log-details-field">
+              <div class="log-details-field-label">${key} <span class="mobile-copy-hint">(tap to copy)</span></div>
+              <div class="log-details-field-value mobile-copyable" data-copy-value="${valueStr}">${valueStr}</div>
+            </div>`;
+          } else {
+            html += `<div class="log-details-field">
+              <div class="log-details-field-label">${key}</div>
+              <div class="log-details-field-value-container">
+                <div class="log-details-field-value">${valueStr}</div>
+                <button class="copy-button" title="Copy ${key}" data-copy-value="${valueStr}">
+                  <span class="material-icons" style="font-size: 14px;">content_copy</span>
+                </button>
+              </div>
+            </div>`;
+          }
         }
       });
 
@@ -1321,30 +1383,40 @@ class CheckOptions {
       Object.entries(additionalProps).forEach(([key, value]) => {
         if (typeof value === "object" && value !== null) {
           const jsonValue = JSON.stringify(value, null, 2);
-          html += `<div class="log-details-field" style="grid-column: 1 / -1;">
-            <div class="log-details-field-label">${key}</div>
-            <div class="log-details-content-container">
-              <div class="log-details-content">${this.escapeHtml(
-                jsonValue
-              )}</div>
-              <button class="copy-button" title="Copy ${key}" data-copy-value="${this.escapeHtml(
-            jsonValue
-          )}">
-                <span class="material-icons" style="font-size: 14px;">content_copy</span>
-              </button>
-            </div>
-          </div>`;
+          if (isMobile) {
+            html += `<div class="log-details-field" style="grid-column: 1 / -1;">
+              <div class="log-details-field-label">${key} <span class="mobile-copy-hint">(tap to copy)</span></div>
+              <div class="log-details-content mobile-copyable" data-copy-value="${this.escapeHtml(jsonValue)}">${this.escapeHtml(jsonValue)}</div>
+            </div>`;
+          } else {
+            html += `<div class="log-details-field" style="grid-column: 1 / -1;">
+              <div class="log-details-field-label">${key}</div>
+              <div class="log-details-content-container">
+                <div class="log-details-content">${this.escapeHtml(jsonValue)}</div>
+                <button class="copy-button" title="Copy ${key}" data-copy-value="${this.escapeHtml(jsonValue)}">
+                  <span class="material-icons" style="font-size: 14px;">content_copy</span>
+                </button>
+              </div>
+            </div>`;
+          }
         } else {
           const valueStr = this.escapeHtml(String(value));
-          html += `<div class="log-details-field">
-            <div class="log-details-field-label">${key}</div>
-            <div class="log-details-field-value-container">
-              <div class="log-details-field-value">${valueStr}</div>
-              <button class="copy-button" title="Copy ${key}" data-copy-value="${valueStr}">
-                <span class="material-icons" style="font-size: 14px;">content_copy</span>
-              </button>
-            </div>
-          </div>`;
+          if (isMobile) {
+            html += `<div class="log-details-field">
+              <div class="log-details-field-label">${key} <span class="mobile-copy-hint">(tap to copy)</span></div>
+              <div class="log-details-field-value mobile-copyable" data-copy-value="${valueStr}">${valueStr}</div>
+            </div>`;
+          } else {
+            html += `<div class="log-details-field">
+              <div class="log-details-field-label">${key}</div>
+              <div class="log-details-field-value-container">
+                <div class="log-details-field-value">${valueStr}</div>
+                <button class="copy-button" title="Copy ${key}" data-copy-value="${valueStr}">
+                  <span class="material-icons" style="font-size: 14px;">content_copy</span>
+                </button>
+              </div>
+            </div>`;
+          }
         }
       });
 
@@ -1353,17 +1425,22 @@ class CheckOptions {
 
     // Raw Data Section
     const rawJson = JSON.stringify(log, null, 2);
-    html += `<div class="log-details-section">
-      <div class="log-details-title">Raw Data</div>
-      <div class="log-details-content-container">
-        <div class="log-details-content">${this.escapeHtml(rawJson)}</div>
-        <button class="copy-button" title="Copy raw JSON" data-copy-value="${this.escapeHtml(
-          rawJson
-        )}">
-          <span class="material-icons" style="font-size: 14px;">content_copy</span>
-        </button>
-      </div>
-    </div>`;
+    if (isMobile) {
+      html += `<div class="log-details-section">
+        <div class="log-details-title">Raw Data <span class="mobile-copy-hint">(tap to copy)</span></div>
+        <div class="log-details-content mobile-copyable" data-copy-value="${this.escapeHtml(rawJson)}">${this.escapeHtml(rawJson)}</div>
+      </div>`;
+    } else {
+      html += `<div class="log-details-section">
+        <div class="log-details-title">Raw Data</div>
+        <div class="log-details-content-container">
+          <div class="log-details-content">${this.escapeHtml(rawJson)}</div>
+          <button class="copy-button" title="Copy raw JSON" data-copy-value="${this.escapeHtml(rawJson)}">
+            <span class="material-icons" style="font-size: 14px;">content_copy</span>
+          </button>
+        </div>
+      </div>`;
+    }
 
     return html;
   }
@@ -1435,11 +1512,67 @@ class CheckOptions {
     }
   }
 
+  // Mobile copy to clipboard function
+  async copyToClipboardMobile(text, element) {
+    try {
+      // Decode HTML entities back to original text
+      const decodedText = this.decodeHtml(text);
+      await navigator.clipboard.writeText(decodedText);
+      
+      this.showMobileToast('Copied to clipboard!');
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+      
+      // Fallback for older browsers
+      const decodedText = this.decodeHtml(text);
+      const textArea = document.createElement('textarea');
+      textArea.value = decodedText;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      this.showMobileToast('Copied to clipboard!');
+    }
+  }
+
   // Decode HTML entities back to original text
   decodeHtml(html) {
     const txt = document.createElement("textarea");
     txt.innerHTML = html;
     return txt.value;
+  }
+
+  // Mobile device detection
+  isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+           (window.innerWidth <= 768) || 
+           ('ontouchstart' in window);
+  }
+
+  // Show mobile toast notification
+  showMobileToast(message) {
+    // Remove any existing toast
+    const existingToast = document.querySelector('.mobile-toast');
+    if (existingToast) {
+      existingToast.remove();
+    }
+
+    const toast = document.createElement('div');
+    toast.className = 'mobile-toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    // Show toast
+    setTimeout(() => toast.classList.add('show'), 100);
+
+    // Hide and remove toast
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 300);
+    }, 2000);
   }
 
   filterLogsForDisplay(logs) {
