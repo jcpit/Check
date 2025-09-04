@@ -72,5 +72,7 @@
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;"
   },
-  "managed_schema": "config/managed_schema.json"
+  "storage": {
+    "managed_schema": "config/managed_schema.json"
+  }
 }

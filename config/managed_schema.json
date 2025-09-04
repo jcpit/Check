@@ -91,9 +91,7 @@
           "format": "uri",
           "default": ""
         }
-      },
-      "additionalProperties": false
+      }
     }
-  },
-  "additionalProperties": false
+  }
 }
