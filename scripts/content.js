@@ -8,14 +8,6 @@
  * 3. If MS logon page on non-trusted domain, apply blocking rules
  */
 
-// Simple, reliable logger
-const logger = {
-  log: (...args) => console.log("[M365-Protection]", ...args),
-  warn: (...args) => console.warn("[M365-Protection]", ...args),
-  error: (...args) => console.error("[M365-Protection]", ...args),
-  debug: (...args) => console.debug("[M365-Protection]", ...args),
-};
-
 // Global state
 let protectionActive = false;
 let detectionRules = null;
@@ -24,8 +16,54 @@ let domObserver = null;
 let lastScanTime = 0;
 let scanCount = 0;
 let lastDetectionResult = null; // Store last detection analysis
+let developerConsoleLoggingEnabled = false; // Cache for developer console logging setting
 const MAX_SCANS = 10; // Prevent infinite scanning
 const SCAN_COOLDOWN = 1000; // 1 second between scans
+
+// Conditional logger that respects developer console logging setting
+const logger = {
+  log: (...args) => {
+    if (developerConsoleLoggingEnabled) {
+      console.log("[M365-Protection]", ...args);
+    }
+  },
+  warn: (...args) => {
+    // Always show warnings regardless of developer setting
+    console.warn("[M365-Protection]", ...args);
+  },
+  error: (...args) => {
+    // Always show errors regardless of developer setting
+    console.error("[M365-Protection]", ...args);
+  },
+  debug: (...args) => {
+    if (developerConsoleLoggingEnabled) {
+      console.debug("[M365-Protection]", ...args);
+    }
+  },
+};
+
+/**
+ * Load developer console logging setting from configuration
+ */
+async function loadDeveloperConsoleLoggingSetting() {
+  try {
+    const config = await new Promise((resolve) => {
+      chrome.storage.local.get(["config"], (result) => {
+        resolve(result.config || {});
+      });
+    });
+
+    developerConsoleLoggingEnabled =
+      config.enableDeveloperConsoleLogging === true;
+  } catch (error) {
+    // If there's an error loading settings, default to false
+    developerConsoleLoggingEnabled = false;
+    console.error(
+      "[M365-Protection] Error loading developer console logging setting:",
+      error
+    );
+  }
+}
 
 /**
  * Load detection rules from the rule file - EVERYTHING comes from here
@@ -41,16 +79,18 @@ async function loadDetectionRules() {
 
       if (response && response.success && response.rules) {
         logger.log("Loaded detection rules from background script cache");
-        
+
         // Set up trusted origins from cached rules
         const rules = response.rules;
         if (rules.trusted_origins && Array.isArray(rules.trusted_origins)) {
           trustedOrigins = new Set(
             rules.trusted_origins.map((origin) => origin.toLowerCase())
           );
-          logger.debug(`Set up ${trustedOrigins.size} trusted origins from cache`);
+          logger.debug(
+            `Set up ${trustedOrigins.size} trusted origins from cache`
+          );
         }
-        
+
         return rules;
       }
     } catch (error) {
@@ -76,9 +116,14 @@ async function loadDetectionRules() {
       trustedOrigins = new Set(
         rules.trusted_origins.map((origin) => origin.toLowerCase())
       );
-      logger.debug(`Set up ${trustedOrigins.size} trusted origins from direct load`);
+      logger.debug(
+        `Set up ${trustedOrigins.size} trusted origins from direct load`
+      );
     } else {
-      logger.error("No trusted_origins found in rules or not an array:", rules.trusted_origins);
+      logger.error(
+        "No trusted_origins found in rules or not an array:",
+        rules.trusted_origins
+      );
     }
 
     logger.log(
@@ -431,6 +476,9 @@ async function runProtection(isRerun = false) {
       clearSecurityUI();
     }
 
+    // Step 0: Load developer console logging setting (affects all subsequent logging)
+    await loadDeveloperConsoleLoggingSetting();
+
     // Step 1: Load detection rules (everything comes from here)
     if (!detectionRules) {
       detectionRules = await loadDetectionRules();
@@ -442,20 +490,24 @@ async function runProtection(isRerun = false) {
       detectionRules = await loadDetectionRules();
       if (trustedOrigins.size === 0) {
         logger.error("CRITICAL: Failed to load trusted origins after reload!");
-        logger.error("This will cause all Microsoft domains to be flagged as non-trusted");
+        logger.error(
+          "This will cause all Microsoft domains to be flagged as non-trusted"
+        );
       } else {
-        logger.log(`✅ Successfully loaded ${trustedOrigins.size} trusted origins on retry`);
+        logger.log(
+          `✅ Successfully loaded ${trustedOrigins.size} trusted origins on retry`
+        );
       }
     }
 
     // Step 2: FIRST CHECK - trusted origins (immediate exit if trusted)
     const currentOrigin = location.origin.toLowerCase();
-    
+
     // Debug logging for trusted domain detection
     logger.debug(`Checking origin: "${currentOrigin}"`);
     logger.debug(`Trusted origins:`, Array.from(trustedOrigins));
     logger.debug(`Is trusted: ${trustedOrigins.has(currentOrigin)}`);
-    
+
     if (trustedOrigins.has(currentOrigin)) {
       logger.log(
         "✅ TRUSTED ORIGIN - No phishing possible, exiting immediately"
@@ -606,7 +658,9 @@ async function runProtection(isRerun = false) {
     logger.log("❌ NON-TRUSTED ORIGIN - Continuing analysis");
     logger.debug(`Origin "${currentOrigin}" not found in trusted origins list`);
     logger.debug(`Expected to find: "https://login.microsoftonline.com"`);
-    logger.debug(`Trusted origins loaded: ${trustedOrigins.size > 0 ? 'YES' : 'NO'}`);
+    logger.debug(
+      `Trusted origins loaded: ${trustedOrigins.size > 0 ? "YES" : "NO"}`
+    );
 
     // Step 3: Check if page is an MS logon page (using rule file requirements)
     const isMSLogon = isMicrosoftLogonPage();
@@ -1336,7 +1390,7 @@ function showValidBadge() {
     // Check if mobile using media query (more conservative breakpoint)
     const isMobile = window.matchMedia("(max-width: 480px)").matches;
 
-    console.log(
+    logger.debug(
       "Screen width:",
       window.innerWidth,
       "Media query matches:",

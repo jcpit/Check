@@ -65,6 +65,9 @@ class CheckOptions {
     // Logging settings (moved from privacy section)
     this.elements.enableDebugLogging =
       document.getElementById("enableDebugLogging");
+    this.elements.enableDeveloperConsoleLogging = document.getElementById(
+      "enableDeveloperConsoleLogging"
+    );
 
     // Logs
     this.elements.logFilter = document.getElementById("logFilter");
@@ -322,6 +325,7 @@ class CheckOptions {
           "https://raw.githubusercontent.com/CyberDrain/ProjectX/refs/heads/main/rules/detection-rules.json",
         updateInterval: 24,
         enableDebugLogging: false,
+        enableDeveloperConsoleLogging: false,
       };
       this.originalConfig = JSON.parse(JSON.stringify(this.config));
 
@@ -532,6 +536,8 @@ class CheckOptions {
     // Logging settings
     this.elements.enableDebugLogging.checked =
       this.config.enableDebugLogging || false;
+    this.elements.enableDeveloperConsoleLogging.checked =
+      this.config.enableDeveloperConsoleLogging || false;
 
     // Branding settings
     this.elements.companyName.value = this.brandingConfig?.companyName || "";
@@ -694,6 +700,8 @@ class CheckOptions {
 
       // Debug logging setting
       enableDebugLogging: this.elements.enableDebugLogging?.checked || false,
+      enableDeveloperConsoleLogging:
+        this.elements.enableDeveloperConsoleLogging?.checked || false,
     };
   }
 
@@ -1646,6 +1654,7 @@ class CheckOptions {
             "https://raw.githubusercontent.com/CyberDrain/ProjectX/refs/heads/main/rules/detection-rules.json",
           updateInterval: 24,
           enableDebugLogging: false,
+          enableDeveloperConsoleLogging: false,
 
           // Custom branding (matches managed_schema.json structure)
           customBranding: {
@@ -1770,6 +1779,8 @@ class CheckOptions {
       customRulesUrl: this.elements.customRulesUrl,
       updateInterval: this.elements.updateInterval,
       enableDebugLogging: this.elements.enableDebugLogging,
+      enableDeveloperConsoleLogging:
+        this.elements.enableDeveloperConsoleLogging,
       // Branding fields (if customBranding policy is present)
       companyName: this.elements.companyName,
       productName: this.elements.productName,
@@ -1860,6 +1871,16 @@ class CheckOptions {
       this.elements.enableDebugLogging.title =
         "Debug logging is managed by your organization's policy";
       this.elements.enableDebugLogging.classList.add("policy-managed");
+    }
+
+    // Disable the developer console logging checkbox specifically
+    if (this.elements.enableDeveloperConsoleLogging) {
+      this.elements.enableDeveloperConsoleLogging.disabled = true;
+      this.elements.enableDeveloperConsoleLogging.title =
+        "Developer console logging is managed by your organization's policy";
+      this.elements.enableDeveloperConsoleLogging.classList.add(
+        "policy-managed"
+      );
     }
 
     // If currently on a restricted tab, switch to logs tab
