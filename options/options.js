@@ -486,6 +486,7 @@ class CheckOptions {
       "enableCippReporting"
     );
     this.elements.cippServerUrl = document.getElementById("cippServerUrl");
+    this.elements.cippTenantId = document.getElementById("cippTenantId");
 
     if (this.elements.enablePageBlocking) {
       this.elements.enablePageBlocking.checked =
@@ -497,6 +498,9 @@ class CheckOptions {
     }
     if (this.elements.cippServerUrl) {
       this.elements.cippServerUrl.value = this.config?.cippServerUrl || "";
+    }
+    if (this.elements.cippTenantId) {
+      this.elements.cippTenantId.value = this.config?.cippTenantId || "";
     }
 
     // UI settings
@@ -688,6 +692,7 @@ class CheckOptions {
       enablePageBlocking: this.elements.enablePageBlocking?.checked !== false,
       enableCippReporting: this.elements.enableCippReporting?.checked || false,
       cippServerUrl: this.elements.cippServerUrl?.value || "",
+      cippTenantId: this.elements.cippTenantId?.value || "",
 
       // UI settings
       showNotifications: this.elements.showNotifications?.checked || false,
@@ -1650,6 +1655,7 @@ class CheckOptions {
           enablePageBlocking: true,
           enableCippReporting: false,
           cippServerUrl: "",
+          cippTenantId: "",
           customRulesUrl:
             "https://raw.githubusercontent.com/CyberDrain/ProjectX/refs/heads/main/rules/detection-rules.json",
           updateInterval: 24,
@@ -1776,6 +1782,7 @@ class CheckOptions {
       enablePageBlocking: this.elements.enablePageBlocking,
       enableCippReporting: this.elements.enableCippReporting,
       cippServerUrl: this.elements.cippServerUrl,
+      cippTenantId: this.elements.cippTenantId,
       customRulesUrl: this.elements.customRulesUrl,
       updateInterval: this.elements.updateInterval,
       enableDebugLogging: this.elements.enableDebugLogging,

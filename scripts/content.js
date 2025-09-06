@@ -1715,14 +1715,20 @@ async function sendCippReport(reportData) {
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
       extensionVersion: chrome.runtime.getManifest().version,
+      tenantId: config.cippTenantId || null, // Include tenant ID if configured
       ...reportData,
     };
 
     // Send POST request to CIPP server
     const cippUrl =
-      config.cippServerUrl.replace(/\/+$/, "") + "/api/PublicExecCheck";
+      config.cippServerUrl.replace(/\/+$/, "") + "/api/PublicPhishingCheck";
 
     logger.log(`Sending CIPP report to: ${cippUrl}`);
+    if (config.cippTenantId) {
+      logger.debug(
+        `Including tenant ID in CIPP report: ${config.cippTenantId}`
+      );
+    }
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
