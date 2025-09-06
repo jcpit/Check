@@ -1695,6 +1695,20 @@ function logProtectionEvent(eventData) {
  */
 async function sendCippReport(reportData) {
   try {
+    // Only send reports for high/critical severity threats to prevent CIPP spam
+    const severity = reportData.severity || reportData.threatLevel;
+    const isCriticalThreat = severity === "critical" || severity === "high";
+    const isRogueApp = reportData.type === "critical_rogue_app_detected";
+    const isPhishingBlocked = reportData.type === "phishing_blocked";
+
+    // Allow critical/high threats and rogue apps, skip informational reports
+    if (!isCriticalThreat && !isRogueApp && !isPhishingBlocked) {
+      logger.debug(
+        `CIPP reporting skipped for ${reportData.type} - only high/critical threats are reported`
+      );
+      return;
+    }
+
     // Get CIPP configuration from storage
     const result = await new Promise((resolve) => {
       chrome.storage.local.get(["config"], (result) => {
@@ -1710,50 +1724,47 @@ async function sendCippReport(reportData) {
       return;
     }
 
-    // Prepare CIPP report payload
-    const cippPayload = {
+    // Prepare base CIPP report payload (background script will inject user profile and build URL)
+    const baseCippPayload = {
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
       extensionVersion: chrome.runtime.getManifest().version,
-      tenantId: config.cippTenantId || null, // Include tenant ID if configured
+      source: "CheckExtension",
       ...reportData,
     };
 
-    // Send POST request to CIPP server
-    const cippUrl =
-      config.cippServerUrl.replace(/\/+$/, "") + "/api/PublicPhishingCheck";
-
-    logger.log(`Sending CIPP report to: ${cippUrl}`);
+    logger.log(
+      `Sending high/critical CIPP report via background script (${
+        reportData.type
+      }, severity: ${severity || "N/A"})`
+    );
     if (config.cippTenantId) {
       logger.debug(
         `Including tenant ID in CIPP report: ${config.cippTenantId}`
       );
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
+    // Send CIPP report via background script (content scripts can't make external requests)
+    // Background script will inject user profile data and build the full URL automatically
     try {
-      const response = await fetch(cippUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(cippPayload),
-        signal: controller.signal,
+      const response = await chrome.runtime.sendMessage({
+        type: "send_cipp_report",
+        payload: baseCippPayload,
       });
 
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        logger.log("CIPP report sent successfully");
+      if (response && response.success) {
+        logger.log("✅ CIPP report sent successfully via background script");
       } else {
         logger.warn(
-          `CIPP report failed: ${response.status} ${response.statusText}`
+          "⚠️ CIPP report failed:",
+          response?.error || "Unknown error"
         );
       }
-    } finally {
-      clearTimeout(timeoutId);
+    } catch (messageError) {
+      logger.error(
+        "Failed to send CIPP report via background script:",
+        messageError.message
+      );
     }
   } catch (error) {
     logger.warn("Failed to send CIPP report:", error.message);

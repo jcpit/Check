@@ -1397,6 +1397,22 @@ class CheckBackground {
           }
           break;
 
+        case "send_cipp_report":
+          try {
+            if (!message.payload) {
+              sendResponse({ success: false, error: "No payload provided" });
+              return;
+            }
+
+            // Handle CIPP report from content script
+            await this.handleCippReport(message.payload);
+            sendResponse({ success: true });
+          } catch (error) {
+            logger.error("Check: Failed to send CIPP report:", error);
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
         default:
           sendResponse({ success: false, error: "Unknown message type" });
       }
@@ -2005,19 +2021,16 @@ class CheckBackground {
         cippPayload.context = "managed";
       }
 
-      const response = await fetch(
-        `${config.cippServerUrl}/api/telemetry/extension`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "User-Agent": `Microsoft365PhishingProtection/${
-              chrome.runtime.getManifest().version
-            }`,
-          },
-          body: JSON.stringify(cippPayload),
-        }
-      );
+      const response = await fetch(`${config.cippServerUrl}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": `Microsoft365PhishingProtection/${
+            chrome.runtime.getManifest().version
+          }`,
+        },
+        body: JSON.stringify(cippPayload),
+      });
 
       if (!response.ok) {
         throw new Error(
@@ -2030,6 +2043,178 @@ class CheckBackground {
       logger.error("Failed to send telemetry to CIPP:", error);
       // Don't fail the entire logging operation if CIPP is unavailable
     }
+  }
+
+  // Handle CIPP reports from content script
+  async handleCippReport(basePayload) {
+    try {
+      // Get configuration
+      const config = await this.configManager.getConfig();
+
+      if (!config?.enableCippReporting || !config?.cippServerUrl) {
+        logger.debug("CIPP reporting disabled or no server URL configured");
+        return;
+      }
+
+      // Build the complete CIPP URL
+      const cippUrl =
+        config.cippServerUrl.replace(/\/+$/, "") + "/api/PublicPhishingCheck";
+
+      // Get user profile information
+      const userProfile = await this.getCurrentProfile();
+
+      // Extract user information from the profile structure
+      const userEmail = userProfile?.userInfo?.email || null;
+      const userDisplayName =
+        userProfile?.userInfo?.displayName ||
+        userProfile?.userInfo?.name ||
+        (userEmail ? userEmail.split("@")[0] : null);
+
+      // Extract browser and environment context
+      const browserContext = {
+        browserType: userProfile?.browserInfo?.browserType || "unknown",
+        browserVersion: userProfile?.browserInfo?.browserVersion || "unknown",
+        platform: userProfile?.browserInfo?.platform || "unknown",
+        language: userProfile?.browserInfo?.language || "unknown",
+        extensionVersion:
+          userProfile?.browserInfo?.version ||
+          chrome.runtime.getManifest().version,
+        installType: userProfile?.browserInfo?.installType || "unknown",
+      };
+
+      // Enhance payload with comprehensive security context
+      const enhancedPayload = {
+        // Original threat data
+        ...basePayload,
+
+        // Tenant and user context
+        tenantId: config.cippTenantId || null,
+        userEmail: userEmail,
+        userDisplayName: userDisplayName,
+        accountType: userProfile?.userInfo?.accountType || "unknown",
+        isManaged: userProfile?.isManaged || false,
+        profileId: userProfile?.profileId || null,
+
+        // Browser and environment context
+        browserContext: browserContext,
+
+        // Security classification
+        alertSeverity: this.mapSeverityLevel(
+          basePayload.severity || basePayload.threatLevel
+        ),
+        alertCategory: this.categorizeSecurityEvent(basePayload),
+
+        // Additional context for CIPP analytics
+        detectionMethod: "chrome_extension",
+        extensionId: chrome.runtime.id,
+        reportVersion: "2.0", // Version identifier for CIPP processing
+
+        // Include redirect information if available (important for OAuth attacks)
+        ...(basePayload.redirectTo && {
+          redirectContext: {
+            redirectHost: basePayload.redirectTo,
+            isLocalhost: basePayload.redirectTo?.includes("localhost"),
+            isPrivateIP: this.isPrivateIP(basePayload.redirectTo),
+          },
+        }),
+
+        // Include client app information if available (for OAuth threats)
+        ...(basePayload.clientId && {
+          oauthContext: {
+            clientId: basePayload.clientId,
+            appName: basePayload.appName || "Unknown",
+            ...(basePayload.reason && { threatReason: basePayload.reason }),
+          },
+        }),
+      };
+
+      logger.log(`Sending enhanced CIPP report to: ${cippUrl}`);
+      logger.debug(
+        `Report type: ${basePayload.type}, severity: ${enhancedPayload.alertSeverity}, category: ${enhancedPayload.alertCategory}`
+      );
+
+      if (config.cippTenantId) {
+        logger.debug(`Including tenant ID: ${config.cippTenantId}`);
+      }
+      if (userEmail) {
+        logger.debug(`Including user profile: ${userEmail}`);
+      }
+
+      // Send POST request to CIPP server (no OPTIONS query needed)
+      const response = await fetch(cippUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": `Check/${chrome.runtime.getManifest().version}`,
+          "X-Report-Version": "2.0", // Header to help CIPP identify enhanced reports
+        },
+        body: JSON.stringify(enhancedPayload),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `CIPP server responded with ${response.status}: ${response.statusText}`
+        );
+      }
+
+      logger.log("✅ Enhanced CIPP report sent successfully");
+    } catch (error) {
+      logger.error("Failed to send CIPP report:", error);
+      throw error; // Re-throw so content script gets the error
+    }
+  }
+
+  // Map severity levels to standardized CIPP severity scale
+  mapSeverityLevel(severity) {
+    const severityMap = {
+      critical: "CRITICAL",
+      high: "HIGH",
+      medium: "MEDIUM",
+      low: "LOW",
+      info: "INFORMATIONAL",
+    };
+    return severityMap[severity?.toLowerCase()] || "MEDIUM";
+  }
+
+  // Categorize security events for better CIPP analytics
+  categorizeSecurityEvent(payload) {
+    const type = payload.type?.toLowerCase() || "";
+
+    if (
+      type.includes("rogue_app") ||
+      payload.ruleType === "rogue_app_detection"
+    ) {
+      return "OAUTH_THREAT";
+    }
+    if (type.includes("phishing") || type.includes("blocked")) {
+      return "PHISHING_ATTEMPT";
+    }
+    if (type.includes("suspicious")) {
+      return "SUSPICIOUS_ACTIVITY";
+    }
+    if (type.includes("microsoft_logon")) {
+      return "LEGITIMATE_ACCESS";
+    }
+
+    return "SECURITY_EVENT";
+  }
+
+  // Check if redirect host is a private IP (additional context for OAuth attacks)
+  isPrivateIP(host) {
+    if (!host) return false;
+
+    // Common private IP patterns and localhost variants
+    const privatePatterns = [
+      /^localhost$/i,
+      /^127\./,
+      /^192\.168\./,
+      /^10\./,
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
+      /^::1$/,
+      /^fe80:/i,
+    ];
+
+    return privatePatterns.some((pattern) => pattern.test(host));
   }
 
   async validateConfiguration() {
