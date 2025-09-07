@@ -544,7 +544,6 @@ class CheckBackground {
     const config = (await safe(this.configManager.getConfig())) || {};
     const enabled =
       this.policy?.EnableValidPageBadge ||
-      config?.showValidPageBadge ||
       config?.enableValidPageBadge;
     if (enabled) {
       await safe(
@@ -554,6 +553,37 @@ class CheckBackground {
           branding: this.policy?.BrandingName,
         })
       );
+    }
+  }
+
+  // CyberDrain integration - Remove valid badges from all tabs when setting is disabled
+  async removeValidBadgesFromAllTabs() {
+    try {
+      logger.log("📋 BADGE CLEANUP: Removing valid badges from all tabs");
+      
+      // Get all tabs
+      const tabs = await safe(chrome.tabs.query({})) || [];
+      
+      // Send remove message to each tab
+      const removePromises = tabs.map(async (tab) => {
+        if (tab.id) {
+          try {
+            await safe(
+              chrome.tabs.sendMessage(tab.id, {
+                type: "REMOVE_VALID_BADGE"
+              })
+            );
+          } catch (error) {
+            // Silently handle tabs that can't receive messages (e.g., chrome:// pages)
+          }
+        }
+      });
+
+      await Promise.allSettled(removePromises);
+      logger.log("📋 BADGE CLEANUP: Valid badge removal completed for all tabs");
+      
+    } catch (error) {
+      logger.warn("Failed to remove valid badges from all tabs:", error.message);
     }
   }
 
@@ -1058,6 +1088,15 @@ class CheckBackground {
           sendResponse({ policy: this.policy });
           break;
 
+        case "REQUEST_SHOW_VALID_BADGE":
+          if (sender.tab?.id) {
+            queueMicrotask(() => this.showValidBadge(sender.tab.id).catch(() => {}));
+            sendResponse({ success: true });
+          } else {
+            sendResponse({ success: false, error: "No tab ID available" });
+          }
+          break;
+
         case "ANALYZE_CONTENT_WITH_RULES":
           // DetectionEngine removed - content analysis now handled by content script
           sendResponse({
@@ -1319,10 +1358,47 @@ class CheckBackground {
 
         case "UPDATE_CONFIG":
           try {
+            // Get the current config to compare badge settings
+            const currentConfig = await this.configManager.getConfig();
+            const previousBadgeEnabled = currentConfig?.enableValidPageBadge || 
+                                       this.policy?.EnableValidPageBadge;
+
+            // Update the configuration
             await this.configManager.updateConfig(message.config);
+            
+            // Get the updated config to check new badge setting
+            const updatedConfig = await this.configManager.getConfig();
+            const newBadgeEnabled = updatedConfig?.enableValidPageBadge || 
+                                  this.policy?.EnableValidPageBadge;
+
+            // If badge was disabled, remove badges from all tabs
+            if (previousBadgeEnabled && !newBadgeEnabled) {
+              logger.log("📋 BADGE SETTING: Badge setting disabled, removing badges from all tabs");
+              await this.removeValidBadgesFromAllTabs();
+            }
+
             sendResponse({ success: true });
           } catch (error) {
             logger.error("Check: Failed to update config:", error);
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
+        case "CONFIG_UPDATED":
+          try {
+            // Handle configuration updates from ConfigManager
+            const currentConfig = await this.configManager.getConfig();
+            const badgeEnabled = currentConfig?.enableValidPageBadge || 
+                                this.policy?.EnableValidPageBadge;
+
+            // If badge setting is disabled, remove badges from all tabs
+            if (!badgeEnabled) {
+              await this.removeValidBadgesFromAllTabs();
+            }
+
+            sendResponse({ success: true });
+          } catch (error) {
+            logger.error("Check: Failed to handle config update:", error);
             sendResponse({ success: false, error: error.message });
           }
           break;

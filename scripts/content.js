@@ -618,7 +618,15 @@ async function runProtection(isRerun = false) {
 
         // Only show valid badge if no rogue app detected
         if (protectionEnabled) {
-          showValidBadge();
+          // Ask background script to show valid badge (it will check if the setting is enabled)
+          chrome.runtime.sendMessage(
+            { type: "REQUEST_SHOW_VALID_BADGE" },
+            (response) => {
+              if (response?.success) {
+                logger.log("📋 VALID BADGE: Background script will handle badge display");
+              }
+            }
+          );
         }
 
         // Normal legitimate access logging if no rogue app detected (only on first run)
@@ -1845,6 +1853,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: true });
     } catch (error) {
       logger.error("Failed to show valid badge:", error);
+      sendResponse({ success: false, error: error.message });
+    }
+    return true;
+  }
+
+  if (message.type === "REMOVE_VALID_BADGE") {
+    try {
+      logger.log("📋 VALID BADGE: Received request to remove valid page badge");
+      const validBadge = document.getElementById("ms365-valid-badge");
+      if (validBadge) {
+        validBadge.remove();
+        logger.log("📋 VALID BADGE: Badge removed successfully");
+      }
+      sendResponse({ success: true });
+    } catch (error) {
+      logger.error("Failed to remove valid badge:", error);
       sendResponse({ success: false, error: error.message });
     }
     return true;
