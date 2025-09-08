@@ -543,8 +543,7 @@ class CheckBackground {
   async showValidBadge(tabId) {
     const config = (await safe(this.configManager.getConfig())) || {};
     const enabled =
-      this.policy?.EnableValidPageBadge ||
-      config?.enableValidPageBadge;
+      this.policy?.EnableValidPageBadge || config?.enableValidPageBadge;
     if (enabled) {
       await safe(
         chrome.tabs.sendMessage(tabId, {
@@ -560,17 +559,17 @@ class CheckBackground {
   async removeValidBadgesFromAllTabs() {
     try {
       logger.log("📋 BADGE CLEANUP: Removing valid badges from all tabs");
-      
+
       // Get all tabs
-      const tabs = await safe(chrome.tabs.query({})) || [];
-      
+      const tabs = (await safe(chrome.tabs.query({}))) || [];
+
       // Send remove message to each tab
       const removePromises = tabs.map(async (tab) => {
         if (tab.id) {
           try {
             await safe(
               chrome.tabs.sendMessage(tab.id, {
-                type: "REMOVE_VALID_BADGE"
+                type: "REMOVE_VALID_BADGE",
               })
             );
           } catch (error) {
@@ -580,10 +579,14 @@ class CheckBackground {
       });
 
       await Promise.allSettled(removePromises);
-      logger.log("📋 BADGE CLEANUP: Valid badge removal completed for all tabs");
-      
+      logger.log(
+        "📋 BADGE CLEANUP: Valid badge removal completed for all tabs"
+      );
     } catch (error) {
-      logger.warn("Failed to remove valid badges from all tabs:", error.message);
+      logger.warn(
+        "Failed to remove valid badges from all tabs:",
+        error.message
+      );
     }
   }
 
@@ -1090,7 +1093,9 @@ class CheckBackground {
 
         case "REQUEST_SHOW_VALID_BADGE":
           if (sender.tab?.id) {
-            queueMicrotask(() => this.showValidBadge(sender.tab.id).catch(() => {}));
+            queueMicrotask(() =>
+              this.showValidBadge(sender.tab.id).catch(() => {})
+            );
             sendResponse({ success: true });
           } else {
             sendResponse({ success: false, error: "No tab ID available" });
@@ -1360,20 +1365,24 @@ class CheckBackground {
           try {
             // Get the current config to compare badge settings
             const currentConfig = await this.configManager.getConfig();
-            const previousBadgeEnabled = currentConfig?.enableValidPageBadge || 
-                                       this.policy?.EnableValidPageBadge;
+            const previousBadgeEnabled =
+              currentConfig?.enableValidPageBadge ||
+              this.policy?.EnableValidPageBadge;
 
             // Update the configuration
             await this.configManager.updateConfig(message.config);
-            
+
             // Get the updated config to check new badge setting
             const updatedConfig = await this.configManager.getConfig();
-            const newBadgeEnabled = updatedConfig?.enableValidPageBadge || 
-                                  this.policy?.EnableValidPageBadge;
+            const newBadgeEnabled =
+              updatedConfig?.enableValidPageBadge ||
+              this.policy?.EnableValidPageBadge;
 
             // If badge was disabled, remove badges from all tabs
             if (previousBadgeEnabled && !newBadgeEnabled) {
-              logger.log("📋 BADGE SETTING: Badge setting disabled, removing badges from all tabs");
+              logger.log(
+                "📋 BADGE SETTING: Badge setting disabled, removing badges from all tabs"
+              );
               await this.removeValidBadgesFromAllTabs();
             }
 
@@ -1388,8 +1397,9 @@ class CheckBackground {
           try {
             // Handle configuration updates from ConfigManager
             const currentConfig = await this.configManager.getConfig();
-            const badgeEnabled = currentConfig?.enableValidPageBadge || 
-                                this.policy?.EnableValidPageBadge;
+            const badgeEnabled =
+              currentConfig?.enableValidPageBadge ||
+              this.policy?.EnableValidPageBadge;
 
             // If badge setting is disabled, remove badges from all tabs
             if (!badgeEnabled) {
