@@ -139,8 +139,74 @@ async function loadDetectionRules() {
 }
 
 /**
+ * Manual test function for debugging detection patterns
+ * Call this from browser console: testDetectionPatterns()
+ */
+function testDetectionPatterns() {
+  console.log("🔍 MANUAL DETECTION TESTING");
+  const pageSource = document.documentElement.outerHTML;
+
+  // Test each pattern individually
+  const patterns = [
+    { name: "idPartnerPL", pattern: "idPartnerPL", type: "source_content" },
+    { name: "loginfmt", pattern: "loginfmt", type: "source_content" },
+    {
+      name: "aadcdn_msauth",
+      pattern: "aadcdn\\.msauth\\.net",
+      type: "source_content",
+    },
+    { name: "urlMsaSignUp", pattern: "urlMsaSignUp", type: "source_content" },
+    { name: "i0116_element", pattern: "#i0116", type: "source_content" },
+    {
+      name: "ms_background_cdn",
+      pattern: "logincdn\\.msauth\\.net",
+      type: "source_content",
+    },
+    {
+      name: "segoe_ui_font",
+      pattern: "Segoe\\s+UI\\s+Webfont",
+      type: "source_content",
+    },
+  ];
+
+  const cssPatterns = [
+    "width:\\s*27\\.5rem",
+    "height:\\s*21\\.125rem",
+    "max-width:\\s*440px",
+    "background-color:\\s*#0067b8",
+    "display:\\s*grid.*place-items:\\s*center",
+  ];
+
+  patterns.forEach((p) => {
+    const regex = new RegExp(p.pattern, "i");
+    const found = regex.test(pageSource);
+    console.log(`${found ? "✅" : "❌"} ${p.name}: ${p.pattern}`);
+    if (found) {
+      const match = pageSource.match(regex);
+      console.log(`   Match: "${match[0]}"`);
+    }
+  });
+
+  console.log("🎨 CSS PATTERNS:");
+  cssPatterns.forEach((pattern, idx) => {
+    const regex = new RegExp(pattern, "i");
+    const found = regex.test(pageSource);
+    console.log(`${found ? "✅" : "❌"} CSS[${idx}]: ${pattern}`);
+    if (found) {
+      const match = pageSource.match(regex);
+      console.log(`   Match: "${match[0]}"`);
+    }
+  });
+
+  return { pageLength: pageSource.length, url: window.location.href };
+}
+
+// Make it globally available for testing
+window.testDetectionPatterns = testDetectionPatterns;
+
+/**
  * Check if page is Microsoft 365 logon page using ONLY rule file requirements
- * Requirements: idPartnerPL, loginfmt, aadcdn.msauth.net, urlMsaSignUp, #i0116 (2 of 5 needed)
+ * Requirements: Now requires 3 of 10 elements for better accuracy
  */
 function isMicrosoftLogonPage() {
   try {
@@ -199,12 +265,43 @@ function isMicrosoftLogonPage() {
     logger.log(
       `M365 logon detection: ${foundElements}/${
         requirements.required_elements.length
-      } elements found (need ${requirements.minimum_required || 2})`
+      } elements found (need ${requirements.minimum_required || 3})`
     );
     logger.log(`Found: [${foundElementsList.join(", ")}]`);
     if (missingElementsList.length > 0) {
       logger.log(`Missing: [${missingElementsList.join(", ")}]`);
     }
+
+    // Enhanced debugging - show what we're actually looking for
+    logger.debug("=== DETECTION DEBUG INFO ===");
+    logger.debug(`Page URL: ${window.location.href}`);
+    logger.debug(`Page title: ${document.title}`);
+    logger.debug(`Page source length: ${pageSource.length} chars`);
+
+    // Debug each pattern individually
+    for (const element of requirements.required_elements) {
+      if (element.type === "source_content") {
+        const regex = new RegExp(element.pattern, "i");
+        const matches = pageSource.match(regex);
+        logger.debug(
+          `Pattern "${element.pattern}" -> ${matches ? "FOUND" : "NOT FOUND"}`
+        );
+        if (matches) logger.debug(`  Match: "${matches[0]}"`);
+      } else if (element.type === "css_pattern") {
+        element.patterns.forEach((pattern, idx) => {
+          const regex = new RegExp(pattern, "i");
+          const matches = pageSource.match(regex);
+          logger.debug(
+            `CSS pattern[${idx}] "${pattern}" -> ${
+              matches ? "FOUND" : "NOT FOUND"
+            }`
+          );
+          if (matches) logger.debug(`  Match: "${matches[0]}"`);
+        });
+      }
+    }
+    logger.debug("=== END DEBUG INFO ===");
+
     logger.log(`Result: ${isM365Page ? "IS" : "NOT"} Microsoft 365 logon page`);
 
     return isM365Page;
