@@ -53,21 +53,35 @@ if (window.checkExtensionLoaded) {
   }
 
   /**
-   * Check if current origin is a trusted Microsoft login domain
-   * @param {string} origin - The origin to check
+   * Check if current URL is from a trusted Microsoft login domain
+   * @param {string} url - The URL to check
    * @returns {boolean} - True if trusted login domain
    */
-  function isTrustedLoginDomain(origin) {
-    return matchesAnyPattern(origin, trustedLoginPatterns);
+  function isTrustedLoginDomain(url) {
+    try {
+      const urlObj = new URL(url);
+      const origin = urlObj.origin;
+      return matchesAnyPattern(origin, trustedLoginPatterns);
+    } catch (error) {
+      logger.warn("Invalid URL for trusted login domain check:", url);
+      return false;
+    }
   }
 
   /**
-   * Check if current origin is a Microsoft domain (but not necessarily login)
-   * @param {string} origin - The origin to check
+   * Check if current URL is from a Microsoft domain (but not necessarily login)
+   * @param {string} url - The URL to check
    * @returns {boolean} - True if Microsoft domain
    */
-  function isMicrosoftDomain(origin) {
-    return matchesAnyPattern(origin, microsoftDomainPatterns);
+  function isMicrosoftDomain(url) {
+    try {
+      const urlObj = new URL(url);
+      const origin = urlObj.origin;
+      return matchesAnyPattern(origin, microsoftDomainPatterns);
+    } catch (error) {
+      logger.warn("Invalid URL for Microsoft domain check:", url);
+      return false;
+    }
   }
 
   // Conditional logger that respects developer console logging setting
