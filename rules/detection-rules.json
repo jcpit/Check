@@ -8,7 +8,10 @@
     "https://login.windows.net",
     "https://login.microsoftonline.us",
     "https://login.partner.microsoftonline.cn",
-    "https://login.live.com"
+    "https://login.live.com",
+    "https://account.microsoft.com",
+    "https://account.live.com",
+    "https://myaccount.microsoft.com"
   ],
   "m365_detection_requirements": {
     "description": "Required elements to identify a Microsoft 365 login page",
@@ -74,7 +77,7 @@
         "id": "segoe_ui_font",
         "type": "source_content",
         "pattern": "Segoe\\s+UI(?:\\s+(?:Webfont|Symbol|Historic|Emoji))?",
-        "description": "Microsoft's Segoe UI font family variants (Webfont, Symbol, Historic, Emoji)",
+        "description": "Microsoft's Segoe UI font family variants",
         "required": false
       },
       {
@@ -84,18 +87,32 @@
           "display:\\s*grid.*place-items:\\s*center",
           "height:\\s*100vh.*width:\\s*100vw"
         ],
-        "description": "Microsoft login container layout (fullscreen grid with centered items)",
+        "description": "Microsoft login container layout",
         "required": false
       },
       {
         "id": "ms_external_css",
         "type": "source_content",
         "pattern": "(?:href=[\"'].*(?:microsoft|msauth|msft|office365|o365).*\\.css[\"']|src=[\"'].*(?:microsoft|msauth|msft).*\\.css[\"'])",
-        "description": "External CSS files from Microsoft or Microsoft-themed domains",
+        "description": "External CSS files from Microsoft domains",
         "required": false
+      },
+      {
+        "id": "password_input_field",
+        "type": "source_content",
+        "pattern": "(?:type=[\"']password[\"']|name=[\"']password[\"']|id=[\"'].*password.*[\"'])",
+        "description": "Password input field present on page",
+        "required": true
+      },
+      {
+        "id": "login_form_element",
+        "type": "source_content",
+        "pattern": "(?:<form[^>]*method=[\"']post[\"'][^>]*>|<input[^>]*type=[\"'](?:email|text)[\"'][^>]*name=[\"'][^\"']+[\"'])",
+        "description": "Login form with POST method or email/text input field",
+        "required": true
       }
     ],
-    "minimum_required": 3,
+    "minimum_required": 4,
     "all_must_be_present": false
   },
   "blocking_rules": [
@@ -470,7 +487,7 @@
     },
     {
       "id": "phi_010_aad_fingerprint",
-      "pattern": "(?=.*(?:loginfmt|i0116))(?=.*(?:idSIButton9|sign.*in|next))(?!.*login\\.microsoftonline\\.com)",
+      "pattern": "(?=.*(?:loginfmt|i0116))(?=.*(?:idSIButton9|type=[\"']submit[\"']))(?!.*login\\.microsoftonline\\.com)",
       "flags": "i",
       "severity": "critical",
       "description": "AAD-like login interface detected on non-Microsoft domain",
@@ -480,7 +497,7 @@
     },
     {
       "id": "phi_011_missing_elements",
-      "pattern": "(?=.*(?:microsoft|office|365))(?=.*(?:login|sign.*in))(?!.*(?:idPartnerPL|urlMsaSignUp|flowToken))",
+      "pattern": "(?=.*(?:microsoft|office|365))(?=.*(?:type=[\"']password[\"']|method=[\"']post[\"']))(?!.*(?:idPartnerPL|urlMsaSignUp|flowToken))",
       "flags": "i",
       "severity": "high",
       "description": "Microsoft branding without required authentication elements",
