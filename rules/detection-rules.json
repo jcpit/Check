@@ -2,22 +2,28 @@
   "version": "1.0.0",
   "lastUpdated": "2025-09-08T14:20:00Z",
   "description": "Phishing detection logic for identifying phishing attempts targeting Microsoft 365 login pages",
-  "trusted_origins": [
-    "https://login.microsoftonline.com",
-    "https://login.microsoft.com",
-    "https://login.windows.net",
-    "https://login.microsoftonline.us",
-    "https://login.partner.microsoftonline.cn",
-    "https://login.live.com"
+  "trusted_login_patterns": [
+    "^https://login\\.microsoftonline\\.(com|us)$",
+    "^https://login\\.microsoft\\.com$",
+    "^https://login\\.windows\\.net$",
+    "^https://login\\.partner\\.microsoftonline\\.cn$",
+    "^https://login\\.live\\.com$"
   ],
-  "microsoft_domains": [
-    "https://account.microsoft.com",
-    "https://account.live.com",
-    "https://myaccount.microsoft.com",
-    "https://portal.azure.com",
-    "https://admin.microsoft.com",
-    "https://outlook.com",
-    "https://outlook.live.com"
+  "microsoft_domain_patterns": [
+    "^https://[^.]*\\.microsoft\\.com$",
+    "^https://[^.]*\\.microsoftonline\\.com$",
+    "^https://[^.]*\\.office\\.com$",
+    "^https://[^.]*\\.office365\\.com$",
+    "^https://[^.]*\\.sharepoint\\.com$",
+    "^https://[^.]*\\.onedrive\\.com$",
+    "^https://[^.]*\\.live\\.com$",
+    "^https://[^.]*\\.hotmail\\.com$",
+    "^https://[^.]*\\.outlook\\.com$",
+    "^https://[^.]*\\.azure\\.com$",
+    "^https://[^.]*\\.azurewebsites\\.net$",
+    "^https://[^.]*\\.msauth\\.net$",
+    "^https://[^.]*\\.msftauth\\.net$",
+    "^https://[^.]*\\.microsoft\\.cloud$"
   ],
   "m365_detection_requirements": {
     "description": "Required elements to identify a Microsoft 365 login page",

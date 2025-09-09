@@ -19,8 +19,8 @@ if (window.checkExtensionLoaded) {
   // Global state
   let protectionActive = false;
   let detectionRules = null;
-  let trustedOrigins = new Set();
-  let microsoftDomains = new Set();
+  let trustedLoginPatterns = [];
+  let microsoftDomainPatterns = [];
   let domObserver = null;
   let lastScanTime = 0;
   let scanCount = 0;
@@ -28,6 +28,47 @@ if (window.checkExtensionLoaded) {
   let developerConsoleLoggingEnabled = false; // Cache for developer console logging setting
   const MAX_SCANS = 10; // Prevent infinite scanning
   const SCAN_COOLDOWN = 1000; // 1 second between scans
+
+  /**
+   * Check if a URL matches any pattern in the given pattern array
+   * @param {string} url - The URL to check
+   * @param {string[]} patterns - Array of regex patterns
+   * @returns {boolean} - True if URL matches any pattern
+   */
+  function matchesAnyPattern(url, patterns) {
+    if (!patterns || patterns.length === 0) return false;
+
+    for (const pattern of patterns) {
+      try {
+        const regex = new RegExp(pattern);
+        if (regex.test(url)) {
+          logger.debug(`URL "${url}" matches pattern: ${pattern}`);
+          return true;
+        }
+      } catch (error) {
+        logger.warn(`Invalid regex pattern: ${pattern}`, error);
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Check if current origin is a trusted Microsoft login domain
+   * @param {string} origin - The origin to check
+   * @returns {boolean} - True if trusted login domain
+   */
+  function isTrustedLoginDomain(origin) {
+    return matchesAnyPattern(origin, trustedLoginPatterns);
+  }
+
+  /**
+   * Check if current origin is a Microsoft domain (but not necessarily login)
+   * @param {string} origin - The origin to check
+   * @returns {boolean} - True if Microsoft domain
+   */
+  function isMicrosoftDomain(origin) {
+    return matchesAnyPattern(origin, microsoftDomainPatterns);
+  }
 
   // Conditional logger that respects developer console logging setting
   const logger = {
@@ -89,22 +130,24 @@ if (window.checkExtensionLoaded) {
         if (response && response.success && response.rules) {
           logger.log("Loaded detection rules from background script cache");
 
-          // Set up trusted origins and Microsoft domains from cached rules
+          // Set up trusted login patterns and Microsoft domain patterns from cached rules
           const rules = response.rules;
-          if (rules.trusted_origins && Array.isArray(rules.trusted_origins)) {
-            trustedOrigins = new Set(
-              rules.trusted_origins.map((origin) => origin.toLowerCase())
-            );
+          if (
+            rules.trusted_login_patterns &&
+            Array.isArray(rules.trusted_login_patterns)
+          ) {
+            trustedLoginPatterns = rules.trusted_login_patterns;
             logger.debug(
-              `Set up ${trustedOrigins.size} trusted origins from cache`
+              `Set up ${trustedLoginPatterns.length} trusted login patterns from cache`
             );
           }
-          if (rules.microsoft_domains && Array.isArray(rules.microsoft_domains)) {
-            microsoftDomains = new Set(
-              rules.microsoft_domains.map((origin) => origin.toLowerCase())
-            );
+          if (
+            rules.microsoft_domain_patterns &&
+            Array.isArray(rules.microsoft_domain_patterns)
+          ) {
+            microsoftDomainPatterns = rules.microsoft_domain_patterns;
             logger.debug(
-              `Set up ${microsoftDomains.size} Microsoft domains from cache`
+              `Set up ${microsoftDomainPatterns.length} Microsoft domain patterns from cache`
             );
           }
 
@@ -131,33 +174,35 @@ if (window.checkExtensionLoaded) {
 
       const rules = await response.json();
 
-      // Set up trusted origins and Microsoft domains from rules ONLY
-      if (rules.trusted_origins && Array.isArray(rules.trusted_origins)) {
-        trustedOrigins = new Set(
-          rules.trusted_origins.map((origin) => origin.toLowerCase())
-        );
+      // Set up trusted login patterns and Microsoft domain patterns from rules ONLY
+      if (
+        rules.trusted_login_patterns &&
+        Array.isArray(rules.trusted_login_patterns)
+      ) {
+        trustedLoginPatterns = rules.trusted_login_patterns.slice();
         logger.debug(
-          `Set up ${trustedOrigins.size} trusted origins from direct load`
+          `Set up ${trustedLoginPatterns.length} trusted login patterns from direct load`
         );
       } else {
         logger.error(
-          "No trusted_origins found in rules or not an array:",
-          rules.trusted_origins
+          "No trusted_login_patterns found in rules or not an array:",
+          rules.trusted_login_patterns
         );
       }
-      if (rules.microsoft_domains && Array.isArray(rules.microsoft_domains)) {
-        microsoftDomains = new Set(
-          rules.microsoft_domains.map((origin) => origin.toLowerCase())
-        );
+      if (
+        rules.microsoft_domain_patterns &&
+        Array.isArray(rules.microsoft_domain_patterns)
+      ) {
+        microsoftDomainPatterns = rules.microsoft_domain_patterns.slice();
         logger.debug(
-          `Set up ${microsoftDomains.size} Microsoft domains from direct load`
+          `Set up ${microsoftDomainPatterns.length} Microsoft domain patterns from direct load`
         );
       }
 
       logger.log(
-        `Loaded detection rules: ${trustedOrigins.size} trusted origins, ${
-          rules.rules?.length || 0
-        } detection rules`
+        `Loaded detection rules: ${
+          trustedLoginPatterns.length
+        } trusted login patterns, ${rules.rules?.length || 0} detection rules`
       );
       return rules;
     } catch (error) {
@@ -752,20 +797,22 @@ if (window.checkExtensionLoaded) {
         detectionRules = await loadDetectionRules();
       }
 
-      // Safety check: Ensure trusted origins are properly loaded
-      if (trustedOrigins.size === 0) {
-        logger.warn("Trusted origins not loaded, reloading detection rules...");
+      // Safety check: Ensure trusted login patterns are properly loaded
+      if (trustedLoginPatterns.length === 0) {
+        logger.warn(
+          "Trusted login patterns not loaded, reloading detection rules..."
+        );
         detectionRules = await loadDetectionRules();
-        if (trustedOrigins.size === 0) {
+        if (trustedLoginPatterns.length === 0) {
           logger.error(
-            "CRITICAL: Failed to load trusted origins after reload!"
+            "CRITICAL: Failed to load trusted login patterns after reload!"
           );
           logger.error(
-            "This will cause all Microsoft domains to be flagged as non-trusted"
+            "This will cause all Microsoft login domains to be flagged as non-trusted"
           );
         } else {
           logger.log(
-            `✅ Successfully loaded ${trustedOrigins.size} trusted origins on retry`
+            `✅ Successfully loaded ${trustedLoginPatterns.length} trusted login patterns on retry`
           );
         }
       }
@@ -775,13 +822,17 @@ if (window.checkExtensionLoaded) {
 
       // Debug logging for domain detection
       logger.debug(`Checking origin: "${currentOrigin}"`);
-      logger.debug(`Trusted origins:`, Array.from(trustedOrigins));
-      logger.debug(`Microsoft domains:`, Array.from(microsoftDomains));
-      logger.debug(`Is trusted login domain: ${trustedOrigins.has(currentOrigin)}`);
-      logger.debug(`Is Microsoft domain: ${microsoftDomains.has(currentOrigin)}`);
+      logger.debug(`Trusted login patterns:`, trustedLoginPatterns);
+      logger.debug(`Microsoft domain patterns:`, microsoftDomainPatterns);
+      logger.debug(
+        `Is trusted login domain: ${isTrustedLoginDomain(window.location.href)}`
+      );
+      logger.debug(
+        `Is Microsoft domain: ${isMicrosoftDomain(window.location.href)}`
+      );
 
       // Check for trusted login domains (these get valid badges)
-      if (trustedOrigins.has(currentOrigin)) {
+      if (isTrustedLoginDomain(window.location.href)) {
         logger.log(
           "✅ TRUSTED ORIGIN - No phishing possible, exiting immediately"
         );
@@ -939,7 +990,7 @@ if (window.checkExtensionLoaded) {
       }
 
       // Check for general Microsoft domains (non-login pages)
-      if (microsoftDomains.has(currentOrigin)) {
+      if (isMicrosoftDomain(window.location.href)) {
         logger.log(
           "ℹ️ MICROSOFT DOMAIN (NON-LOGIN) - No phishing scan needed, no badge shown"
         );
@@ -962,12 +1013,14 @@ if (window.checkExtensionLoaded) {
       }
 
       logger.log("❌ NON-TRUSTED ORIGIN - Continuing analysis");
+      logger.debug(`Origin "${currentOrigin}" not in trusted login patterns`);
       logger.debug(
-        `Origin "${currentOrigin}" not found in trusted origins list`
+        `Expected to match pattern like: "^https://login\\.microsoftonline\\.com$"`
       );
-      logger.debug(`Expected to find: "https://login.microsoftonline.com"`);
       logger.debug(
-        `Trusted origins loaded: ${trustedOrigins.size > 0 ? "YES" : "NO"}`
+        `Trusted login patterns loaded: ${
+          trustedLoginPatterns.length > 0 ? "YES" : "NO"
+        }`
       );
 
       // Step 3: Check if page is an MS logon page (using rule file requirements)
@@ -1904,17 +1957,10 @@ if (window.checkExtensionLoaded) {
   }
 
   /**
-   * Check if a URL is from a trusted origin
+   * Check if a URL is from a trusted origin (legacy function - now uses trusted login domain check)
    */
   function isTrustedOrigin(url) {
-    try {
-      const urlObj = new URL(url);
-      const origin = urlObj.origin.toLowerCase();
-      return trustedOrigins.has(origin);
-    } catch (error) {
-      logger.warn("Invalid URL for trusted origin check:", url);
-      return false;
-    }
+    return isTrustedLoginDomain(url);
   }
 
   /**
