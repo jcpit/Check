@@ -1080,10 +1080,10 @@ class CheckBackground {
                 },
               })
             );
-            this.setBadge(tabId, "trusted"); // Use trusted badge for safe sites
+            // Don't set badge for general "safe" sites - only trusted login domains get badges
+            this.setBadge(tabId, "not-evaluated"); // Clear badge for non-login pages
             sendResponse({ ok: true });
-            // Show valid badge for safe sites
-            queueMicrotask(() => this.showValidBadge(tabId).catch(() => {}));
+            // Don't show valid badge for general safe sites - only for trusted login domains
           }
           break;
 

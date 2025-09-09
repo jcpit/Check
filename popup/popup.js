@@ -604,11 +604,11 @@ class CheckPopup {
         if (response && response.success && response.analysis) {
           this.updateSecurityStatus(response.analysis);
         } else {
-          this.showSecurityBadge("safe", "Analysis unavailable");
+          this.showSecurityBadge("neutral", "Analysis unavailable");
         }
       } catch (error) {
         console.warn("Check: Failed to get URL analysis after retries:", error);
-        this.showSecurityBadge("safe", "Analysis unavailable");
+        this.showSecurityBadge("neutral", "Analysis unavailable");
       }
 
       // Get page info from content script with safe wrapper
@@ -633,7 +633,7 @@ class CheckPopup {
     } catch (error) {
       console.error("Failed to load page info:", error);
       this.elements.currentUrl.textContent = "Invalid URL";
-      this.showSecurityBadge("safe", "Protected");
+      this.showSecurityBadge("neutral", "No Analysis Available");
     }
   }
 
@@ -655,7 +655,7 @@ class CheckPopup {
       analysis.verdict === "trusted" ||
       analysis.verdict === "trusted-extra"
     ) {
-      this.showSecurityBadge("safe", "Microsoft Domain");
+      this.showSecurityBadge("safe", "Trusted Login Domain");
       this.hideThreats();
     } else if (analysis.verdict === "ms-login-unknown") {
       this.showSecurityBadge("warning", "MS Login - Unknown Domain");
@@ -664,7 +664,8 @@ class CheckPopup {
       this.showSecurityBadge("neutral", "Not Microsoft Login");
       this.hideThreats();
     } else {
-      this.showSecurityBadge("safe", "Safe");
+      // For general Microsoft domains or other safe sites - show neutral, no badge
+      this.showSecurityBadge("neutral", "No Action Required");
       this.hideThreats();
     }
 
