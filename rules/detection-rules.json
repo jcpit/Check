@@ -128,7 +128,7 @@
           "width:\\s*calc\\(100%\\s*-\\s*40px\\)",
           "width:\\s*27\\.5rem.*height:\\s*21\\.125rem",
           "display:\\s*grid.*place-items:\\s*center",
-          "Segoe\\s+UI\\s+Webfont"
+          "Segoe\\s+UI(?:\\s+(?:Webfont|Symbol|Historic|Emoji))?"
         ],
         "minimum_css_matches": 3,
         "form_action_must_not_contain": "login.microsoftonline.com",
