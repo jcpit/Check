@@ -441,20 +441,39 @@ if (window.checkExtensionLoaded) {
         }
       }
 
-      // New categorized detection logic
+      // New categorized detection logic with flexible thresholds
       const thresholds = requirements.detection_thresholds || {};
-      const minPrimary = thresholds.minimum_primary_elements || 2;
-      const minWeight = thresholds.minimum_total_weight || 6;
-      const minTotal = thresholds.minimum_elements_overall || 4;
+      const minPrimary = thresholds.minimum_primary_elements || 1;
+      const minWeight = thresholds.minimum_total_weight || 4;
+      const minTotal = thresholds.minimum_elements_overall || 3;
+      const minSecondaryOnlyWeight = thresholds.minimum_secondary_only_weight || 6;
+      const minSecondaryOnlyElements = thresholds.minimum_secondary_only_elements || 5;
 
-      const isM365Page =
-        primaryFound >= minPrimary &&
-        totalWeight >= minWeight &&
-        totalElements >= minTotal;
+      let isM365Page = false;
 
-      logger.log(
-        `M365 logon detection: Primary=${primaryFound}/${minPrimary}, Weight=${totalWeight}/${minWeight}, Total=${totalElements}/${minTotal}`
-      );
+      if (primaryFound > 0) {
+        // If we have primary elements, use normal thresholds
+        isM365Page =
+          primaryFound >= minPrimary &&
+          totalWeight >= minWeight &&
+          totalElements >= minTotal;
+      } else {
+        // If NO primary elements, require higher secondary evidence
+        // This catches phishing simulations while preventing false positives like GitHub
+        isM365Page =
+          totalWeight >= minSecondaryOnlyWeight &&
+          totalElements >= minSecondaryOnlyElements;
+      }
+
+      if (primaryFound > 0) {
+        logger.log(
+          `M365 logon detection (with primary): Primary=${primaryFound}/${minPrimary}, Weight=${totalWeight}/${minWeight}, Total=${totalElements}/${minTotal}`
+        );
+      } else {
+        logger.log(
+          `M365 logon detection (secondary only): Weight=${totalWeight}/${minSecondaryOnlyWeight}, Total=${totalElements}/${minSecondaryOnlyElements}`
+        );
+      }
       logger.log(`Found elements: [${foundElementsList.join(", ")}]`);
       if (missingElementsList.length > 0) {
         logger.log(`Missing elements: [${missingElementsList.join(", ")}]`);

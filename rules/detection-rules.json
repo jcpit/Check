@@ -147,9 +147,11 @@
       }
     ],
     "detection_thresholds": {
-      "minimum_primary_elements": 2,
-      "minimum_total_weight": 6,
-      "minimum_elements_overall": 4
+      "minimum_primary_elements": 1,
+      "minimum_total_weight": 4,
+      "minimum_elements_overall": 3,
+      "minimum_secondary_only_weight": 6,
+      "minimum_secondary_only_elements": 5
     },
     "legacy_minimum_required": 4,
     "legacy_all_must_be_present": false
