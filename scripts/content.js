@@ -163,15 +163,25 @@ function isMicrosoftLogonPage() {
         if (element.type === "source_content") {
           const regex = new RegExp(element.pattern, "i");
           found = regex.test(pageSource);
+        } else if (element.type === "css_pattern") {
+          // Check for CSS patterns in the page source
+          found = element.patterns.some((pattern) => {
+            const regex = new RegExp(pattern, "i");
+            return regex.test(pageSource);
+          });
         }
 
         if (found) {
           foundElements++;
           foundElementsList.push(element.id);
-          logger.debug(`✓ Found required element: ${element.id}`);
+          logger.debug(
+            `✓ Found required element: ${element.id} (${element.type})`
+          );
         } else {
           missingElementsList.push(element.id);
-          logger.debug(`✗ Missing required element: ${element.id}`);
+          logger.debug(
+            `✗ Missing required element: ${element.id} (${element.type})`
+          );
         }
       } catch (elementError) {
         logger.warn(
@@ -184,7 +194,7 @@ function isMicrosoftLogonPage() {
 
     const isM365Page = requirements.all_must_be_present
       ? foundElements === requirements.required_elements.length
-      : foundElements >= (requirements.minimum_required || 2); // Changed to 2 of 5 elements
+      : foundElements >= (requirements.minimum_required || 3); // Requires 3 of 10 elements to reduce false positives
 
     logger.log(
       `M365 logon detection: ${foundElements}/${
@@ -262,6 +272,55 @@ function runBlockingRules() {
                 if (!url.startsWith(requiredOrigin)) {
                   ruleTriggered = true;
                   reason = `Resource "${url}" does not come from required origin "${requiredOrigin}"`;
+                  logger.warn(
+                    `BLOCKING RULE TRIGGERED: ${rule.id} - ${reason}`
+                  );
+                  break;
+                }
+              }
+            }
+            break;
+
+          case "css_spoofing_validation":
+            // Check: If page has Microsoft CSS patterns but posts to non-Microsoft domain
+            const pageSource = document.documentElement.outerHTML;
+            let cssMatches = 0;
+
+            // Count CSS indicator matches
+            for (const indicator of rule.condition?.css_indicators || []) {
+              const regex = new RegExp(indicator, "i");
+              if (regex.test(pageSource)) {
+                cssMatches++;
+                logger.debug(`CSS indicator matched: ${indicator}`);
+              }
+            }
+
+            // Check if we have enough CSS matches
+            const minMatches = rule.condition?.minimum_css_matches || 2;
+            if (cssMatches >= minMatches) {
+              // Check if form posts to non-Microsoft domain
+              const credentialForms = document.querySelectorAll("form");
+              for (const form of credentialForms) {
+                // Check if form has credential fields
+                if (rule.condition?.has_credential_fields) {
+                  const hasEmail = form.querySelector(
+                    'input[type="email"], input[name*="email"], input[id*="email"]'
+                  );
+                  const hasPassword = form.querySelector(
+                    'input[type="password"]'
+                  );
+
+                  if (!hasEmail && !hasPassword) continue;
+                }
+
+                const action = form.action || location.href;
+                const actionContainsMicrosoft = action.includes(
+                  rule.condition?.form_action_must_not_contain || ""
+                );
+
+                if (!actionContainsMicrosoft) {
+                  ruleTriggered = true;
+                  reason = `CSS spoofing detected: ${cssMatches} Microsoft style indicators found, but form posts to "${action}" (not Microsoft)`;
                   logger.warn(
                     `BLOCKING RULE TRIGGERED: ${rule.id} - ${reason}`
                   );
@@ -623,7 +682,9 @@ async function runProtection(isRerun = false) {
             { type: "REQUEST_SHOW_VALID_BADGE" },
             (response) => {
               if (response?.success) {
-                logger.log("📋 VALID BADGE: Background script will handle badge display");
+                logger.log(
+                  "📋 VALID BADGE: Background script will handle badge display"
+                );
               }
             }
           );

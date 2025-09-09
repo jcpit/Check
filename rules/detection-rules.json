@@ -47,9 +47,48 @@
         "pattern": "#i0116",
         "description": "Microsoft login input element must be in source",
         "required": false
+      },
+      {
+        "id": "ms_form_dimensions",
+        "type": "css_pattern",
+        "patterns": [
+          "max-width:\\s*440px",
+          "width:\\s*calc\\(100%\\s*-\\s*40px\\)",
+          "width:\\s*27\\.5rem",
+          "height:\\s*21\\.125rem"
+        ],
+        "description": "Microsoft login form width patterns (max-width: 440px, calc(100% - 40px), or static 27.5rem dimensions)",
+        "required": false
+      },
+      {
+        "id": "ms_button_colors",
+        "type": "css_pattern",
+        "patterns": [
+          "background-color:\\s*#0067b8",
+          "border:\\s*1px\\s+solid\\s+#0067b8"
+        ],
+        "description": "Microsoft specific button styling (#0067b8 blue)",
+        "required": false
+      },
+      {
+        "id": "segoe_ui_font",
+        "type": "source_content",
+        "pattern": "Segoe\\s+UI\\s+Webfont",
+        "description": "Microsoft's Segoe UI font family usage",
+        "required": false
+      },
+      {
+        "id": "ms_container_layout",
+        "type": "css_pattern",
+        "patterns": [
+          "display:\\s*grid.*place-items:\\s*center",
+          "height:\\s*100vh.*width:\\s*100vw"
+        ],
+        "description": "Microsoft login container layout (fullscreen grid with centered items)",
+        "required": false
       }
     ],
-    "minimum_required": 2,
+    "minimum_required": 3,
     "all_must_be_present": false
   },
   "blocking_rules": [
@@ -73,6 +112,27 @@
         "resource_pattern": "customcss",
         "required_origin": "https://aadcdn.msftauthimages.net/",
         "block_if_different_origin": true
+      },
+      "action": "block",
+      "severity": "critical"
+    },
+    {
+      "id": "css_spoofing_detection",
+      "type": "css_spoofing_validation",
+      "description": "Block if page mimics Microsoft CSS styling but posts to non-Microsoft domain",
+      "condition": {
+        "css_indicators": [
+          "logincdn\\.msauth\\.net",
+          "background-color:\\s*#0067b8",
+          "max-width:\\s*440px",
+          "width:\\s*calc\\(100%\\s*-\\s*40px\\)",
+          "width:\\s*27\\.5rem.*height:\\s*21\\.125rem",
+          "display:\\s*grid.*place-items:\\s*center",
+          "Segoe\\s+UI\\s+Webfont"
+        ],
+        "minimum_css_matches": 3,
+        "form_action_must_not_contain": "login.microsoftonline.com",
+        "has_credential_fields": true
       },
       "action": "block",
       "severity": "critical"
