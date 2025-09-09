@@ -446,8 +446,10 @@ if (window.checkExtensionLoaded) {
       const minPrimary = thresholds.minimum_primary_elements || 1;
       const minWeight = thresholds.minimum_total_weight || 4;
       const minTotal = thresholds.minimum_elements_overall || 3;
-      const minSecondaryOnlyWeight = thresholds.minimum_secondary_only_weight || 6;
-      const minSecondaryOnlyElements = thresholds.minimum_secondary_only_elements || 5;
+      const minSecondaryOnlyWeight =
+        thresholds.minimum_secondary_only_weight || 6;
+      const minSecondaryOnlyElements =
+        thresholds.minimum_secondary_only_elements || 5;
 
       let isM365Page = false;
 
@@ -511,9 +513,21 @@ if (window.checkExtensionLoaded) {
       }
       logger.debug("=== END DEBUG INFO ===");
 
-      logger.log(
-        `Result: ${isM365Page ? "IS" : "NOT"} Microsoft 365 logon page`
-      );
+      const resultMessage = isM365Page
+        ? "✅ DETECTED as Microsoft 365 logon page"
+        : "❌ NOT DETECTED as Microsoft 365 logon page";
+
+      logger.log(`🎯 Detection Result: ${resultMessage}`);
+
+      if (isM365Page) {
+        logger.log(
+          "📋 Next step: Analyzing if this is legitimate or phishing attempt..."
+        );
+      } else {
+        logger.log(
+          "📋 Next step: No further analysis needed - not Microsoft-related"
+        );
+      }
 
       return isM365Page;
     } catch (error) {
@@ -1138,7 +1152,30 @@ if (window.checkExtensionLoaded) {
       // Step 4: Check if page is an MS logon page (using rule file requirements)
       const isMSLogon = isMicrosoftLogonPage();
       if (!isMSLogon) {
-        logger.debug("Not a Microsoft logon page - no protection needed");
+        logger.log(
+          "❌ NOT DETECTED as Microsoft logon page - analysis complete"
+        );
+        logger.log(
+          `✅ Page analysis result: Site appears legitimate (not Microsoft-related)`
+        );
+
+        // Notify background script that analysis concluded site is safe
+        try {
+          chrome.runtime.sendMessage({
+            type: "UPDATE_VERDICT_TO_SAFE",
+            url: location.href,
+            origin: location.origin,
+            reason: "Not a Microsoft login page - no action required",
+            analysis: true,
+            legitimacyScore: 100,
+            threshold: 85,
+          });
+        } catch (updateError) {
+          logger.warn(
+            "Failed to update background verdict:",
+            updateError.message
+          );
+        }
 
         // Set up monitoring in case content loads later
         if (!isRerun) {
@@ -1149,7 +1186,10 @@ if (window.checkExtensionLoaded) {
       }
 
       logger.warn(
-        "🚨 MICROSOFT LOGON PAGE ON NON-TRUSTED DOMAIN - ANALYZING THREAT"
+        "🚨 MICROSOFT LOGON PAGE DETECTED ON NON-TRUSTED DOMAIN - ANALYZING THREAT"
+      );
+      logger.log(
+        "🔍 Beginning security analysis for potential phishing attempt..."
       );
 
       // Extract client info and redirect hostname for analysis
