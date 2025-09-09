@@ -834,6 +834,15 @@ if (window.checkExtensionLoaded) {
    */
   async function runProtection(isRerun = false) {
     try {
+      logger.log(
+        `🚀 Starting protection analysis ${isRerun ? "(re-run)" : "(initial)"}`
+      );
+      logger.log(
+        `📄 Page info: ${document.querySelectorAll("*").length} elements, ${
+          document.body?.textContent?.length || 0
+        } chars content`
+      );
+
       // Load configuration to check protection settings
       const config = await new Promise((resolve) => {
         chrome.storage.local.get(["config"], (result) => {
@@ -1116,38 +1125,17 @@ if (window.checkExtensionLoaded) {
         }`
       );
 
-      // Step 3: Pre-check domain before expensive Microsoft login analysis
+      // Step 3: Pre-check domain for obvious non-threats only
+      // NOTE: We removed the restrictive domain check that was blocking training platforms
+      // like KnowBe4. Phishing simulations use legitimate domains but copy Microsoft UI.
+      // Let content-based detection handle all cases.
       const currentDomain = new URL(
         window.location.href
       ).hostname.toLowerCase();
-      const suspiciousDomainPatterns = [
-        /microsoft/i,
-        /office/i,
-        /365/i,
-        /outlook/i,
-        /azure/i,
-        /msauth/i,
-        /login/i,
-        /signin/i,
-        /auth/i,
-      ];
 
-      const couldBeMicrosoftLogin = suspiciousDomainPatterns.some((pattern) =>
-        pattern.test(currentDomain)
+      logger.debug(
+        `Analyzing domain "${currentDomain}" - proceeding with content-based detection`
       );
-
-      if (!couldBeMicrosoftLogin) {
-        logger.debug(
-          `Domain "${currentDomain}" doesn't look like Microsoft login - skipping analysis`
-        );
-
-        // Set up monitoring in case content loads later
-        if (!isRerun) {
-          setupDOMMonitoring();
-        }
-
-        return;
-      }
 
       // Step 4: Check if page is an MS logon page (using rule file requirements)
       const isMSLogon = isMicrosoftLogonPage();
@@ -1590,6 +1578,13 @@ if (window.checkExtensionLoaded) {
       }
 
       logger.log("Setting up DOM monitoring for delayed content");
+      logger.log(
+        `Current page has ${document.querySelectorAll("*").length} elements`
+      );
+      logger.log(`Page title: "${document.title}"`);
+      logger.log(
+        `Body content length: ${document.body?.textContent?.length || 0} chars`
+      );
 
       domObserver = new MutationObserver((mutations) => {
         try {
@@ -1639,12 +1634,19 @@ if (window.checkExtensionLoaded) {
 
           if (shouldRerun) {
             logger.log(
-              "Significant DOM changes detected - re-running protection"
+              "🔄 Significant DOM changes detected - re-running protection analysis"
+            );
+            logger.log(
+              `Page now has ${document.querySelectorAll("*").length} elements`
             );
             // Debounce re-runs
             setTimeout(() => {
               runProtection(true);
             }, 500);
+          } else if (newElementsAdded) {
+            logger.debug(
+              "🔍 DOM changes detected but not significant enough to re-run analysis"
+            );
           }
         } catch (observerError) {
           logger.warn("DOM observer error:", observerError.message);
@@ -1658,9 +1660,25 @@ if (window.checkExtensionLoaded) {
         attributes: false, // Don't monitor attributes to reduce noise
       });
 
+      // Fallback: Check periodically for content that might have loaded without triggering observer
+      const checkInterval = setInterval(() => {
+        const currentElementCount = document.querySelectorAll("*").length;
+        const hasSignificantContent = document.body?.textContent?.length > 1000;
+
+        if (hasSignificantContent && currentElementCount > 50) {
+          logger.log(
+            "⏰ Fallback timer detected significant content - re-running analysis"
+          );
+          clearInterval(checkInterval);
+          runProtection(true);
+        }
+      }, 2000);
+
       // Stop monitoring after 30 seconds to prevent resource drain
       setTimeout(() => {
+        clearInterval(checkInterval);
         stopDOMMonitoring();
+        logger.log("🛑 DOM monitoring timeout reached - stopping");
       }, 30000);
     } catch (error) {
       logger.error("Failed to set up DOM monitoring:", error.message);
