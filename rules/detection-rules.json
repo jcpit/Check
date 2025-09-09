@@ -73,8 +73,8 @@
       {
         "id": "segoe_ui_font",
         "type": "source_content",
-        "pattern": "Segoe\\s+UI\\s+Webfont",
-        "description": "Microsoft's Segoe UI font family usage",
+        "pattern": "Segoe\\s+UI(?:\\s+(?:Webfont|Symbol|Historic|Emoji))?",
+        "description": "Microsoft's Segoe UI font family variants (Webfont, Symbol, Historic, Emoji)",
         "required": false
       },
       {

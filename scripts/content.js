@@ -164,7 +164,7 @@ function testDetectionPatterns() {
     },
     {
       name: "segoe_ui_font",
-      pattern: "Segoe\\s+UI\\s+Webfont",
+      pattern: "Segoe\\s+UI(?:\\s+(?:Webfont|Symbol|Historic|Emoji))?",
       type: "source_content",
     },
   ];
