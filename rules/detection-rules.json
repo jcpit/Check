@@ -95,7 +95,7 @@
         "required": false
       }
     ],
-    "minimum_required": 2,
+    "minimum_required": 3,
     "all_must_be_present": false
   },
   "blocking_rules": [
