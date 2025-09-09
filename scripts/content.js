@@ -341,8 +341,8 @@ if (window.checkExtensionLoaded) {
   window.testDetectionPatterns = testDetectionPatterns;
 
   /**
-   * Check if page is Microsoft 365 logon page using ONLY rule file requirements
-   * Requirements: Now requires 3 of 10 elements for better accuracy
+   * Check if page is Microsoft 365 logon page using categorized detection
+   * Requirements: Primary elements are Microsoft-specific, secondary are supporting evidence
    */
   function isMicrosoftLogonPage() {
     try {
@@ -353,12 +353,20 @@ if (window.checkExtensionLoaded) {
 
       const requirements = detectionRules.m365_detection_requirements;
       const pageSource = document.documentElement.outerHTML;
-      let foundElements = 0;
+
+      let primaryFound = 0;
+      let totalWeight = 0;
+      let totalElements = 0;
       const foundElementsList = [];
       const missingElementsList = [];
 
-      // Check each required element from the rule file
-      for (const element of requirements.required_elements) {
+      // Check primary elements (Microsoft-specific)
+      const allElements = [
+        ...(requirements.primary_elements || []),
+        ...(requirements.secondary_elements || []),
+      ];
+
+      for (const element of allElements) {
         try {
           let found = false;
 
@@ -405,15 +413,23 @@ if (window.checkExtensionLoaded) {
           }
 
           if (found) {
-            foundElements++;
+            totalElements++;
+            totalWeight += element.weight || 1;
+            if (element.category === "primary") {
+              primaryFound++;
+            }
             foundElementsList.push(element.id);
             logger.debug(
-              `✓ Found required element: ${element.id} (${element.type})`
+              `✓ Found ${element.category || "unknown"} element: ${
+                element.id
+              } (weight: ${element.weight || 1})`
             );
           } else {
             missingElementsList.push(element.id);
             logger.debug(
-              `✗ Missing required element: ${element.id} (${element.type})`
+              `✗ Missing ${element.category || "unknown"} element: ${
+                element.id
+              }`
             );
           }
         } catch (elementError) {
@@ -425,18 +441,23 @@ if (window.checkExtensionLoaded) {
         }
       }
 
-      const isM365Page = requirements.all_must_be_present
-        ? foundElements === requirements.required_elements.length
-        : foundElements >= (requirements.minimum_required || 2); // Back to 2 elements to catch evilginx-style phishing
+      // New categorized detection logic
+      const thresholds = requirements.detection_thresholds || {};
+      const minPrimary = thresholds.minimum_primary_elements || 2;
+      const minWeight = thresholds.minimum_total_weight || 6;
+      const minTotal = thresholds.minimum_elements_overall || 4;
+
+      const isM365Page =
+        primaryFound >= minPrimary &&
+        totalWeight >= minWeight &&
+        totalElements >= minTotal;
 
       logger.log(
-        `M365 logon detection: ${foundElements}/${
-          requirements.required_elements.length
-        } elements found (need ${requirements.minimum_required || 2})`
+        `M365 logon detection: Primary=${primaryFound}/${minPrimary}, Weight=${totalWeight}/${minWeight}, Total=${totalElements}/${minTotal}`
       );
-      logger.log(`Found: [${foundElementsList.join(", ")}]`);
+      logger.log(`Found elements: [${foundElementsList.join(", ")}]`);
       if (missingElementsList.length > 0) {
-        logger.log(`Missing: [${missingElementsList.join(", ")}]`);
+        logger.log(`Missing elements: [${missingElementsList.join(", ")}]`);
       }
 
       // Enhanced debugging - show what we're actually looking for
@@ -446,12 +467,14 @@ if (window.checkExtensionLoaded) {
       logger.debug(`Page source length: ${pageSource.length} chars`);
 
       // Debug each pattern individually
-      for (const element of requirements.required_elements) {
+      for (const element of allElements) {
         if (element.type === "source_content") {
           const regex = new RegExp(element.pattern, "i");
           const matches = pageSource.match(regex);
           logger.debug(
-            `Pattern "${element.pattern}" -> ${matches ? "FOUND" : "NOT FOUND"}`
+            `${element.category} pattern "${element.pattern}" -> ${
+              matches ? "FOUND" : "NOT FOUND"
+            }`
           );
           if (matches) logger.debug(`  Match: "${matches[0]}"`);
         } else if (element.type === "css_pattern") {
@@ -459,7 +482,7 @@ if (window.checkExtensionLoaded) {
             const regex = new RegExp(pattern, "i");
             const matches = pageSource.match(regex);
             logger.debug(
-              `CSS pattern[${idx}] "${pattern}" -> ${
+              `${element.category} CSS pattern[${idx}] "${pattern}" -> ${
                 matches ? "FOUND" : "NOT FOUND"
               }`
             );
@@ -1060,7 +1083,40 @@ if (window.checkExtensionLoaded) {
         }`
       );
 
-      // Step 3: Check if page is an MS logon page (using rule file requirements)
+      // Step 3: Pre-check domain before expensive Microsoft login analysis
+      const currentDomain = new URL(
+        window.location.href
+      ).hostname.toLowerCase();
+      const suspiciousDomainPatterns = [
+        /microsoft/i,
+        /office/i,
+        /365/i,
+        /outlook/i,
+        /azure/i,
+        /msauth/i,
+        /login/i,
+        /signin/i,
+        /auth/i,
+      ];
+
+      const couldBeMicrosoftLogin = suspiciousDomainPatterns.some((pattern) =>
+        pattern.test(currentDomain)
+      );
+
+      if (!couldBeMicrosoftLogin) {
+        logger.debug(
+          `Domain "${currentDomain}" doesn't look like Microsoft login - skipping analysis`
+        );
+
+        // Set up monitoring in case content loads later
+        if (!isRerun) {
+          setupDOMMonitoring();
+        }
+
+        return;
+      }
+
+      // Step 4: Check if page is an MS logon page (using rule file requirements)
       const isMSLogon = isMicrosoftLogonPage();
       if (!isMSLogon) {
         logger.debug("Not a Microsoft logon page - no protection needed");

@@ -34,43 +34,50 @@
     "^https://.*\\.cloud\\.microsoft$"
   ],
   "m365_detection_requirements": {
-    "description": "Required elements to identify a Microsoft 365 login page",
-    "required_elements": [
+    "description": "Required elements to identify a Microsoft 365 login page with primary and secondary categorization",
+    "primary_elements": [
       {
         "id": "idPartnerPL",
         "type": "source_content",
         "pattern": "idPartnerPL",
         "description": "Microsoft partner login field must be in source",
-        "required": true
+        "weight": 3,
+        "category": "primary"
       },
       {
         "id": "loginfmt",
         "type": "source_content",
         "pattern": "loginfmt",
         "description": "Login format field must be in source",
-        "required": true
+        "weight": 3,
+        "category": "primary"
       },
       {
         "id": "aadcdn_msauth",
         "type": "source_content",
         "pattern": "aadcdn\\.msauth\\.net",
         "description": "Microsoft auth CDN must be present in source",
-        "required": true
+        "weight": 3,
+        "category": "primary"
       },
       {
         "id": "urlMsaSignUp",
         "type": "source_content",
         "pattern": "urlMsaSignUp",
         "description": "Microsoft signup URL reference must be in source",
-        "required": false
+        "weight": 2,
+        "category": "primary"
       },
       {
         "id": "i0116_element",
         "type": "source_content",
         "pattern": "#i0116",
         "description": "Microsoft login input element must be in source",
-        "required": false
-      },
+        "weight": 2,
+        "category": "primary"
+      }
+    ],
+    "secondary_elements": [
       {
         "id": "ms_form_dimensions",
         "type": "css_pattern",
@@ -80,8 +87,9 @@
           "width:\\s*27\\.5rem",
           "height:\\s*21\\.125rem"
         ],
-        "description": "Microsoft login form width patterns (max-width: 440px, calc(100% - 40px), or static 27.5rem dimensions)",
-        "required": false
+        "description": "Microsoft login form width patterns (supporting evidence only)",
+        "weight": 1,
+        "category": "secondary"
       },
       {
         "id": "ms_button_colors",
@@ -90,15 +98,17 @@
           "background-color:\\s*#0067b8",
           "border:\\s*1px\\s+solid\\s+#0067b8"
         ],
-        "description": "Microsoft specific button styling (#0067b8 blue)",
-        "required": false
+        "description": "Microsoft specific button styling (supporting evidence only)",
+        "weight": 1,
+        "category": "secondary"
       },
       {
         "id": "segoe_ui_font",
         "type": "source_content",
         "pattern": "Segoe\\s+UI(?:\\s+(?:Webfont|Symbol|Historic|Emoji))?",
-        "description": "Microsoft's Segoe UI font family variants",
-        "required": false
+        "description": "Microsoft's Segoe UI font family variants (supporting evidence only)",
+        "weight": 1,
+        "category": "secondary"
       },
       {
         "id": "ms_container_layout",
@@ -107,33 +117,42 @@
           "display:\\s*grid.*place-items:\\s*center",
           "height:\\s*100vh.*width:\\s*100vw"
         ],
-        "description": "Microsoft login container layout",
-        "required": false
+        "description": "Microsoft login container layout (supporting evidence only)",
+        "weight": 1,
+        "category": "secondary"
       },
       {
         "id": "ms_external_css",
         "type": "source_content",
         "pattern": "(?:href=[\"'].*(?:microsoft|msauth|msft|office365|o365).*\\.css[\"']|src=[\"'].*(?:microsoft|msauth|msft).*\\.css[\"'])",
-        "description": "External CSS files from Microsoft domains",
-        "required": false
+        "description": "External CSS files from Microsoft domains (supporting evidence only)",
+        "weight": 1,
+        "category": "secondary"
       },
       {
         "id": "password_input_field",
         "type": "source_content",
         "pattern": "(?:type=[\"']password[\"']|name=[\"']password[\"']|id=[\"'].*password.*[\"'])",
-        "description": "Password input field present on page",
-        "required": true
+        "description": "Password input field present on page (supporting evidence only)",
+        "weight": 1,
+        "category": "secondary"
       },
       {
         "id": "login_form_element",
         "type": "source_content",
         "pattern": "(?:<form[^>]*method=[\"']post[\"'][^>]*>|<input[^>]*type=[\"'](?:email|text)[\"'][^>]*name=[\"'][^\"']+[\"'])",
-        "description": "Login form with POST method or email/text input field",
-        "required": true
+        "description": "Login form with POST method or email/text input field (supporting evidence only)",
+        "weight": 1,
+        "category": "secondary"
       }
     ],
-    "minimum_required": 4,
-    "all_must_be_present": false
+    "detection_thresholds": {
+      "minimum_primary_elements": 2,
+      "minimum_total_weight": 6,
+      "minimum_elements_overall": 4
+    },
+    "legacy_minimum_required": 4,
+    "legacy_all_must_be_present": false
   },
   "blocking_rules": [
     {
