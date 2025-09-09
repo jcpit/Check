@@ -198,7 +198,38 @@ function testDetectionPatterns() {
     }
   });
 
-  return { pageLength: pageSource.length, url: window.location.href };
+  // Check external stylesheets
+  console.log("📎 EXTERNAL STYLESHEETS:");
+  const styleSheets = Array.from(document.styleSheets);
+  styleSheets.forEach((sheet, idx) => {
+    try {
+      const href = sheet.href || 'inline';
+      console.log(`   [${idx}] ${href}`);
+      
+      // Check if stylesheet URL contains Microsoft patterns
+      if (href !== 'inline') {
+        const msPatterns = ['microsoft', 'msauth', 'msft', 'office365', 'o365'];
+        const hasMsPattern = msPatterns.some(pattern => href.toLowerCase().includes(pattern));
+        console.log(`      ${hasMsPattern ? "✅" : "❌"} Microsoft-themed URL`);
+      }
+      
+      // Try to check CSS rules (may be blocked by CORS)
+      if (sheet.cssRules) {
+        const cssText = Array.from(sheet.cssRules).map(rule => rule.cssText).join(' ');
+        const hasSegoeUI = /segoe\s+ui/i.test(cssText);
+        const hasMsBlue = /#0067b8/i.test(cssText);
+        const has440px = /440px|27\.5rem/i.test(cssText);
+        
+        console.log(`      ${hasSegoeUI ? "✅" : "❌"} Segoe UI font`);
+        console.log(`      ${hasMsBlue ? "✅" : "❌"} Microsoft blue (#0067b8)`);
+        console.log(`      ${has440px ? "✅" : "❌"} 440px/27.5rem width`);
+      }
+    } catch (e) {
+      console.log(`      ⚠️ Cannot access stylesheet (CORS): ${e.message}`);
+    }
+  });
+
+  return { pageLength: pageSource.length, url: window.location.href, stylesheets: styleSheets.length };
 }
 
 // Make it globally available for testing
@@ -235,6 +266,33 @@ function isMicrosoftLogonPage() {
             const regex = new RegExp(pattern, "i");
             return regex.test(pageSource);
           });
+          
+          // Also check external stylesheets if not found in page source
+          if (!found) {
+            try {
+              const styleSheets = Array.from(document.styleSheets);
+              found = styleSheets.some(sheet => {
+                try {
+                  if (sheet.cssRules) {
+                    const cssText = Array.from(sheet.cssRules).map(rule => rule.cssText).join(' ');
+                    return element.patterns.some(pattern => {
+                      const regex = new RegExp(pattern, "i");
+                      return regex.test(cssText);
+                    });
+                  }
+                } catch (corsError) {
+                  // CORS blocked - check stylesheet URL for Microsoft patterns
+                  if (sheet.href && element.id === 'ms_external_css') {
+                    const regex = new RegExp(element.patterns[0], "i");
+                    return regex.test(sheet.href);
+                  }
+                }
+                return false;
+              });
+            } catch (stylesheetError) {
+              logger.debug(`Could not check stylesheets for ${element.id}: ${stylesheetError.message}`);
+            }
+          }
         }
 
         if (found) {
@@ -260,12 +318,12 @@ function isMicrosoftLogonPage() {
 
     const isM365Page = requirements.all_must_be_present
       ? foundElements === requirements.required_elements.length
-      : foundElements >= (requirements.minimum_required || 3); // Requires 3 of 10 elements to reduce false positives
+      : foundElements >= (requirements.minimum_required || 2); // Back to 2 elements to catch evilginx-style phishing
 
     logger.log(
       `M365 logon detection: ${foundElements}/${
         requirements.required_elements.length
-      } elements found (need ${requirements.minimum_required || 3})`
+      } elements found (need ${requirements.minimum_required || 2})`
     );
     logger.log(`Found: [${foundElementsList.join(", ")}]`);
     if (missingElementsList.length > 0) {

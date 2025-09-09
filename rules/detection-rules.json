@@ -86,9 +86,16 @@
         ],
         "description": "Microsoft login container layout (fullscreen grid with centered items)",
         "required": false
+      },
+      {
+        "id": "ms_external_css",
+        "type": "source_content",
+        "pattern": "(?:href=[\"'].*(?:microsoft|msauth|msft|office365|o365).*\\.css[\"']|src=[\"'].*(?:microsoft|msauth|msft).*\\.css[\"'])",
+        "description": "External CSS files from Microsoft or Microsoft-themed domains",
+        "required": false
       }
     ],
-    "minimum_required": 3,
+    "minimum_required": 2,
     "all_must_be_present": false
   },
   "blocking_rules": [
