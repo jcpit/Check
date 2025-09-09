@@ -5,6 +5,7 @@
   "trusted_login_patterns": [
     "^https://login\\.microsoftonline\\.(com|us)$",
     "^https://login\\.microsoft\\.com$",
+    "^https://login\\.microsoft\\.net$",
     "^https://login\\.windows\\.net$",
     "^https://login\\.partner\\.microsoftonline\\.cn$",
     "^https://login\\.live\\.com$"
@@ -23,7 +24,14 @@
     "^https://[^.]*\\.azurewebsites\\.net$",
     "^https://[^.]*\\.msauth\\.net$",
     "^https://[^.]*\\.msftauth\\.net$",
-    "^https://[^.]*\\.microsoft\\.cloud$"
+    "^https://[^.]*\\.msftauthimages\\.net$",
+    "^https://[^.]*\\.msauthimages\\.net$",
+    "^https://[^.]*\\.msidentity\\.com$",
+    "^https://[^.]*\\.microsoftonline-p\\.com$",
+    "^https://[^.]*\\.microsoftazuread-sso\\.com$",
+    "^https://[^.]*\\.azureedge\\.net$",
+    "^https://[^.]*\\.bing\\.com$",
+    "^https://.*\\.cloud\\.microsoft$"
   ],
   "m365_detection_requirements": {
     "description": "Required elements to identify a Microsoft 365 login page",
@@ -374,21 +382,14 @@
     },
     {
       "id": "check_valid_referrer",
-      "type": "header",
+      "type": "referrer_validation",
       "weight": 25,
       "condition": {
         "header_name": "referer",
-        "allowed_referrers": [
-          "https://login.microsoftonline.com",
-          "https://login.microsoft.net",
-          "https://login.microsoft.com",
-          "https://autologon.microsoftazuread-sso.com",
-          "https://tasks.office.com",
-          "https://login.windows.net",
-          "https://planner.cloud.microsoft"
-        ]
+        "validation_method": "pattern_match",
+        "pattern_source": "microsoft_domain_patterns"
       },
-      "description": "Validate referrer against custom allow list of valid Microsoft referrers"
+      "description": "Validate referrer against Microsoft domain patterns for legitimate authentication flows"
     }
   ],
   "thresholds": {
@@ -687,48 +688,12 @@
       "action": "warn"
     }
   ],
-  "whitelist_domains": [
-    "*.microsoft.com",
-    "*.microsoftonline.com",
-    "*.office.com",
-    "*.office365.com",
-    "*.live.com",
-    "*.msauth.net",
-    "*.msftauth.net",
-    "*.msftauthimages.net",
-    "*.msauthimages.net",
-    "*.msidentity.com",
-    "*.microsoftonline-p.com",
-    "*.microsoftazuread-sso.com",
-    "*.azureedge.net",
-    "*.outlook.com",
-    "*.bing.com"
-  ],
-  "valid_referrers": {
-    "description": "Custom allow list of valid Microsoft referrers for authentication flows",
-    "referrers": [
-      "https://login.microsoftonline.com",
-      "https://login.microsoft.net",
-      "https://login.microsoft.com",
-      "https://autologon.microsoftazuread-sso.com",
-      "https://tasks.office.com",
-      "https://login.windows.net",
-      "https://planner.cloud.microsoft"
-    ],
-    "enforcement": "strict",
-    "allow_missing_referrer": false,
-    "case_sensitive": false
-  },
   "detection_settings": {
     "enable_real_time_scanning": true,
     "enable_form_monitoring": true,
     "enable_url_verification": true,
     "enable_content_analysis": true,
     "enable_verification_badge": false,
-    "verification_badge_domains": [
-      "login.microsoftonline.com",
-      "portal.office.com"
-    ],
     "block_threshold": 0.8,
     "warn_threshold": 0.6,
     "monitor_threshold": 0.4,

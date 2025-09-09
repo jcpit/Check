@@ -707,6 +707,29 @@ if (window.checkExtensionLoaded) {
               }
               break;
 
+            case "referrer_validation":
+              if (
+                rule.condition?.header_name === "referer" &&
+                rule.condition?.validation_method === "pattern_match" &&
+                rule.condition?.pattern_source === "microsoft_domain_patterns"
+              ) {
+                // Check if referrer exists and matches Microsoft domain patterns
+                const referrer = document.referrer;
+                if (referrer) {
+                  ruleTriggered = isMicrosoftDomain(referrer);
+                  logger.debug(
+                    `Referrer validation: ${referrer} -> ${
+                      ruleTriggered ? "VALID" : "INVALID"
+                    }`
+                  );
+                } else {
+                  // No referrer header - this could be suspicious for redirected login flows
+                  ruleTriggered = false;
+                  logger.debug("Referrer validation: No referrer header found");
+                }
+              }
+              break;
+
             default:
               logger.warn(`Unknown rule type: ${rule.type}`);
           }
