@@ -20,6 +20,7 @@ if (window.checkExtensionLoaded) {
   let protectionActive = false;
   let detectionRules = null;
   let trustedOrigins = new Set();
+  let microsoftDomains = new Set();
   let domObserver = null;
   let lastScanTime = 0;
   let scanCount = 0;
@@ -88,7 +89,7 @@ if (window.checkExtensionLoaded) {
         if (response && response.success && response.rules) {
           logger.log("Loaded detection rules from background script cache");
 
-          // Set up trusted origins from cached rules
+          // Set up trusted origins and Microsoft domains from cached rules
           const rules = response.rules;
           if (rules.trusted_origins && Array.isArray(rules.trusted_origins)) {
             trustedOrigins = new Set(
@@ -96,6 +97,14 @@ if (window.checkExtensionLoaded) {
             );
             logger.debug(
               `Set up ${trustedOrigins.size} trusted origins from cache`
+            );
+          }
+          if (rules.microsoft_domains && Array.isArray(rules.microsoft_domains)) {
+            microsoftDomains = new Set(
+              rules.microsoft_domains.map((origin) => origin.toLowerCase())
+            );
+            logger.debug(
+              `Set up ${microsoftDomains.size} Microsoft domains from cache`
             );
           }
 
@@ -122,7 +131,7 @@ if (window.checkExtensionLoaded) {
 
       const rules = await response.json();
 
-      // Set up trusted origins from rules ONLY
+      // Set up trusted origins and Microsoft domains from rules ONLY
       if (rules.trusted_origins && Array.isArray(rules.trusted_origins)) {
         trustedOrigins = new Set(
           rules.trusted_origins.map((origin) => origin.toLowerCase())
@@ -134,6 +143,14 @@ if (window.checkExtensionLoaded) {
         logger.error(
           "No trusted_origins found in rules or not an array:",
           rules.trusted_origins
+        );
+      }
+      if (rules.microsoft_domains && Array.isArray(rules.microsoft_domains)) {
+        microsoftDomains = new Set(
+          rules.microsoft_domains.map((origin) => origin.toLowerCase())
+        );
+        logger.debug(
+          `Set up ${microsoftDomains.size} Microsoft domains from direct load`
         );
       }
 
@@ -753,14 +770,17 @@ if (window.checkExtensionLoaded) {
         }
       }
 
-      // Step 2: FIRST CHECK - trusted origins (immediate exit if trusted)
+      // Step 2: FIRST CHECK - trusted origins and Microsoft domains
       const currentOrigin = location.origin.toLowerCase();
 
-      // Debug logging for trusted domain detection
+      // Debug logging for domain detection
       logger.debug(`Checking origin: "${currentOrigin}"`);
       logger.debug(`Trusted origins:`, Array.from(trustedOrigins));
-      logger.debug(`Is trusted: ${trustedOrigins.has(currentOrigin)}`);
+      logger.debug(`Microsoft domains:`, Array.from(microsoftDomains));
+      logger.debug(`Is trusted login domain: ${trustedOrigins.has(currentOrigin)}`);
+      logger.debug(`Is Microsoft domain: ${microsoftDomains.has(currentOrigin)}`);
 
+      // Check for trusted login domains (these get valid badges)
       if (trustedOrigins.has(currentOrigin)) {
         logger.log(
           "✅ TRUSTED ORIGIN - No phishing possible, exiting immediately"
@@ -916,6 +936,29 @@ if (window.checkExtensionLoaded) {
         }
 
         return; // EXIT IMMEDIATELY - can't be phishing on trusted domain
+      }
+
+      // Check for general Microsoft domains (non-login pages)
+      if (microsoftDomains.has(currentOrigin)) {
+        logger.log(
+          "ℹ️ MICROSOFT DOMAIN (NON-LOGIN) - No phishing scan needed, no badge shown"
+        );
+
+        // Log as legitimate Microsoft access (but not login page)
+        logProtectionEvent({
+          type: "legitimate_access",
+          url: location.href,
+          origin: currentOrigin,
+          reason: "Legitimate Microsoft domain (non-login page)",
+          redirectTo: null,
+          clientId: null,
+          clientSuspicious: false,
+          clientReason: null,
+        });
+
+        // Don't show any badge for general Microsoft pages
+        // Just exit silently - these are legitimate but not login pages
+        return; // EXIT - legitimate Microsoft domain, no scanning needed
       }
 
       logger.log("❌ NON-TRUSTED ORIGIN - Continuing analysis");

@@ -8,10 +8,16 @@
     "https://login.windows.net",
     "https://login.microsoftonline.us",
     "https://login.partner.microsoftonline.cn",
-    "https://login.live.com",
+    "https://login.live.com"
+  ],
+  "microsoft_domains": [
     "https://account.microsoft.com",
     "https://account.live.com",
-    "https://myaccount.microsoft.com"
+    "https://myaccount.microsoft.com",
+    "https://portal.azure.com",
+    "https://admin.microsoft.com",
+    "https://outlook.com",
+    "https://outlook.live.com"
   ],
   "m365_detection_requirements": {
     "description": "Required elements to identify a Microsoft 365 login page",
