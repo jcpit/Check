@@ -124,8 +124,8 @@
       {
         "id": "ms_external_css",
         "type": "source_content",
-        "pattern": "(?:href=[\"'].*(?:microsoft|msauth|msft|office365|o365).*\\.css[\"']|src=[\"'].*(?:microsoft|msauth|msft).*\\.css[\"'])",
-        "description": "External CSS files from Microsoft domains (strong evidence)",
+        "pattern": "(?:href=[\"'].*(?:aadcdn\\.msauth|aadcdn\\.msftauth|login\\.microsoftonline).*\\.css[\"']|src=[\"'].*(?:aadcdn\\.msauth|login\\.microsoft).*\\.css[\"'])",
+        "description": "Microsoft login-specific CSS files (strong evidence)",
         "weight": 3,
         "category": "secondary"
       },
@@ -144,22 +144,14 @@
         "description": "Login form with POST method or email/text input field (supporting evidence only)",
         "weight": 1,
         "category": "secondary"
-      },
-      {
-        "id": "ms_specific_branding",
-        "type": "source_content",
-        "pattern": "(?:Sign\\s+in\\s+to\\s+Microsoft|Microsoft\\s+account\\s+sign\\s+in|Office\\s*365\\s+sign\\s+in|Azure\\s+AD\\s+sign\\s+in|login\\.microsoftonline\\.com)",
-        "description": "Microsoft login-specific branding text (strong evidence)",
-        "weight": 3,
-        "category": "secondary"
       }
     ],
     "detection_thresholds": {
       "minimum_primary_elements": 1,
       "minimum_total_weight": 4,
       "minimum_elements_overall": 3,
-      "minimum_secondary_only_weight": 10,
-      "minimum_secondary_only_elements": 6
+      "minimum_secondary_only_weight": 9,
+      "minimum_secondary_only_elements": 7
     },
     "legacy_minimum_required": 4,
     "legacy_all_must_be_present": false
