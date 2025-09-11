@@ -26,6 +26,7 @@ if (window.checkExtensionLoaded) {
   let scanCount = 0;
   let lastDetectionResult = null; // Store last detection analysis
   let developerConsoleLoggingEnabled = false; // Cache for developer console logging setting
+  let showingBanner = false; // Flag to prevent DOM monitoring loops when showing banners
   const MAX_SCANS = 10; // Prevent infinite scanning
   const SCAN_COOLDOWN = 1000; // 1 second between scans
 
@@ -1632,7 +1633,7 @@ if (window.checkExtensionLoaded) {
             if (shouldRerun) break;
           }
 
-          if (shouldRerun) {
+          if (shouldRerun && !showingBanner) {
             logger.log(
               "🔄 Significant DOM changes detected - re-running protection analysis"
             );
@@ -1643,6 +1644,8 @@ if (window.checkExtensionLoaded) {
             setTimeout(() => {
               runProtection(true);
             }, 500);
+          } else if (showingBanner) {
+            logger.debug("🚫 Ignoring DOM changes while banner is being displayed");
           } else if (newElementsAdded) {
             logger.debug(
               "🔍 DOM changes detected but not significant enough to re-run analysis"
@@ -1662,6 +1665,11 @@ if (window.checkExtensionLoaded) {
 
       // Fallback: Check periodically for content that might have loaded without triggering observer
       const checkInterval = setInterval(() => {
+        if (showingBanner) {
+          logger.debug("🚫 Fallback timer skipping check while banner is displayed");
+          return;
+        }
+
         const currentElementCount = document.querySelectorAll("*").length;
         const hasSignificantContent = document.body?.textContent?.length > 1000;
 
@@ -1825,6 +1833,9 @@ if (window.checkExtensionLoaded) {
    */
   function showWarningBanner(reason, analysisData) {
     try {
+      // Set flag to prevent DOM monitoring loops
+      showingBanner = true;
+      
       const detailsText = analysisData?.score
         ? ` (Score: ${analysisData.score}/${analysisData.threshold})`
         : "";
@@ -1913,8 +1924,15 @@ if (window.checkExtensionLoaded) {
       document.body.style.marginTop = `${bannerHeight}px`;
 
       logger.log("Warning banner displayed");
+      
+      // Clear flag after a short delay to allow banner to fully render
+      setTimeout(() => {
+        showingBanner = false;
+        logger.debug("🟢 Banner display complete - DOM monitoring resumed");
+      }, 1000);
     } catch (error) {
       logger.error("Failed to show warning banner:", error.message);
+      showingBanner = false; // Make sure flag is cleared on error
     }
   }
 

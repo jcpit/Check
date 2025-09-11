@@ -148,8 +148,8 @@
       {
         "id": "ms_specific_branding",
         "type": "source_content",
-        "pattern": "(?:Microsoft|Office\\s*365|Azure\\s*AD|outlook\\.com|hotmail\\.com|live\\.com)",
-        "description": "Microsoft branding or service names in page content (strong evidence)",
+        "pattern": "(?:Sign\\s+in\\s+to\\s+Microsoft|Microsoft\\s+account\\s+sign\\s+in|Office\\s*365\\s+sign\\s+in|Azure\\s+AD\\s+sign\\s+in|login\\.microsoftonline\\.com)",
+        "description": "Microsoft login-specific branding text (strong evidence)",
         "weight": 3,
         "category": "secondary"
       }
