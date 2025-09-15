@@ -6,7 +6,7 @@ CHROME_EXTENSION_ID="benimdeioplgkhanklclahllklceahbe"
 # Format: 32-character lowercase string like "abcdefghijklmnopqrstuvwxyz123456"
 
 # Edge Add-ons Store
-EDGE_EXTENSION_ID="will-be-assigned-by-microsoft"
+EDGE_EXTENSION_ID="knepjpocdagponkonnbggpcnhnaikajg"
 # Format: 32-character lowercase string, different from Chrome
 
 # Firefox Add-ons (if you plan to support)
