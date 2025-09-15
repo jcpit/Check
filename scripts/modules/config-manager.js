@@ -140,7 +140,7 @@ export class ConfigManager {
       detectionRules: {
         enableCustomRules: true,
         customRulesUrl:
-          "https://raw.githubusercontent.com/CyberDrain/ProjectX/refs/heads/main/rules/detection-rules.json",
+          "https://raw.githubusercontent.com/CyberDrain/Check/refs/heads/main/rules/detection-rules.json",
         updateInterval: 86400000, // 24 hours
         strictMode: false,
       },

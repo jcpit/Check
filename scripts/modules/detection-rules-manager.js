@@ -13,7 +13,7 @@ export class DetectionRulesManager {
     this.cacheKey = "detection_rules_cache";
     this.fallbackUrl = chrome.runtime.getURL("rules/detection-rules.json");
     this.remoteUrl =
-      "https://raw.githubusercontent.com/CyberDrain/ProjectX/refs/heads/main/rules/detection-rules.json";
+      "https://raw.githubusercontent.com/CyberDrain/Check/refs/heads/main/rules/detection-rules.json";
     this.config = null;
     this.initialized = false;
   }
