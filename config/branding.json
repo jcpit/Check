@@ -37,20 +37,6 @@
       "images/screenshot3.png"
     ]
   },
-  "contact": {
-    "supportEmail": "support@cyberdrain.com",
-    "supportUrl": "https://support.cyberdrain.com",
-    "salesEmail": "info@cyberdrain.com",
-    "salesUrl": "https://cyberdrain.com/contact",
-    "websiteUrl": "https://cyberdrain.com",
-    "documentationUrl": "https://docs.cyberdrain.com"
-  },
-  "legal": {
-    "privacyPolicyUrl": "https://cyberdrain.com/privacy",
-    "termsOfServiceUrl": "https://cyberdrain.com/terms",
-    "licenseUrl": "https://cyberdrain.com/license",
-    "copyrightNotice": "© 2024 CyberDrain. All rights reserved."
-  },
   "customization": {
     "showCompanyBranding": true,
     "allowUserCustomization": true,
@@ -140,20 +126,6 @@
       "Manual Installation"
     ]
   },
-  "support": {
-    "documentationUrl": "https://docs.check.com/drain",
-    "knowledgeBaseUrl": "https://support.check.com/kb",
-    "communityForumUrl": "https://community.check.com",
-    "statusPageUrl": "https://status.check.com",
-    "feedbackUrl": "https://feedback.check.com",
-    "supportHours": "24/7 for Enterprise customers, Business hours for Standard",
-    "supportChannels": [
-      "email",
-      "phone",
-      "chat",
-      "ticket_system"
-    ]
-  },
   "analytics": {
     "enabled": false,
     "trackingId": "",
@@ -169,8 +141,7 @@
   "updates": {
     "autoUpdateEnabled": true,
     "updateChannel": "stable",
-    "updateCheckInterval": 86400000,
-    "releaseNotesUrl": "https://releases.check.com/drain"
+    "updateCheckInterval": 86400000
   },
   "metadata": {
     "created": "2024-01-01T00:00:00Z",
