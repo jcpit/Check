@@ -3,6 +3,7 @@
 An open-source, Manifest V3 browser extension for detecting phishing attacks that
 impersonate Microsoft 365 sign-in pages.
 
+
 ## Features
 
 - **Detection engine** – loads rules from `rules/detection-rules.json` and
