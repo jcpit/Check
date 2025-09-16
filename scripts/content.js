@@ -1240,6 +1240,22 @@ if (window.checkExtensionLoaded) {
   }
 
   /**
+   * Check if content contains legitimate SSO patterns
+   */
+  function checkLegitimateSSO(pageText, pageSource) {
+    if (!detectionRules?.exclusion_system?.context_indicators?.legitimate_sso_patterns) {
+      return false;
+    }
+    
+    const ssoPatterns = detectionRules.exclusion_system.context_indicators.legitimate_sso_patterns;
+    const combinedText = (pageText + ' ' + pageSource).toLowerCase();
+    
+    return ssoPatterns.some(pattern => 
+      combinedText.includes(pattern.toLowerCase())
+    );
+  }
+
+  /**
    * Process phishing indicators from detection rules
    */
   function processPhishingIndicators() {
@@ -1249,39 +1265,8 @@ if (window.checkExtensionLoaded) {
         `🔍 processPhishingIndicators: detectionRules available: ${!!detectionRules}`
       );
 
-      if (!detectionRules) {
-        logger.error("❌ detectionRules is null/undefined - rules not loaded!");
-        return { threats: [], score: 0 };
-      }
-
-      logger.log(
-        `🔍 processPhishingIndicators: phishing_indicators available: ${!!detectionRules?.phishing_indicators}`
-      );
-      logger.log(
-        `🔍 processPhishingIndicators: phishing_indicators count: ${
-          detectionRules?.phishing_indicators?.length || 0
-        }`
-      );
-
-      if (!detectionRules.phishing_indicators) {
-        logger.warn("❌ No phishing_indicators section in detection rules");
-        logger.log(
-          "Available sections in detectionRules:",
-          Object.keys(detectionRules)
-        );
-        return { threats: [], score: 0 };
-      }
-
-      if (!Array.isArray(detectionRules.phishing_indicators)) {
-        logger.error(
-          "❌ phishing_indicators is not an array:",
-          typeof detectionRules.phishing_indicators
-        );
-        return { threats: [], score: 0 };
-      }
-
-      if (detectionRules.phishing_indicators.length === 0) {
-        logger.warn("⚠️ phishing_indicators array is empty");
+      if (!detectionRules?.phishing_indicators) {
+        logger.warn("No phishing indicators available");
         return { threats: [], score: 0 };
       }
 
@@ -1298,91 +1283,81 @@ if (window.checkExtensionLoaded) {
       logger.log(`   - Page text length: ${pageText.length} chars`);
       logger.log(`   - Current URL: ${currentUrl}`);
 
+      // Check if current URL matches exclusion patterns
+      const isExcludedDomain = checkDomainExclusion(currentUrl);
+      const legitimateContext = checkLegitimateContext(pageText, pageSource);
+      
+      if (isExcludedDomain && legitimateContext) {
+        logger.log(`🚫 Domain excluded from phishing detection: ${currentUrl}`);
+        logger.log(`📋 Legitimate context detected, skipping phishing indicators`);
+        return { threats: [], score: 0 };
+      }
+
       // Log first few indicators for debugging
+      const firstThree = detectionRules.phishing_indicators.slice(0, 3);
       logger.log("📋 First 3 indicators:");
-      detectionRules.phishing_indicators
-        .slice(0, 3)
-        .forEach((indicator, idx) => {
-          logger.log(
-            `   ${idx + 1}. ${indicator.id}: ${indicator.pattern} (${
-              indicator.severity
-            })`
-          );
-        });
+      firstThree.forEach((ind, i) => {
+        logger.log(
+          `   ${i + 1}. ${ind.id}: ${ind.pattern} (${ind.severity})`
+        );
+      });
 
       for (const indicator of detectionRules.phishing_indicators) {
         try {
-          if (!indicator.pattern) {
-            logger.warn(`⚠️ Indicator ${indicator.id} has no pattern`);
-            continue;
-          }
-
           let matches = false;
           let matchDetails = "";
+          const pattern = new RegExp(indicator.pattern, indicator.flags || "i");
 
-          try {
-            const pattern = new RegExp(
-              indicator.pattern,
-              indicator.flags || "i"
-            );
-
-            // Debug each pattern test
-            logger.debug(
-              `🔍 Testing pattern ${indicator.id}: ${
-                indicator.pattern
-              } (flags: ${indicator.flags || "i"})`
-            );
-
-            // Test against page source
-            if (pattern.test(pageSource)) {
-              matches = true;
-              const match = pageSource.match(pattern);
-              matchDetails = `page source: "${match[0]}"`;
-              logger.debug(`   ✅ Matched in ${matchDetails}`);
-            }
-            // Test against visible text
-            else if (pattern.test(pageText)) {
-              matches = true;
-              const match = pageText.match(pattern);
-              matchDetails = `page text: "${match[0]}"`;
-              logger.debug(`   ✅ Matched in ${matchDetails}`);
-            }
-            // Test against URL
-            else if (pattern.test(currentUrl)) {
-              matches = true;
-              const match = currentUrl.match(pattern);
-              matchDetails = `URL: "${match[0]}"`;
-              logger.debug(`   ✅ Matched in ${matchDetails}`);
-            }
-          } catch (regexError) {
-            logger.warn(
-              `⚠️ Invalid regex pattern for ${indicator.id}: ${indicator.pattern}`,
-              regexError
-            );
-            continue;
+          // Test against page source
+          if (pattern.test(pageSource)) {
+            matches = true;
+            matchDetails = "page source";
+          }
+          // Test against visible text
+          else if (pattern.test(pageText)) {
+            matches = true;
+            matchDetails = "page text";
+          }
+          // Test against URL
+          else if (pattern.test(currentUrl)) {
+            matches = true;
+            matchDetails = "URL";
           }
 
           // Special handling for additional_checks (phi_014, phi_015)
-          if (
-            !matches &&
-            indicator.additional_checks &&
-            Array.isArray(indicator.additional_checks)
-          ) {
-            logger.debug(
-              `   🔍 Testing ${indicator.additional_checks.length} additional checks`
-            );
+          if (!matches && indicator.additional_checks) {
             for (const check of indicator.additional_checks) {
-              if (pageSource.includes(check)) {
+              if (pageSource.includes(check) || pageText.includes(check)) {
                 matches = true;
-                matchDetails = `additional check in source: "${check}"`;
-                logger.debug(`   ✅ Matched ${matchDetails}`);
-                break;
-              } else if (pageText.includes(check)) {
-                matches = true;
-                matchDetails = `additional check in text: "${check}"`;
-                logger.debug(`   ✅ Matched ${matchDetails}`);
+                matchDetails = "additional checks";
                 break;
               }
+            }
+          }
+
+          // Apply centralized exclusion logic for social engineering patterns
+          if (matches && isExcludedDomain) {
+            if (indicator.category === "social_engineering" || 
+                indicator.category === "brand_impersonation") {
+              
+              // Check if this is legitimate discussion vs actual phishing
+              const hasSuspiciousContext = checkSuspiciousContext(pageText);
+              const hasCredentialForm = document.querySelector('input[type="password"], input[type="email"]');
+              
+              if (legitimateContext && !hasSuspiciousContext && !hasCredentialForm) {
+                logger.debug(`🚫 ${indicator.id} excluded - legitimate discussion context`);
+                matches = false;
+              }
+            }
+          }
+          
+          // Special handling for Microsoft branding indicators (phi_001_enhanced, phi_002)
+          if (matches && (indicator.id === "phi_001_enhanced" || indicator.id === "phi_002")) {
+            const hasLegitimateSSO = checkLegitimateSSO(pageText, pageSource);
+            
+            if (hasLegitimateSSO) {
+              logger.debug(`🚫 ${indicator.id} excluded - legitimate SSO detected`);
+              matches = false;
             }
           }
 
@@ -1402,18 +1377,10 @@ if (window.checkExtensionLoaded) {
             // Calculate score based on severity and confidence
             let scoreWeight = 0;
             switch (indicator.severity) {
-              case "critical":
-                scoreWeight = 25;
-                break;
-              case "high":
-                scoreWeight = 15;
-                break;
-              case "medium":
-                scoreWeight = 10;
-                break;
-              case "low":
-                scoreWeight = 5;
-                break;
+              case "critical": scoreWeight = 25; break;
+              case "high": scoreWeight = 15; break;
+              case "medium": scoreWeight = 10; break;
+              case "low": scoreWeight = 5; break;
             }
 
             totalScore += scoreWeight * (indicator.confidence || 0.5);
@@ -1421,8 +1388,6 @@ if (window.checkExtensionLoaded) {
             logger.warn(
               `🚨 PHISHING INDICATOR DETECTED: ${indicator.id} - ${indicator.description}`
             );
-          } else {
-            logger.debug(`   ❌ No match for ${indicator.id}`);
           }
         } catch (error) {
           logger.warn(
@@ -1440,6 +1405,53 @@ if (window.checkExtensionLoaded) {
       logger.error("Error processing phishing indicators:", error.message);
       return { threats: [], score: 0 };
     }
+  }
+
+  /**
+   * Check if domain should be excluded from phishing detection
+   */
+  function checkDomainExclusion(url) {
+    if (!detectionRules?.exclusion_system?.domain_patterns) {
+      return false;
+    }
+    
+    return detectionRules.exclusion_system.domain_patterns.some(pattern => {
+      try {
+        const regex = new RegExp(pattern, 'i');
+        return regex.test(url);
+      } catch (error) {
+        logger.warn(`Invalid exclusion pattern: ${pattern}`);
+        return false;
+      }
+    });
+  }
+
+  /**
+   * Check for legitimate context indicators
+   */
+  function checkLegitimateContext(pageText, pageSource) {
+    if (!detectionRules?.exclusion_system?.context_indicators?.legitimate_contexts) {
+      return false;
+    }
+    
+    const content = (pageText + " " + pageSource).toLowerCase();
+    return detectionRules.exclusion_system.context_indicators.legitimate_contexts.some(context => {
+      return content.includes(context.toLowerCase());
+    });
+  }
+
+  /**
+   * Check for suspicious context indicators that override legitimate exclusions
+   */
+  function checkSuspiciousContext(pageText) {
+    if (!detectionRules?.exclusion_system?.context_indicators?.suspicious_contexts) {
+      return false;
+    }
+    
+    const content = pageText.toLowerCase();
+    return detectionRules.exclusion_system.context_indicators.suspicious_contexts.some(context => {
+      return content.includes(context.toLowerCase());
+    });
   }
 
   /**
