@@ -588,7 +588,7 @@
       "flags": "i",
       "severity": "high",
       "description": "Page contains obfuscated JavaScript code using base64, hex, or unicode encoding",
-      "action": "warn",
+      "action": "block",
       "category": "code_obfuscation",
       "confidence": 0.80,
       "additional_checks": [
