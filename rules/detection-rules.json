@@ -558,6 +558,58 @@
       "action": "block",
       "category": "credential_harvesting",
       "confidence": 0.95
+    },
+    {
+      "id": "phi_014_devtools_blocking",
+      "pattern": "(?:debugger|developer.*tools?|devtools?|F12|inspect.*element|right.*click.*disabled|console.*clear|setInterval.*debugger|while.*true.*debugger|keydown.*F12|contextmenu.*prevent|selectstart.*prevent|dragstart.*prevent)",
+      "flags": "i",
+      "severity": "high",
+      "description": "Page attempts to block or detect developer tools usage",
+      "action": "warn",
+      "category": "anti_analysis",
+      "confidence": 0.85,
+      "additional_checks": [
+        "document.addEventListener('keydown'",
+        "event.keyCode === 123",
+        "event.which === 123",
+        "debugger;",
+        "setInterval(function(){debugger;}",
+        "while(true){debugger;}",
+        "console.clear()",
+        "addEventListener('contextmenu'",
+        "oncontextmenu=\"return false\"",
+        "onselectstart=\"return false\"",
+        "ondragstart=\"return false\""
+      ]
+    },
+    {
+      "id": "phi_015_code_obfuscation",
+      "pattern": "(?:atob\\s*\\(|btoa\\s*\\(|String\\.fromCharCode\\s*\\(|eval\\s*\\(.*atob|Function\\s*\\(.*atob|unescape\\s*\\(|decodeURIComponent\\s*\\(.*%[0-9a-fA-F]{2}|\\\\x[0-9a-fA-F]{2}|\\\\u[0-9a-fA-F]{4})",
+      "flags": "i",
+      "severity": "high",
+      "description": "Page contains obfuscated JavaScript code using base64, hex, or unicode encoding",
+      "action": "warn",
+      "category": "code_obfuscation",
+      "confidence": 0.80,
+      "additional_checks": [
+        "atob(",
+        "btoa(",
+        "String.fromCharCode(",
+        "eval(",
+        "Function(",
+        "unescape(",
+        "decodeURIComponent(",
+        "\\x",
+        "\\u",
+        "%[0-9a-fA-F]",
+        "base64",
+        ".split('').reverse().join('')",
+        "parseInt(",
+        "parseFloat(",
+        "new Function(",
+        "window['eval']",
+        "this['eval']"
+      ]
     }
   ],
   "legitimate_patterns": [
