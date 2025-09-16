@@ -689,132 +689,6 @@ if (window.checkExtensionLoaded) {
   }
 
   /**
-   * Process phishing indicators from detection rules
-   */
-  function processPhishingIndicators(content) {
-    try {
-      if (!detectionRules?.phishing_indicators) {
-        return { score: 0, triggeredIndicators: [] };
-      }
-
-      let score = 0;
-      const triggeredIndicators = [];
-
-      for (const indicator of detectionRules.phishing_indicators) {
-        try {
-          const regex = new RegExp(indicator.pattern, indicator.flags || "i");
-          const matches = content.match(regex);
-
-          if (matches) {
-            const weight =
-              indicator.severity === "critical"
-                ? 15
-                : indicator.severity === "high"
-                ? 10
-                : indicator.severity === "medium"
-                ? 5
-                : 3;
-
-            score += weight;
-            triggeredIndicators.push({
-              id: indicator.id,
-              description: indicator.description,
-              severity: indicator.severity,
-              category: indicator.category,
-              weight: weight,
-              matches: matches.slice(0, 3), // Limit to first 3 matches
-            });
-
-            logger.debug(
-              `Phishing indicator triggered: ${indicator.id} (weight: ${weight})`
-            );
-          }
-        } catch (error) {
-          logger.warn(
-            `Error processing phishing indicator ${indicator.id}:`,
-            error.message
-          );
-        }
-      }
-
-      return { score, triggeredIndicators };
-    } catch (error) {
-      logger.error("Phishing indicators processing failed:", error.message);
-      return { score: 0, triggeredIndicators: [] };
-    }
-  }
-
-  /**
-   * Scan dynamic script content for phishing indicators
-   */
-  function scanDynamicScript(scriptContent, source = "unknown") {
-    try {
-      if (!scriptContent || scriptContent.length < 10) return;
-
-      logger.debug(
-        `Scanning dynamic script from ${source}, length: ${scriptContent.length}`
-      );
-
-      // Process the script content through phishing indicators
-      const result = processPhishingIndicators(scriptContent);
-
-      if (result.triggeredIndicators.length > 0) {
-        logger.warn(
-          `⚠️ Dynamic script contains ${result.triggeredIndicators.length} phishing indicators (score: ${result.score})`
-        );
-
-        // Log each triggered indicator for debugging
-        for (const indicator of result.triggeredIndicators) {
-          logger.warn(
-            `  - ${indicator.id}: ${indicator.description} (${indicator.severity})`
-          );
-
-          // For critical indicators, consider blocking
-          if (indicator.severity === "critical" && result.score >= 15) {
-            logger.error(
-              `🚨 CRITICAL: Blocking page due to dynamic script phishing indicator: ${indicator.id}`
-            );
-            blockPage(
-              `Critical phishing indicator detected in dynamic script: ${indicator.description}`
-            );
-            return;
-          }
-        }
-
-        // Update the extension badge to reflect additional threats found
-        updateBadgeForDynamicThreats(
-          result.score,
-          result.triggeredIndicators.length
-        );
-      }
-    } catch (error) {
-      logger.error("Dynamic script scanning failed:", error.message);
-    }
-  }
-
-  /**
-   * Update extension badge when dynamic threats are detected
-   */
-  function updateBadgeForDynamicThreats(score, indicatorCount) {
-    try {
-      chrome.runtime.sendMessage({
-        action: "updateBadge",
-        data: {
-          type: "dynamic_threat",
-          score: score,
-          indicatorCount: indicatorCount,
-          url: window.location.href,
-        },
-      });
-    } catch (error) {
-      logger.debug(
-        "Failed to update badge for dynamic threats:",
-        error.message
-      );
-    }
-  }
-
-  /**
    * Run detection rules from rule file to calculate legitimacy score
    */
   function runDetectionRules() {
@@ -931,28 +805,6 @@ if (window.checkExtensionLoaded) {
           logger.warn(`Error processing rule ${rule.id}:`, ruleError.message);
           // Continue with other rules - don't let one bad rule break everything
         }
-      }
-
-      // Also process phishing indicators from detection rules
-      const phishingResult = processPhishingIndicators(pageHTML);
-
-      // Add phishing indicator results to the main results
-      score += phishingResult.score;
-      triggeredRules.push(
-        ...phishingResult.triggeredIndicators.map((indicator) => ({
-          id: indicator.id,
-          type: "phishing_indicator",
-          description: indicator.description,
-          weight: indicator.weight,
-          category: indicator.category,
-          severity: indicator.severity,
-        }))
-      );
-
-      if (phishingResult.triggeredIndicators.length > 0) {
-        logger.log(
-          `Phishing indicators: ${phishingResult.triggeredIndicators.length} triggered, added ${phishingResult.score} to score`
-        );
       }
 
       const threshold = detectionRules.thresholds?.legitimate || 85;
@@ -1717,109 +1569,6 @@ if (window.checkExtensionLoaded) {
   }
 
   /**
-   * Scan dynamically loaded script for phishing indicators using detection rules
-   */
-  function scanDynamicScript(scriptElement) {
-    try {
-      const scriptContent =
-        scriptElement.textContent || scriptElement.innerHTML || "";
-      const scriptSrc = scriptElement.src || "";
-
-      if (!scriptContent && !scriptSrc) {
-        return;
-      }
-
-      logger.debug(
-        `🔍 Scanning dynamic script from DOM (${
-          scriptContent.length
-        } chars, src: ${scriptSrc || "inline"})`
-      );
-
-      // Create combined content to scan (script content + URL)
-      const combinedContent = `${scriptContent}\n${scriptSrc}`;
-
-      // Use the detection rules system to process the script
-      const result = processPhishingIndicators(combinedContent);
-
-      if (result.triggeredIndicators.length > 0) {
-        logger.warn(
-          `🚨 SUSPICIOUS DYNAMIC SCRIPT DETECTED: ${result.triggeredIndicators.length} phishing indicators (score: ${result.score})`
-        );
-
-        logger.warn(`Script source: ${scriptSrc || "inline"}`);
-        logger.warn(`Script content length: ${scriptContent.length} chars`);
-
-        // Log each triggered indicator
-        result.triggeredIndicators.forEach((indicator, i) => {
-          logger.warn(
-            `  ${i + 1}. ${indicator.id}: ${indicator.description} (${
-              indicator.severity
-            }, weight: ${indicator.weight})`
-          );
-
-          // Show sample matches for debugging
-          if (indicator.matches && indicator.matches.length > 0) {
-            indicator.matches.forEach((match, j) => {
-              const truncatedMatch =
-                match.substring(0, 100) + (match.length > 100 ? "..." : "");
-              logger.warn(`     Match ${j + 1}: ${truncatedMatch}`);
-            });
-          }
-        });
-
-        // For critical indicators, consider blocking the page
-        const criticalIndicators = result.triggeredIndicators.filter(
-          (i) => i.severity === "critical"
-        );
-        if (criticalIndicators.length > 0 && result.score >= 15) {
-          logger.error(
-            `🚨 CRITICAL: Blocking page due to dynamic script phishing indicators`
-          );
-          criticalIndicators.forEach((indicator) => {
-            logger.error(
-              `  Critical: ${indicator.id} - ${indicator.description}`
-            );
-          });
-
-          // Block the page immediately
-          const reason = `Critical phishing indicators detected in dynamic script: ${criticalIndicators
-            .map((i) => i.id)
-            .join(", ")}`;
-          blockPage(reason);
-          return;
-        }
-
-        // For high-severity indicators with moderate score, trigger a re-scan
-        const highSeverityIndicators = result.triggeredIndicators.filter(
-          (i) => i.severity === "high"
-        );
-        if (highSeverityIndicators.length >= 2 || result.score >= 10) {
-          logger.warn(
-            `🔄 Multiple high-severity indicators detected in dynamic script - triggering page re-scan`
-          );
-          setTimeout(() => {
-            if (!showingBanner) {
-              runProtection(true);
-            }
-          }, 1000);
-        }
-
-        // Update the extension badge to reflect dynamic threats found
-        updateBadgeForDynamicThreats(
-          result.score,
-          result.triggeredIndicators.length
-        );
-      } else {
-        logger.debug(
-          `✅ Dynamic script clean - no phishing indicators detected`
-        );
-      }
-    } catch (error) {
-      logger.warn("Error scanning dynamic script:", error.message);
-    }
-  }
-
-  /**
    * Set up DOM monitoring to catch delayed phishing content
    */
   function setupDOMMonitoring() {
@@ -1860,29 +1609,6 @@ if (window.checkExtensionLoaded) {
                     logger.debug(
                       `DOM change detected: ${tagName} element added`
                     );
-
-                    // If it's a script tag, scan it for obfuscation immediately
-                    if (tagName === "script") {
-                      const scriptContent = node.textContent || node.innerHTML;
-                      const scriptSrc = node.src;
-
-                      if (scriptContent) {
-                        logger.debug(
-                          `Scanning inline script content (${scriptContent.length} chars)`
-                        );
-                        scanDynamicScript(scriptContent, "inline_script");
-                      }
-
-                      if (scriptSrc) {
-                        logger.debug(`Detected external script: ${scriptSrc}`);
-                        // For external scripts, we'll monitor when they load
-                        node.addEventListener("load", () => {
-                          logger.debug(`External script loaded: ${scriptSrc}`);
-                          // External scripts can't be directly read due to CORS, but we can check the URL
-                          scanDynamicScript(scriptSrc, "external_script_url");
-                        });
-                      }
-                    }
                     break;
                   }
 
@@ -1919,9 +1645,7 @@ if (window.checkExtensionLoaded) {
               runProtection(true);
             }, 500);
           } else if (showingBanner) {
-            logger.debug(
-              "🚫 Ignoring DOM changes while banner is being displayed"
-            );
+            logger.debug("🚫 Ignoring DOM changes while banner is being displayed");
           } else if (newElementsAdded) {
             logger.debug(
               "🔍 DOM changes detected but not significant enough to re-run analysis"
@@ -1942,9 +1666,7 @@ if (window.checkExtensionLoaded) {
       // Fallback: Check periodically for content that might have loaded without triggering observer
       const checkInterval = setInterval(() => {
         if (showingBanner) {
-          logger.debug(
-            "🚫 Fallback timer skipping check while banner is displayed"
-          );
+          logger.debug("🚫 Fallback timer skipping check while banner is displayed");
           return;
         }
 
@@ -2113,7 +1835,7 @@ if (window.checkExtensionLoaded) {
     try {
       // Set flag to prevent DOM monitoring loops
       showingBanner = true;
-
+      
       const detailsText = analysisData?.score
         ? ` (Score: ${analysisData.score}/${analysisData.threshold})`
         : "";
@@ -2202,7 +1924,7 @@ if (window.checkExtensionLoaded) {
       document.body.style.marginTop = `${bannerHeight}px`;
 
       logger.log("Warning banner displayed");
-
+      
       // Clear flag after a short delay to allow banner to fully render
       setTimeout(() => {
         showingBanner = false;
@@ -2643,109 +2365,6 @@ if (window.checkExtensionLoaded) {
   }
 
   /**
-   * Set up monitoring for dynamic script execution
-   */
-  function setupDynamicScriptMonitoring() {
-    try {
-      logger.debug("Setting up dynamic script monitoring");
-
-      // Override eval function to monitor dynamic code execution
-      const originalEval = window.eval;
-      window.eval = function (code) {
-        logger.debug("eval() called with code length:", code?.length || 0);
-        if (code && typeof code === "string") {
-          scanDynamicScript(code, "eval");
-        }
-        return originalEval.call(this, code);
-      };
-
-      // Override Function constructor
-      const originalFunction = window.Function;
-      window.Function = function (...args) {
-        const code = args[args.length - 1]; // Last argument is the function body
-        logger.debug(
-          "Function() constructor called with code length:",
-          code?.length || 0
-        );
-        if (code && typeof code === "string") {
-          scanDynamicScript(code, "Function_constructor");
-        }
-        return originalFunction.apply(this, args);
-      };
-
-      // Override setTimeout with string code
-      const originalSetTimeout = window.setTimeout;
-      window.setTimeout = function (code, delay) {
-        if (typeof code === "string") {
-          logger.debug(
-            "setTimeout() called with string code length:",
-            code.length
-          );
-          scanDynamicScript(code, "setTimeout");
-        }
-        return originalSetTimeout.call(this, code, delay);
-      };
-
-      // Override setInterval with string code
-      const originalSetInterval = window.setInterval;
-      window.setInterval = function (code, delay) {
-        if (typeof code === "string") {
-          logger.debug(
-            "setInterval() called with string code length:",
-            code.length
-          );
-          scanDynamicScript(code, "setInterval");
-        }
-        return originalSetInterval.call(this, code, delay);
-      };
-
-      // Monitor script tag creation
-      const originalCreateElement = document.createElement;
-      document.createElement = function (tagName) {
-        const element = originalCreateElement.call(this, tagName);
-
-        if (tagName.toLowerCase() === "script") {
-          logger.debug("Script element created dynamically");
-
-          // Monitor when src is set
-          let srcValue = "";
-          Object.defineProperty(element, "src", {
-            set: function (value) {
-              srcValue = value;
-              logger.debug("Script src set to:", value);
-              scanDynamicScript(value, "dynamic_script_src");
-            },
-            get: function () {
-              return srcValue;
-            },
-          });
-
-          // Monitor when text content is set
-          let textValue = "";
-          Object.defineProperty(element, "textContent", {
-            set: function (value) {
-              textValue = value;
-              if (value && typeof value === "string") {
-                logger.debug("Script textContent set, length:", value.length);
-                scanDynamicScript(value, "dynamic_script_content");
-              }
-            },
-            get: function () {
-              return textValue;
-            },
-          });
-        }
-
-        return element;
-      };
-
-      logger.debug("Dynamic script monitoring setup complete");
-    } catch (error) {
-      logger.error("Failed to setup dynamic script monitoring:", error.message);
-    }
-  }
-
-  /**
    * Initialize protection when DOM is ready
    */
   function initializeProtection() {
@@ -2754,9 +2373,6 @@ if (window.checkExtensionLoaded) {
 
       // Apply branding colors first
       applyBrandingColors();
-
-      // Set up dynamic script monitoring
-      setupDynamicScriptMonitoring();
 
       if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", () => {
