@@ -5,6 +5,7 @@ impersonate Microsoft 365 sign-in pages.
 
 ## Features 
 
+
 - **Detection engine** – loads rules from `rules/detection-rules.json` and
   analyses URLs and page content to block or warn about suspicious sites
   targeting Microsoft 365 credentials
