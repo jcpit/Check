@@ -1243,14 +1243,19 @@ if (window.checkExtensionLoaded) {
    * Check if content contains legitimate SSO patterns
    */
   function checkLegitimateSSO(pageText, pageSource) {
-    if (!detectionRules?.exclusion_system?.context_indicators?.legitimate_sso_patterns) {
+    if (
+      !detectionRules?.exclusion_system?.context_indicators
+        ?.legitimate_sso_patterns
+    ) {
       return false;
     }
-    
-    const ssoPatterns = detectionRules.exclusion_system.context_indicators.legitimate_sso_patterns;
-    const combinedText = (pageText + ' ' + pageSource).toLowerCase();
-    
-    return ssoPatterns.some(pattern => 
+
+    const ssoPatterns =
+      detectionRules.exclusion_system.context_indicators
+        .legitimate_sso_patterns;
+    const combinedText = (pageText + " " + pageSource).toLowerCase();
+
+    return ssoPatterns.some((pattern) =>
       combinedText.includes(pattern.toLowerCase())
     );
   }
@@ -1260,6 +1265,30 @@ if (window.checkExtensionLoaded) {
    */
   function processPhishingIndicators() {
     try {
+      // Performance protection: Early exit for major trusted domains to prevent false positives
+      const currentUrl = window.location.href;
+      const hostname = new URL(currentUrl).hostname.toLowerCase();
+      const majorTrustedDomains = [
+        'google.com', 'google.co', 'google.ca', 'google.co.uk',
+        'bing.com', 'yahoo.com', 'duckduckgo.com', 'ask.com', 'askjeeves.com',
+        'baidu.com', 'yandex.com', 'startpage.com', 'searx.org',
+        'amazon.com', 'amazon.co.uk', 'amazon.ca', 'amazon.de', 'amazon.fr',
+        'facebook.com', 'twitter.com', 'x.com', 'linkedin.com', 'instagram.com',
+        'github.com', 'gitlab.com', 'bitbucket.org', 'stackoverflow.com', 'stackexchange.com',
+        'reddit.com', 'wikipedia.org', 'youtube.com', 'youtu.be', 'vimeo.com',
+        'apple.com', 'microsoft.com', 'office.com', 'office365.com',
+        'dropbox.com', 'slack.com', 'zoom.us', 'teams.microsoft.com', 'discord.com',
+        'ebay.com', 'paypal.com', 'stripe.com', 'shopify.com',
+        'cnn.com', 'bbc.com', 'nytimes.com', 'theguardian.com', 'reuters.com'
+      ];
+
+      for (const domain of majorTrustedDomains) {
+        if (hostname.includes(domain)) {
+          logger.log(`🚫 Major trusted domain detected (${domain}), skipping phishing indicators`);
+          return { threats: [], score: 0 };
+        }
+      }
+
       // Debug logging
       logger.log(
         `🔍 processPhishingIndicators: detectionRules available: ${!!detectionRules}`
@@ -1274,7 +1303,14 @@ if (window.checkExtensionLoaded) {
       let totalScore = 0;
       const pageSource = document.documentElement.outerHTML;
       const pageText = document.body?.textContent || "";
-      const currentUrl = window.location.href;
+
+      // Performance protection: Check for extremely large content that could cause regex hangs
+      const LARGE_CONTENT_THRESHOLD = 200000; // 200KB
+      const isLargeContent = pageSource.length > LARGE_CONTENT_THRESHOLD || pageText.length > LARGE_CONTENT_THRESHOLD;
+      
+      if (isLargeContent) {
+        logger.log(`⚠️ Large content detected (${pageSource.length} + ${pageText.length} chars), using performance mode`);
+      }
 
       logger.log(
         `🔍 Testing ${detectionRules.phishing_indicators.length} phishing indicators against:`
@@ -1282,14 +1318,17 @@ if (window.checkExtensionLoaded) {
       logger.log(`   - Page source length: ${pageSource.length} chars`);
       logger.log(`   - Page text length: ${pageText.length} chars`);
       logger.log(`   - Current URL: ${currentUrl}`);
+      logger.log(`   - Large content mode: ${isLargeContent}`);
 
       // Check if current URL matches exclusion patterns
       const isExcludedDomain = checkDomainExclusion(currentUrl);
       const legitimateContext = checkLegitimateContext(pageText, pageSource);
-      
+
       if (isExcludedDomain && legitimateContext) {
         logger.log(`🚫 Domain excluded from phishing detection: ${currentUrl}`);
-        logger.log(`📋 Legitimate context detected, skipping phishing indicators`);
+        logger.log(
+          `📋 Legitimate context detected, skipping phishing indicators`
+        );
         return { threats: [], score: 0 };
       }
 
@@ -1297,31 +1336,66 @@ if (window.checkExtensionLoaded) {
       const firstThree = detectionRules.phishing_indicators.slice(0, 3);
       logger.log("📋 First 3 indicators:");
       firstThree.forEach((ind, i) => {
-        logger.log(
-          `   ${i + 1}. ${ind.id}: ${ind.pattern} (${ind.severity})`
-        );
+        logger.log(`   ${i + 1}. ${ind.id}: ${ind.pattern} (${ind.severity})`);
       });
 
+      // Performance protection: Add timeout mechanism
+      const startTime = Date.now();
+      const PROCESSING_TIMEOUT = isLargeContent ? 1000 : 3000; // Shorter timeout for large content
+
       for (const indicator of detectionRules.phishing_indicators) {
+        // Check if we've exceeded the timeout
+        if (Date.now() - startTime > PROCESSING_TIMEOUT) {
+          logger.warn(`⏱️ Processing timeout reached after ${Date.now() - startTime}ms, stopping at ${indicator.id}`);
+          break;
+        }
+
         try {
           let matches = false;
           let matchDetails = "";
-          const pattern = new RegExp(indicator.pattern, indicator.flags || "i");
+          
+          // Performance protection: For large content, use safer detection methods
+          if (isLargeContent) {
+            // For large content, only test against URL and use simple string matching for content
+            const pattern = new RegExp(indicator.pattern, indicator.flags || "i");
+            
+            // Always test URL (safe)
+            if (pattern.test(currentUrl)) {
+              matches = true;
+              matchDetails = "URL";
+            }
+            // For large content, use simple string contains instead of regex on content
+            else {
+              // Extract simple keywords from the pattern for string matching
+              const simpleKeywords = extractSimpleKeywords(indicator.pattern);
+              for (const keyword of simpleKeywords) {
+                if (pageSource.toLowerCase().includes(keyword.toLowerCase()) || 
+                    pageText.toLowerCase().includes(keyword.toLowerCase())) {
+                  matches = true;
+                  matchDetails = "content (simple match)";
+                  break;
+                }
+              }
+            }
+          } else {
+            // Normal processing for smaller content
+            const pattern = new RegExp(indicator.pattern, indicator.flags || "i");
 
-          // Test against page source
-          if (pattern.test(pageSource)) {
-            matches = true;
-            matchDetails = "page source";
-          }
-          // Test against visible text
-          else if (pattern.test(pageText)) {
-            matches = true;
-            matchDetails = "page text";
-          }
-          // Test against URL
-          else if (pattern.test(currentUrl)) {
-            matches = true;
-            matchDetails = "URL";
+            // Test against page source
+            if (pattern.test(pageSource)) {
+              matches = true;
+              matchDetails = "page source";
+            }
+            // Test against visible text
+            else if (pattern.test(pageText)) {
+              matches = true;
+              matchDetails = "page text";
+            }
+            // Test against URL
+            else if (pattern.test(currentUrl)) {
+              matches = true;
+              matchDetails = "URL";
+            }
           }
 
           // Special handling for additional_checks (phi_014, phi_015)
@@ -1338,43 +1412,63 @@ if (window.checkExtensionLoaded) {
           // Handle context_required field for conditional detection
           if (matches && indicator.context_required) {
             let contextFound = false;
-            
+
             for (const requiredContext of indicator.context_required) {
-              if (pageSource.toLowerCase().includes(requiredContext.toLowerCase()) || 
-                  pageText.toLowerCase().includes(requiredContext.toLowerCase())) {
+              if (
+                pageSource
+                  .toLowerCase()
+                  .includes(requiredContext.toLowerCase()) ||
+                pageText.toLowerCase().includes(requiredContext.toLowerCase())
+              ) {
                 contextFound = true;
                 break;
               }
             }
-            
+
             if (!contextFound) {
-              logger.debug(`🚫 ${indicator.id} excluded - required context not found`);
+              logger.debug(
+                `🚫 ${indicator.id} excluded - required context not found`
+              );
               matches = false;
             }
           }
 
           // Apply centralized exclusion logic for social engineering patterns
           if (matches && isExcludedDomain) {
-            if (indicator.category === "social_engineering" || 
-                indicator.category === "brand_impersonation") {
-              
+            if (
+              indicator.category === "social_engineering" ||
+              indicator.category === "brand_impersonation"
+            ) {
               // Check if this is legitimate discussion vs actual phishing
               const hasSuspiciousContext = checkSuspiciousContext(pageText);
-              const hasCredentialForm = document.querySelector('input[type="password"], input[type="email"]');
-              
-              if (legitimateContext && !hasSuspiciousContext && !hasCredentialForm) {
-                logger.debug(`🚫 ${indicator.id} excluded - legitimate discussion context`);
+              const hasCredentialForm = document.querySelector(
+                'input[type="password"], input[type="email"]'
+              );
+
+              if (
+                legitimateContext &&
+                !hasSuspiciousContext &&
+                !hasCredentialForm
+              ) {
+                logger.debug(
+                  `🚫 ${indicator.id} excluded - legitimate discussion context`
+                );
                 matches = false;
               }
             }
           }
-          
+
           // Special handling for Microsoft branding indicators (phi_001_enhanced, phi_002)
-          if (matches && (indicator.id === "phi_001_enhanced" || indicator.id === "phi_002")) {
+          if (
+            matches &&
+            (indicator.id === "phi_001_enhanced" || indicator.id === "phi_002")
+          ) {
             const hasLegitimateSSO = checkLegitimateSSO(pageText, pageSource);
-            
+
             if (hasLegitimateSSO) {
-              logger.debug(`🚫 ${indicator.id} excluded - legitimate SSO detected`);
+              logger.debug(
+                `🚫 ${indicator.id} excluded - legitimate SSO detected`
+              );
               matches = false;
             }
           }
@@ -1395,10 +1489,18 @@ if (window.checkExtensionLoaded) {
             // Calculate score based on severity and confidence
             let scoreWeight = 0;
             switch (indicator.severity) {
-              case "critical": scoreWeight = 25; break;
-              case "high": scoreWeight = 15; break;
-              case "medium": scoreWeight = 10; break;
-              case "low": scoreWeight = 5; break;
+              case "critical":
+                scoreWeight = 25;
+                break;
+              case "high":
+                scoreWeight = 15;
+                break;
+              case "medium":
+                scoreWeight = 10;
+                break;
+              case "low":
+                scoreWeight = 5;
+                break;
             }
 
             totalScore += scoreWeight * (indicator.confidence || 0.5);
@@ -1415,8 +1517,9 @@ if (window.checkExtensionLoaded) {
         }
       }
 
+      const processingTime = Date.now() - startTime;
       logger.log(
-        `Phishing indicators check: ${threats.length} threats found, score: ${totalScore}`
+        `Phishing indicators check: ${threats.length} threats found, score: ${totalScore} (${processingTime}ms, ${isLargeContent ? 'performance mode' : 'normal mode'})`
       );
       return { threats, score: totalScore };
     } catch (error) {
@@ -1426,16 +1529,40 @@ if (window.checkExtensionLoaded) {
   }
 
   /**
+   * Extract simple keywords from regex patterns for performance-safe matching
+   */
+  function extractSimpleKeywords(pattern) {
+    const keywords = [];
+    
+    // Extract words that are 3+ characters and not regex operators
+    const wordMatches = pattern.match(/[a-zA-Z]{3,}/g);
+    if (wordMatches) {
+      keywords.push(...wordMatches);
+    }
+    
+    // Extract specific common phishing terms
+    const commonTerms = ['microsoft', 'office', 'login', 'secure', 'verify', 'account', 'auth', 'oauth', 'security'];
+    for (const term of commonTerms) {
+      if (pattern.toLowerCase().includes(term)) {
+        keywords.push(term);
+      }
+    }
+    
+    // Remove duplicates and return unique keywords
+    return [...new Set(keywords)];
+  }
+
+  /**
    * Check if domain should be excluded from phishing detection
    */
   function checkDomainExclusion(url) {
     if (!detectionRules?.exclusion_system?.domain_patterns) {
       return false;
     }
-    
-    return detectionRules.exclusion_system.domain_patterns.some(pattern => {
+
+    return detectionRules.exclusion_system.domain_patterns.some((pattern) => {
       try {
-        const regex = new RegExp(pattern, 'i');
+        const regex = new RegExp(pattern, "i");
         return regex.test(url);
       } catch (error) {
         logger.warn(`Invalid exclusion pattern: ${pattern}`);
@@ -1448,28 +1575,36 @@ if (window.checkExtensionLoaded) {
    * Check for legitimate context indicators
    */
   function checkLegitimateContext(pageText, pageSource) {
-    if (!detectionRules?.exclusion_system?.context_indicators?.legitimate_contexts) {
+    if (
+      !detectionRules?.exclusion_system?.context_indicators?.legitimate_contexts
+    ) {
       return false;
     }
-    
+
     const content = (pageText + " " + pageSource).toLowerCase();
-    return detectionRules.exclusion_system.context_indicators.legitimate_contexts.some(context => {
-      return content.includes(context.toLowerCase());
-    });
+    return detectionRules.exclusion_system.context_indicators.legitimate_contexts.some(
+      (context) => {
+        return content.includes(context.toLowerCase());
+      }
+    );
   }
 
   /**
    * Check for suspicious context indicators that override legitimate exclusions
    */
   function checkSuspiciousContext(pageText) {
-    if (!detectionRules?.exclusion_system?.context_indicators?.suspicious_contexts) {
+    if (
+      !detectionRules?.exclusion_system?.context_indicators?.suspicious_contexts
+    ) {
       return false;
     }
-    
+
     const content = pageText.toLowerCase();
-    return detectionRules.exclusion_system.context_indicators.suspicious_contexts.some(context => {
-      return content.includes(context.toLowerCase());
-    });
+    return detectionRules.exclusion_system.context_indicators.suspicious_contexts.some(
+      (context) => {
+        return content.includes(context.toLowerCase());
+      }
+    );
   }
 
   /**
