@@ -695,32 +695,37 @@
     },
     {
       "id": "phi_015_code_obfuscation",
-      "pattern": "(?:atob\\s*\\(|btoa\\s*\\(|String\\.fromCharCode\\s*\\(|eval\\s*\\(.*atob|Function\\s*\\(.*atob|unescape\\s*\\(|decodeURIComponent\\s*\\(.*%[0-9a-fA-F]{2}|\\\\x[0-9a-fA-F]{2}|\\\\u[0-9a-fA-F]{4})",
+      "pattern": "(?:eval\\s*\\(\\s*(?:atob|unescape|decodeURIComponent)|(?:new\\s+)?Function\\s*\\([^)]*atob|setInterval\\s*\\([^)]*(?:atob|eval)|setTimeout\\s*\\([^)]*(?:atob|eval)|document\\.write\\s*\\([^)]*(?:atob|unescape))",
+      "flags": "i",
+      "severity": "high",
+      "description": "Page contains suspicious JavaScript obfuscation patterns commonly used in malware",
+      "action": "warn",
+      "category": "code_obfuscation", 
+      "confidence": 0.85,
+      "context_required": [
+        "(?:microsoft|office|365|login|password|credential)"
+      ],
+      "additional_checks": [
+        "eval(atob(",
+        "eval(unescape(",
+        "eval(decodeURIComponent(",
+        "Function(atob(",
+        "new Function(atob(",
+        "setInterval(eval(",
+        "setTimeout(eval(",
+        "document.write(atob(",
+        "document.write(unescape("
+      ]
+    },
+    {
+      "id": "phi_019_malicious_obfuscation",
+      "pattern": "(?:(?:var|let|const)\\s+\\w+\\s*=\\s*(?:atob|unescape)\\([^)]+\\);\\s*eval\\(\\w+\\)|\\w+\\.split\\(['\"]['\"]\\)\\.reverse\\(\\)\\.join\\(['\"]['\"]\\)|String\\.fromCharCode\\((?:\\d+,\\s*){10,}\\d+\\))",
       "flags": "i",
       "severity": "critical",
-      "description": "Page contains obfuscated JavaScript code using base64, hex, or unicode encoding",
+      "description": "Page contains advanced malicious obfuscation techniques",
       "action": "block",
-      "category": "code_obfuscation",
-      "confidence": 0.90,
-      "additional_checks": [
-        "atob(",
-        "btoa(",
-        "String.fromCharCode(",
-        "eval(",
-        "Function(",
-        "unescape(",
-        "decodeURIComponent(",
-        "\\x",
-        "\\u",
-        "%[0-9a-fA-F]",
-        "base64",
-        ".split('').reverse().join('')",
-        "parseInt(",
-        "parseFloat(",
-        "new Function(",
-        "window['eval']",
-        "this['eval']"
-      ]
+      "category": "malicious_obfuscation",
+      "confidence": 0.95
     },
     {
       "id": "phi_016_suspicious_url_structure",

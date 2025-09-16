@@ -1335,6 +1335,24 @@ if (window.checkExtensionLoaded) {
             }
           }
 
+          // Handle context_required field for conditional detection
+          if (matches && indicator.context_required) {
+            let contextFound = false;
+            
+            for (const requiredContext of indicator.context_required) {
+              if (pageSource.toLowerCase().includes(requiredContext.toLowerCase()) || 
+                  pageText.toLowerCase().includes(requiredContext.toLowerCase())) {
+                contextFound = true;
+                break;
+              }
+            }
+            
+            if (!contextFound) {
+              logger.debug(`🚫 ${indicator.id} excluded - required context not found`);
+              matches = false;
+            }
+          }
+
           // Apply centralized exclusion logic for social engineering patterns
           if (matches && isExcludedDomain) {
             if (indicator.category === "social_engineering" || 
