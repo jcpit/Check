@@ -523,6 +523,24 @@ body {
   font-size: 11px;
 }
 
+.config-subsection {
+  margin-top: 8px;
+  margin-left: 12px;
+  padding: 8px;
+  background: var(--background-color);
+  border-left: 2px solid var(--primary-color);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.config-subsection-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
 .config-raw-json {
   white-space: pre-wrap;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;

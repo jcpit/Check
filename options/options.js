@@ -830,7 +830,114 @@ class CheckOptions {
       </div>
     `);
 
-    // Trusted origins
+    // Detection Thresholds
+    if (config.thresholds) {
+      sections.push(`
+        <div class="config-section">
+          <div class="config-section-title">Detection Thresholds</div>
+          <div class="config-item"><strong>Legitimate Site Threshold:</strong> <span class="config-value">${config.thresholds.legitimate}%</span></div>
+          <div class="config-item"><strong>Suspicious Site Threshold:</strong> <span class="config-value">${config.thresholds.suspicious}%</span></div>
+          <div class="config-item"><strong>Phishing Site Threshold:</strong> <span class="config-value">${config.thresholds.phishing}%</span></div>
+        </div>
+      `);
+    }
+
+    // Trusted Login Patterns
+    if (config.trusted_login_patterns && config.trusted_login_patterns.length > 0) {
+      sections.push(`
+        <div class="config-section">
+          <div class="config-section-title">Trusted Login Patterns (${config.trusted_login_patterns.length})</div>
+          ${config.trusted_login_patterns
+            .slice(0, 5)
+            .map((pattern) => `<div class="config-item">• ${pattern}</div>`)
+            .join("")}
+          ${config.trusted_login_patterns.length > 5 ? 
+            `<div class="config-item">... and ${config.trusted_login_patterns.length - 5} more</div>` : ''}
+        </div>
+      `);
+    }
+
+    // Microsoft 365 Detection Requirements
+    if (config.m365_detection_requirements) {
+      const req = config.m365_detection_requirements;
+      const primaryCount = req.primary_elements ? req.primary_elements.length : 0;
+      const secondaryCount = req.secondary_elements ? req.secondary_elements.length : 0;
+      
+      sections.push(`
+        <div class="config-section">
+          <div class="config-section-title">Microsoft 365 Detection Requirements</div>
+          <div class="config-item"><strong>Primary Elements:</strong> <span class="config-value">${primaryCount}</span></div>
+          <div class="config-item"><strong>Secondary Elements:</strong> <span class="config-value">${secondaryCount}</span></div>
+          <div class="config-item"><strong>Description:</strong> ${req.description || 'No description'}</div>
+        </div>
+      `);
+    }
+
+    // Microsoft Domain Patterns
+    if (config.microsoft_domain_patterns && config.microsoft_domain_patterns.length > 0) {
+      sections.push(`
+        <div class="config-section">
+          <div class="config-section-title">Microsoft Domain Patterns (${
+            config.microsoft_domain_patterns.length
+          })</div>
+          ${config.microsoft_domain_patterns
+            .slice(0, 10)
+            .map((pattern) => `<div class="config-item">• ${pattern}</div>`)
+            .join("")}
+          ${config.microsoft_domain_patterns.length > 10 ? 
+            `<div class="config-item">... and ${config.microsoft_domain_patterns.length - 10} more</div>` : ''}
+        </div>
+      `);
+    }
+
+    // Exclusion System
+    if (config.exclusion_system) {
+      const exclusions = config.exclusion_system;
+      sections.push(`
+        <div class="config-section">
+          <div class="config-section-title">Exclusion System</div>
+          <div class="config-item"><strong>Excluded Domains:</strong> <span class="config-value">${
+            exclusions.domains ? exclusions.domains.length : 0
+          }</span></div>
+          <div class="config-item"><strong>Excluded Keywords:</strong> <span class="config-value">${
+            exclusions.keywords ? exclusions.keywords.length : 0
+          }</span></div>
+          <div class="config-item"><strong>Trusted Services:</strong> <span class="config-value">${
+            exclusions.trusted_services ? exclusions.trusted_services.length : 0
+          }</span></div>
+          ${exclusions.domains && exclusions.domains.length > 0 ? 
+            `<div class="config-subsection">
+              <div class="config-subsection-title">Excluded Domains:</div>
+              ${exclusions.domains.map(domain => `<div class="config-item">• ${domain}</div>`).join('')}
+            </div>` : ''}
+        </div>
+      `);
+    }
+
+    // Phishing Indicators Summary
+    if (config.phishing_indicators && config.phishing_indicators.length > 0) {
+      const indicatorTypes = {};
+      const criticalCount = config.phishing_indicators.filter(indicator => indicator.severity === 'critical').length;
+      
+      config.phishing_indicators.forEach(indicator => {
+        const type = indicator.type || 'unknown';
+        indicatorTypes[type] = (indicatorTypes[type] || 0) + 1;
+      });
+
+      const indicatorSections = Object.entries(indicatorTypes).map(([type, count]) => 
+        `<div class="config-item"><strong>${type}:</strong> <span class="config-value">${count}</span></div>`
+      ).join('');
+
+      sections.push(`
+        <div class="config-section">
+          <div class="config-section-title">Phishing Indicators (${config.phishing_indicators.length} total)</div>
+          <div class="config-item"><strong>Critical Severity Rules:</strong> <span class="config-value">${criticalCount}</span></div>
+          ${indicatorSections}
+        </div>
+      `);
+    }
+
+    // Legacy format support - Trusted origins
     if (config.trusted_origins && config.trusted_origins.length > 0) {
       sections.push(`
         <div class="config-section">
@@ -844,42 +951,7 @@ class CheckOptions {
       `);
     }
 
-    // Rules summary
-    const ruleSections = [];
-    if (config.blocking_rules && config.blocking_rules.length > 0) {
-      ruleSections.push(
-        `<div class="config-item"><strong>Blocking Rules:</strong> <span class="config-value">${config.blocking_rules.length}</span></div>`
-      );
-    }
-    if (config.allow_rules && config.allow_rules.length > 0) {
-      ruleSections.push(
-        `<div class="config-item"><strong>Allow Rules:</strong> <span class="config-value">${config.allow_rules.length}</span></div>`
-      );
-    }
-    if (
-      config.aad_detection_elements &&
-      config.aad_detection_elements.length > 0
-    ) {
-      ruleSections.push(
-        `<div class="config-item"><strong>AAD Detection Elements:</strong> <span class="config-value">${config.aad_detection_elements.length}</span></div>`
-      );
-    }
-    if (config.rules && config.rules.length > 0) {
-      ruleSections.push(
-        `<div class="config-item"><strong>General Rules:</strong> <span class="config-value">${config.rules.length}</span></div>`
-      );
-    }
-
-    if (ruleSections.length > 0) {
-      sections.push(`
-        <div class="config-section">
-          <div class="config-section-title">Detection Rules Summary</div>
-          ${ruleSections.join("")}
-        </div>
-      `);
-    }
-
-    // Pattern categories
+    // Legacy format support - Pattern categories
     const patternSections = [];
     if (config.phishing && config.phishing.length > 0) {
       patternSections.push(
@@ -901,31 +973,12 @@ class CheckOptions {
         `<div class="config-item"><strong>Legitimate Patterns:</strong> <span class="config-value">${config.legitimate_patterns.length}</span></div>`
       );
     }
-    if (config.suspicious_behaviors && config.suspicious_behaviors.length > 0) {
-      patternSections.push(
-        `<div class="config-item"><strong>Suspicious Behaviors:</strong> <span class="config-value">${config.suspicious_behaviors.length}</span></div>`
-      );
-    }
 
     if (patternSections.length > 0) {
       sections.push(`
         <div class="config-section">
-          <div class="config-section-title">Pattern Categories</div>
+          <div class="config-section-title">Legacy Pattern Categories</div>
           ${patternSections.join("")}
-        </div>
-      `);
-    }
-
-    // Whitelist domains
-    if (config.whitelist_domains && config.whitelist_domains.length > 0) {
-      sections.push(`
-        <div class="config-section">
-          <div class="config-section-title">Whitelist Domains (${
-            config.whitelist_domains.length
-          })</div>
-          ${config.whitelist_domains
-            .map((domain) => `<div class="config-item">• ${domain}</div>`)
-            .join("")}
         </div>
       `);
     }
@@ -959,30 +1012,44 @@ class CheckOptions {
     }
 
     // Configuration statistics
-    const stats = [];
     let totalPatterns = 0;
+    if (config.phishing_indicators) totalPatterns += config.phishing_indicators.length;
     if (config.phishing) totalPatterns += config.phishing.length;
     if (config.malicious) totalPatterns += config.malicious.length;
     if (config.suspicious) totalPatterns += config.suspicious.length;
-    if (config.legitimate_patterns)
-      totalPatterns += config.legitimate_patterns.length;
+    if (config.legitimate_patterns) totalPatterns += config.legitimate_patterns.length;
 
-    let totalRules = 0;
-    if (config.blocking_rules) totalRules += config.blocking_rules.length;
-    if (config.allow_rules) totalRules += config.allow_rules.length;
-    if (config.rules) totalRules += config.rules.length;
+    let totalDetectionElements = 0;
+    if (config.m365_detection_requirements) {
+      if (config.m365_detection_requirements.primary_elements) totalDetectionElements += config.m365_detection_requirements.primary_elements.length;
+      if (config.m365_detection_requirements.secondary_elements) totalDetectionElements += config.m365_detection_requirements.secondary_elements.length;
+    }
+
+    let totalExclusions = 0;
+    if (config.exclusion_system) {
+      if (config.exclusion_system.domains) totalExclusions += config.exclusion_system.domains.length;
+      if (config.exclusion_system.keywords) totalExclusions += config.exclusion_system.keywords.length;
+      if (config.exclusion_system.trusted_services) totalExclusions += config.exclusion_system.trusted_services.length;
+    }
+
+    let criticalRules = 0;
+    if (config.phishing_indicators) {
+      criticalRules = config.phishing_indicators.filter(indicator => indicator.severity === 'critical').length;
+    }
 
     sections.push(`
       <div class="config-section">
         <div class="config-section-title">Configuration Statistics</div>
-        <div class="config-item"><strong>Total Patterns:</strong> <span class="config-value">${totalPatterns}</span></div>
-        <div class="config-item"><strong>Total Rules:</strong> <span class="config-value">${totalRules}</span></div>
-        <div class="config-item"><strong>Trusted Domains:</strong> <span class="config-value">${
-          config.trusted_origins ? config.trusted_origins.length : 0
+        <div class="config-item"><strong>Total Detection Patterns:</strong> <span class="config-value">${totalPatterns}</span></div>
+        <div class="config-item"><strong>Microsoft 365 Detection Elements:</strong> <span class="config-value">${totalDetectionElements}</span></div>
+        <div class="config-item"><strong>Trusted Login Patterns:</strong> <span class="config-value">${
+          config.trusted_login_patterns ? config.trusted_login_patterns.length : 0
         }</span></div>
-        <div class="config-item"><strong>Whitelist Domains:</strong> <span class="config-value">${
-          config.whitelist_domains ? config.whitelist_domains.length : 0
+        <div class="config-item"><strong>Microsoft Domain Patterns:</strong> <span class="config-value">${
+          config.microsoft_domain_patterns ? config.microsoft_domain_patterns.length : 0
         }</span></div>
+        <div class="config-item"><strong>Critical Severity Rules:</strong> <span class="config-value">${criticalRules}</span></div>
+        <div class="config-item"><strong>Total Exclusions:</strong> <span class="config-value">${totalExclusions}</span></div>
       </div>
     `);
 
