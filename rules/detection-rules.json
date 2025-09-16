@@ -451,13 +451,13 @@
     },
     {
       "id": "phi_003",
-      "pattern": "(?:verify.*account|suspended.*365|update.*office|secure.*microsoft)",
+      "pattern": "(?:verify.*account|suspended.*365|update.*office|secure.*microsoft|account.*security|security.*verification|365.*suspended|office.*update|microsoft.*secure|login.*microsoft|microsoft.*login|microsoft.*authentication|authentication.*microsoft|office.*365.*login|365.*office.*login)",
       "flags": "i",
-      "severity": "medium",
-      "description": "Common Microsoft 365 phishing keywords",
-      "action": "warn",
+      "severity": "high",
+      "description": "Common Microsoft 365 phishing keywords and variations",
+      "action": "block",
       "category": "social_engineering",
-      "confidence": 0.7
+      "confidence": 0.85
     },
     {
       "id": "phi_004",
@@ -586,11 +586,11 @@
       "id": "phi_015_code_obfuscation",
       "pattern": "(?:atob\\s*\\(|btoa\\s*\\(|String\\.fromCharCode\\s*\\(|eval\\s*\\(.*atob|Function\\s*\\(.*atob|unescape\\s*\\(|decodeURIComponent\\s*\\(.*%[0-9a-fA-F]{2}|\\\\x[0-9a-fA-F]{2}|\\\\u[0-9a-fA-F]{4})",
       "flags": "i",
-      "severity": "high",
+      "severity": "critical",
       "description": "Page contains obfuscated JavaScript code using base64, hex, or unicode encoding",
       "action": "block",
       "category": "code_obfuscation",
-      "confidence": 0.80,
+      "confidence": 0.90,
       "additional_checks": [
         "atob(",
         "btoa(",
@@ -610,6 +610,36 @@
         "window['eval']",
         "this['eval']"
       ]
+    },
+    {
+      "id": "phi_016_suspicious_url_structure",
+      "pattern": "(?:https?://[^/]+/[A-Za-z0-9+/=]{50,})",
+      "flags": "i",
+      "severity": "high",
+      "description": "Suspicious URL with long encoded parameters typically used in phishing campaigns",
+      "action": "warn",
+      "category": "suspicious_url_structure",
+      "confidence": 0.85
+    },
+    {
+      "id": "phi_017_microsoft_brand_abuse",
+      "pattern": "(?:(?:microsoft|office|365).*(?:login|sign.*in|authentication)|(?:login|sign.*in|authentication).*(?:microsoft|office|365))",
+      "flags": "i",
+      "severity": "high",
+      "description": "Microsoft branding combined with login/authentication terms on non-Microsoft domain",
+      "action": "block",
+      "category": "brand_abuse",
+      "confidence": 0.95
+    },
+    {
+      "id": "phi_018_credential_form_non_microsoft",
+      "pattern": "(?=.*(?:password|passwd))(?=.*(?:email|username|user))(?=.*(?:form|input))(?!.*login\\.microsoftonline\\.com)",
+      "flags": "i",
+      "severity": "critical",
+      "description": "Credential collection form on non-Microsoft domain",
+      "action": "block",
+      "category": "credential_harvesting",
+      "confidence": 0.90
     }
   ],
   "legitimate_patterns": [

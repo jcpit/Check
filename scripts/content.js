@@ -346,42 +346,50 @@ if (window.checkExtensionLoaded) {
    */
   function testPhishingIndicators() {
     console.log("🔍 TESTING PHISHING INDICATORS");
-    
+
     if (!detectionRules) {
       console.error("❌ Detection rules not loaded!");
       return;
     }
-    
+
     if (!detectionRules.phishing_indicators) {
       console.error("❌ No phishing indicators in detection rules!");
       return;
     }
-    
-    console.log(`📋 Found ${detectionRules.phishing_indicators.length} phishing indicators to test`);
-    
+
+    console.log(
+      `📋 Found ${detectionRules.phishing_indicators.length} phishing indicators to test`
+    );
+
     const pageSource = document.documentElement.outerHTML;
     const pageText = document.body?.textContent || "";
     const currentUrl = window.location.href;
-    
+
     console.log(`📄 Page source length: ${pageSource.length} chars`);
     console.log(`📝 Page text length: ${pageText.length} chars`);
     console.log(`🌐 Current URL: ${currentUrl}`);
-    
+
     let foundThreats = 0;
-    
+
     detectionRules.phishing_indicators.forEach((indicator, idx) => {
       try {
-        console.log(`\n🔍 Testing indicator ${idx + 1}/${detectionRules.phishing_indicators.length}: ${indicator.id}`);
+        console.log(
+          `\n🔍 Testing indicator ${idx + 1}/${
+            detectionRules.phishing_indicators.length
+          }: ${indicator.id}`
+        );
         console.log(`   Pattern: ${indicator.pattern}`);
-        console.log(`   Flags: ${indicator.flags || 'i'}`);
-        console.log(`   Severity: ${indicator.severity} | Action: ${indicator.action}`);
-        
+        console.log(`   Flags: ${indicator.flags || "i"}`);
+        console.log(
+          `   Severity: ${indicator.severity} | Action: ${indicator.action}`
+        );
+
         const pattern = new RegExp(indicator.pattern, indicator.flags || "i");
-        
+
         // Test against page source
         let matches = false;
         let matchLocation = "";
-        
+
         if (pattern.test(pageSource)) {
           matches = true;
           matchLocation = "page source";
@@ -402,10 +410,12 @@ if (window.checkExtensionLoaded) {
           const match = currentUrl.match(pattern);
           console.log(`   ✅ MATCH in ${matchLocation}: "${match[0]}"`);
         }
-        
+
         // Special handling for additional_checks
         if (!matches && indicator.additional_checks) {
-          console.log(`   🔍 Testing ${indicator.additional_checks.length} additional checks...`);
+          console.log(
+            `   🔍 Testing ${indicator.additional_checks.length} additional checks...`
+          );
           for (const check of indicator.additional_checks) {
             if (pageSource.includes(check) || pageText.includes(check)) {
               matches = true;
@@ -415,30 +425,31 @@ if (window.checkExtensionLoaded) {
             }
           }
         }
-        
+
         if (matches) {
           foundThreats++;
           console.log(`   🚨 THREAT DETECTED: ${indicator.description}`);
         } else {
           console.log(`   ❌ No match found`);
         }
-        
       } catch (error) {
         console.error(`   ⚠️ Error testing indicator ${indicator.id}:`, error);
       }
     });
-    
-    console.log(`\n📊 SUMMARY: ${foundThreats} threats found out of ${detectionRules.phishing_indicators.length} indicators tested`);
-    
+
+    console.log(
+      `\n📊 SUMMARY: ${foundThreats} threats found out of ${detectionRules.phishing_indicators.length} indicators tested`
+    );
+
     // Also test the actual function
     console.log("\n🔧 Testing processPhishingIndicators() function...");
     const result = processPhishingIndicators();
     console.log("Function result:", result);
-    
+
     return {
       totalIndicators: detectionRules.phishing_indicators.length,
       threatsFound: foundThreats,
-      functionResult: result
+      functionResult: result,
     };
   }
 
@@ -448,59 +459,67 @@ if (window.checkExtensionLoaded) {
   function debugDetectionRules() {
     console.log("🔍 DETECTION RULES DEBUG");
     console.log("Detection rules loaded:", !!detectionRules);
-    
+
     if (detectionRules) {
       console.log("Available sections:");
-      Object.keys(detectionRules).forEach(key => {
+      Object.keys(detectionRules).forEach((key) => {
         const section = detectionRules[key];
         if (Array.isArray(section)) {
           console.log(`  - ${key}: ${section.length} items`);
-        } else if (typeof section === 'object') {
-          console.log(`  - ${key}: object with ${Object.keys(section).length} keys`);
+        } else if (typeof section === "object") {
+          console.log(
+            `  - ${key}: object with ${Object.keys(section).length} keys`
+          );
         } else {
           console.log(`  - ${key}: ${typeof section} = ${section}`);
         }
       });
-      
+
       if (detectionRules.phishing_indicators) {
         console.log("\nPhishing indicators:");
         detectionRules.phishing_indicators.forEach((indicator, idx) => {
-          console.log(`  ${idx + 1}. ${indicator.id} (${indicator.severity}/${indicator.action})`);
+          console.log(
+            `  ${idx + 1}. ${indicator.id} (${indicator.severity}/${
+              indicator.action
+            })`
+          );
         });
       }
     }
-    
+
     return detectionRules;
   }
 
   // Make debug functions globally available
   window.testPhishingIndicators = testPhishingIndicators;
   window.debugDetectionRules = debugDetectionRules;
-  
+
   /**
    * Manual trigger function for testing
    */
-  window.manualPhishingCheck = function() {
+  window.manualPhishingCheck = function () {
     console.log("🚨 MANUAL PHISHING CHECK TRIGGERED");
     const result = processPhishingIndicators();
     console.log("Manual check result:", result);
-    
+
     if (result.threats.length > 0) {
       console.log("🚨 THREATS FOUND:");
-      result.threats.forEach(threat => {
-        console.log(`  - ${threat.id}: ${threat.description} (${threat.severity})`);
+      result.threats.forEach((threat) => {
+        console.log(
+          `  - ${threat.id}: ${threat.description} (${threat.severity})`
+        );
       });
     } else {
       console.log("✅ No threats detected");
     }
-    
+
     return result;
   };
 
   /**
    * Function to re-run the entire protection analysis
    */
-  window.rerunProtection = function() {
+  window.rerunProtection = function () {
     console.log("🔄 RE-RUNNING PROTECTION ANALYSIS");
     runProtection(true);
   };
@@ -508,38 +527,48 @@ if (window.checkExtensionLoaded) {
   /**
    * Function to check if detection rules are loaded and show their status
    */
-  window.checkRulesStatus = function() {
+  window.checkRulesStatus = function () {
     console.log("📋 DETECTION RULES STATUS CHECK");
     console.log(`Rules loaded: ${!!detectionRules}`);
-    
+
     if (!detectionRules) {
       console.error("❌ Detection rules not loaded!");
       console.log("Attempting to reload rules...");
-      
-      loadDetectionRules().then(() => {
-        console.log("✅ Rules reload attempt completed");
-        console.log(`Rules now loaded: ${!!detectionRules}`);
-        if (detectionRules?.phishing_indicators) {
-          console.log(`Phishing indicators available: ${detectionRules.phishing_indicators.length}`);
-        }
-      }).catch(error => {
-        console.error("❌ Failed to reload rules:", error);
-      });
-      
+
+      loadDetectionRules()
+        .then(() => {
+          console.log("✅ Rules reload attempt completed");
+          console.log(`Rules now loaded: ${!!detectionRules}`);
+          if (detectionRules?.phishing_indicators) {
+            console.log(
+              `Phishing indicators available: ${detectionRules.phishing_indicators.length}`
+            );
+          }
+        })
+        .catch((error) => {
+          console.error("❌ Failed to reload rules:", error);
+        });
+
       return false;
     }
-    
+
     console.log("✅ Detection rules are loaded");
     if (detectionRules.phishing_indicators) {
-      console.log(`✅ Phishing indicators: ${detectionRules.phishing_indicators.length} available`);
+      console.log(
+        `✅ Phishing indicators: ${detectionRules.phishing_indicators.length} available`
+      );
       console.log("Sample indicators:");
-      detectionRules.phishing_indicators.slice(0, 5).forEach((indicator, idx) => {
-        console.log(`  ${idx + 1}. ${indicator.id}: ${indicator.description}`);
-      });
+      detectionRules.phishing_indicators
+        .slice(0, 5)
+        .forEach((indicator, idx) => {
+          console.log(
+            `  ${idx + 1}. ${indicator.id}: ${indicator.description}`
+          );
+        });
     } else {
       console.error("❌ No phishing_indicators section found!");
     }
-    
+
     return true;
   };
 
@@ -550,36 +579,42 @@ if (window.checkExtensionLoaded) {
   function testPhishingIndicators() {
     console.log("🔍 MANUAL PHISHING INDICATORS TESTING");
     console.log("=".repeat(50));
-    
+
     if (!detectionRules?.phishing_indicators) {
       console.error("❌ No phishing indicators loaded!");
       console.log("Detection rules:", detectionRules);
       return;
     }
-    
-    console.log(`✅ Found ${detectionRules.phishing_indicators.length} phishing indicators`);
-    
+
+    console.log(
+      `✅ Found ${detectionRules.phishing_indicators.length} phishing indicators`
+    );
+
     const pageSource = document.documentElement.outerHTML;
     const pageText = document.body?.textContent || "";
     const currentUrl = window.location.href;
-    
+
     console.log(`📄 Page source length: ${pageSource.length} chars`);
     console.log(`📝 Page text length: ${pageText.length} chars`);
     console.log(`🌐 Current URL: ${currentUrl}`);
     console.log("");
-    
+
     // Test each phishing indicator
     detectionRules.phishing_indicators.forEach((indicator, index) => {
-      console.log(`Testing ${index + 1}/${detectionRules.phishing_indicators.length}: ${indicator.id}`);
+      console.log(
+        `Testing ${index + 1}/${detectionRules.phishing_indicators.length}: ${
+          indicator.id
+        }`
+      );
       console.log(`  Pattern: ${indicator.pattern}`);
-      console.log(`  Flags: ${indicator.flags || 'i'}`);
-      
+      console.log(`  Flags: ${indicator.flags || "i"}`);
+
       try {
         const pattern = new RegExp(indicator.pattern, indicator.flags || "i");
-        
+
         let matched = false;
         let matchLocation = "";
-        
+
         if (pattern.test(pageSource)) {
           matched = true;
           matchLocation = "page source";
@@ -590,7 +625,7 @@ if (window.checkExtensionLoaded) {
           matched = true;
           matchLocation = "URL";
         }
-        
+
         // Test additional_checks
         if (!matched && indicator.additional_checks) {
           for (const check of indicator.additional_checks) {
@@ -601,21 +636,22 @@ if (window.checkExtensionLoaded) {
             }
           }
         }
-        
+
         if (matched) {
           console.log(`  ✅ MATCH found in: ${matchLocation}`);
-          console.log(`  🚨 Severity: ${indicator.severity}, Action: ${indicator.action}`);
+          console.log(
+            `  🚨 Severity: ${indicator.severity}, Action: ${indicator.action}`
+          );
         } else {
           console.log(`  ❌ No match`);
         }
-        
       } catch (error) {
         console.log(`  💥 Pattern error: ${error.message}`);
       }
-      
+
       console.log("");
     });
-    
+
     // Run the actual function
     console.log("Running processPhishingIndicators()...");
     const result = processPhishingIndicators();
@@ -624,6 +660,116 @@ if (window.checkExtensionLoaded) {
 
   // Make it globally available for testing
   window.testPhishingIndicators = testPhishingIndicators;
+
+  /**
+   * Global function to analyze current page - call from browser console: analyzeCurrentPage()
+   */
+  window.analyzeCurrentPage = function () {
+    console.log("🔍 MANUAL PAGE ANALYSIS");
+    console.log("=".repeat(50));
+
+    // Check detection rules loading
+    console.log("Detection Rules Status:", {
+      loaded: !!detectionRules,
+      phishingIndicators: detectionRules?.phishing_indicators?.length || 0,
+      m365Requirements: !!detectionRules?.m365_detection_requirements,
+      blockingRules: detectionRules?.blocking_rules?.length || 0,
+    });
+
+    // Check current URL
+    console.log("Current URL:", window.location.href);
+    console.log("Current Domain:", window.location.hostname);
+
+    // Check if trusted
+    const isTrusted = isTrustedOrigin(window.location.href);
+    console.log("Is Trusted Domain:", isTrusted);
+
+    // Check M365 detection
+    const isMSLogon = isMicrosoftLogonPage();
+    console.log("Detected as M365 Login:", isMSLogon);
+
+    // Run phishing indicators
+    const phishingResult = processPhishingIndicators();
+    console.log("Phishing Analysis:", {
+      threatsFound: phishingResult.threats.length,
+      totalScore: phishingResult.score,
+      threats: phishingResult.threats.map((t) => ({
+        id: t.id,
+        severity: t.severity,
+        category: t.category,
+        description: t.description,
+        confidence: t.confidence,
+      })),
+    });
+
+    // Run blocking rules
+    const blockingResult = runBlockingRules();
+    console.log("Blocking Rules Result:", {
+      shouldBlock: blockingResult.shouldBlock,
+      reason: blockingResult.reason,
+    });
+
+    // Run detection rules
+    const detectionResult = runDetectionRules();
+    console.log("Detection Rules Result:", {
+      score: detectionResult.score,
+      threshold: detectionResult.threshold,
+      triggeredRules: detectionResult.triggeredRules,
+    });
+
+    // Check for forms
+    const forms = document.querySelectorAll("form");
+    console.log(
+      "Forms Found:",
+      Array.from(forms).map((form) => ({
+        action: form.action || "none",
+        method: form.method || "get",
+        hasPasswordField: !!form.querySelector('input[type="password"]'),
+        hasEmailField: !!form.querySelector(
+          'input[type="email"], input[name*="email"], input[id*="email"]'
+        ),
+      }))
+    );
+
+    // Check for suspicious patterns in page source
+    const pageSource = document.documentElement.outerHTML;
+    const suspiciousPatterns = [
+      {
+        name: "Microsoft mentions",
+        count: (pageSource.match(/microsoft/gi) || []).length,
+      },
+      {
+        name: "Office mentions",
+        count: (pageSource.match(/office/gi) || []).length,
+      },
+      { name: "365 mentions", count: (pageSource.match(/365/gi) || []).length },
+      {
+        name: "Login mentions",
+        count: (pageSource.match(/login/gi) || []).length,
+      },
+      {
+        name: "Password fields",
+        count: document.querySelectorAll('input[type="password"]').length,
+      },
+      {
+        name: "Email fields",
+        count: document.querySelectorAll('input[type="email"]').length,
+      },
+    ];
+    console.log("Content Analysis:", suspiciousPatterns);
+
+    console.log("=".repeat(50));
+    console.log("✅ Analysis complete. Check the results above.");
+
+    return {
+      detectionRulesLoaded: !!detectionRules,
+      isTrustedDomain: isTrusted,
+      isMicrosoftLogin: isMSLogon,
+      phishingThreats: phishingResult.threats.length,
+      shouldBlock: blockingResult.shouldBlock,
+      legitimacyScore: detectionResult.score,
+    };
+  };
 
   /**
    * Check if page is Microsoft 365 logon page using categorized detection
@@ -979,33 +1125,33 @@ if (window.checkExtensionLoaded) {
     try {
       // Override eval to detect dynamic script execution
       const originalEval = window.eval;
-      window.eval = function(code) {
-        scanDynamicScript(code, 'eval');
+      window.eval = function (code) {
+        scanDynamicScript(code, "eval");
         return originalEval.call(this, code);
       };
 
-      // Override Function constructor 
+      // Override Function constructor
       const originalFunction = window.Function;
-      window.Function = function() {
+      window.Function = function () {
         const code = arguments[arguments.length - 1];
-        scanDynamicScript(code, 'Function');
+        scanDynamicScript(code, "Function");
         return originalFunction.apply(this, arguments);
       };
 
       // Override setTimeout for code execution
       const originalSetTimeout = window.setTimeout;
-      window.setTimeout = function(code, delay) {
-        if (typeof code === 'string') {
-          scanDynamicScript(code, 'setTimeout');
+      window.setTimeout = function (code, delay) {
+        if (typeof code === "string") {
+          scanDynamicScript(code, "setTimeout");
         }
         return originalSetTimeout.call(this, code, delay);
       };
 
       // Override setInterval for code execution
       const originalSetInterval = window.setInterval;
-      window.setInterval = function(code, delay) {
-        if (typeof code === 'string') {
-          scanDynamicScript(code, 'setInterval');
+      window.setInterval = function (code, delay) {
+        if (typeof code === "string") {
+          scanDynamicScript(code, "setInterval");
         }
         return originalSetInterval.call(this, code, delay);
       };
@@ -1021,21 +1167,24 @@ if (window.checkExtensionLoaded) {
    */
   function scanDynamicScript(code, source) {
     try {
-      if (!code || typeof code !== 'string') return;
+      if (!code || typeof code !== "string") return;
 
       // Use phishing indicators to scan dynamic content
       const result = processPhishingIndicators();
       const dynamicResult = {
         threats: [],
-        score: 0
+        score: 0,
       };
 
       // Test dynamic code against phishing indicators
       if (detectionRules?.phishing_indicators) {
         for (const indicator of detectionRules.phishing_indicators) {
           try {
-            const pattern = new RegExp(indicator.pattern, indicator.flags || "i");
-            
+            const pattern = new RegExp(
+              indicator.pattern,
+              indicator.flags || "i"
+            );
+
             if (pattern.test(code)) {
               const threat = {
                 id: indicator.id,
@@ -1044,31 +1193,41 @@ if (window.checkExtensionLoaded) {
                 description: `${indicator.description} (in ${source})`,
                 confidence: indicator.confidence,
                 action: indicator.action,
-                source: source
+                source: source,
               };
-              
+
               dynamicResult.threats.push(threat);
-              
-              logger.warn(`🚨 DYNAMIC SCRIPT THREAT: ${indicator.id} detected in ${source}`);
-              
+
+              logger.warn(
+                `🚨 DYNAMIC SCRIPT THREAT: ${indicator.id} detected in ${source}`
+              );
+
               // Take immediate action for critical threats
-              if (indicator.severity === "critical" && indicator.action === "block") {
-                logger.error(`🛑 Critical dynamic script threat detected - ${indicator.description}`);
-                
+              if (
+                indicator.severity === "critical" &&
+                indicator.action === "block"
+              ) {
+                logger.error(
+                  `🛑 Critical dynamic script threat detected - ${indicator.description}`
+                );
+
                 // Send alert but don't block as script may already be executing
                 showWarningBanner(
                   `CRITICAL: Dynamic script threat detected - ${indicator.description}`,
-                  { 
+                  {
                     type: "dynamic_script_threat",
                     severity: "critical",
                     source: source,
-                    indicator: indicator.id
+                    indicator: indicator.id,
                   }
                 );
               }
             }
           } catch (patternError) {
-            logger.warn(`Error testing dynamic script against ${indicator.id}:`, patternError.message);
+            logger.warn(
+              `Error testing dynamic script against ${indicator.id}:`,
+              patternError.message
+            );
           }
         }
       }
@@ -1086,24 +1245,38 @@ if (window.checkExtensionLoaded) {
   function processPhishingIndicators() {
     try {
       // Debug logging
-      logger.log(`🔍 processPhishingIndicators: detectionRules available: ${!!detectionRules}`);
-      
+      logger.log(
+        `🔍 processPhishingIndicators: detectionRules available: ${!!detectionRules}`
+      );
+
       if (!detectionRules) {
         logger.error("❌ detectionRules is null/undefined - rules not loaded!");
         return { threats: [], score: 0 };
       }
-      
-      logger.log(`🔍 processPhishingIndicators: phishing_indicators available: ${!!detectionRules?.phishing_indicators}`);
-      logger.log(`🔍 processPhishingIndicators: phishing_indicators count: ${detectionRules?.phishing_indicators?.length || 0}`);
+
+      logger.log(
+        `🔍 processPhishingIndicators: phishing_indicators available: ${!!detectionRules?.phishing_indicators}`
+      );
+      logger.log(
+        `🔍 processPhishingIndicators: phishing_indicators count: ${
+          detectionRules?.phishing_indicators?.length || 0
+        }`
+      );
 
       if (!detectionRules.phishing_indicators) {
         logger.warn("❌ No phishing_indicators section in detection rules");
-        logger.log("Available sections in detectionRules:", Object.keys(detectionRules));
+        logger.log(
+          "Available sections in detectionRules:",
+          Object.keys(detectionRules)
+        );
         return { threats: [], score: 0 };
       }
 
       if (!Array.isArray(detectionRules.phishing_indicators)) {
-        logger.error("❌ phishing_indicators is not an array:", typeof detectionRules.phishing_indicators);
+        logger.error(
+          "❌ phishing_indicators is not an array:",
+          typeof detectionRules.phishing_indicators
+        );
         return { threats: [], score: 0 };
       }
 
@@ -1118,16 +1291,24 @@ if (window.checkExtensionLoaded) {
       const pageText = document.body?.textContent || "";
       const currentUrl = window.location.href;
 
-      logger.log(`🔍 Testing ${detectionRules.phishing_indicators.length} phishing indicators against:`);
+      logger.log(
+        `🔍 Testing ${detectionRules.phishing_indicators.length} phishing indicators against:`
+      );
       logger.log(`   - Page source length: ${pageSource.length} chars`);
       logger.log(`   - Page text length: ${pageText.length} chars`);
       logger.log(`   - Current URL: ${currentUrl}`);
 
       // Log first few indicators for debugging
       logger.log("📋 First 3 indicators:");
-      detectionRules.phishing_indicators.slice(0, 3).forEach((indicator, idx) => {
-        logger.log(`   ${idx + 1}. ${indicator.id}: ${indicator.pattern} (${indicator.severity})`);
-      });
+      detectionRules.phishing_indicators
+        .slice(0, 3)
+        .forEach((indicator, idx) => {
+          logger.log(
+            `   ${idx + 1}. ${indicator.id}: ${indicator.pattern} (${
+              indicator.severity
+            })`
+          );
+        });
 
       for (const indicator of detectionRules.phishing_indicators) {
         try {
@@ -1138,12 +1319,19 @@ if (window.checkExtensionLoaded) {
 
           let matches = false;
           let matchDetails = "";
-          
+
           try {
-            const pattern = new RegExp(indicator.pattern, indicator.flags || "i");
+            const pattern = new RegExp(
+              indicator.pattern,
+              indicator.flags || "i"
+            );
 
             // Debug each pattern test
-            logger.debug(`🔍 Testing pattern ${indicator.id}: ${indicator.pattern} (flags: ${indicator.flags || "i"})`);
+            logger.debug(
+              `🔍 Testing pattern ${indicator.id}: ${
+                indicator.pattern
+              } (flags: ${indicator.flags || "i"})`
+            );
 
             // Test against page source
             if (pattern.test(pageSource)) {
@@ -1167,13 +1355,22 @@ if (window.checkExtensionLoaded) {
               logger.debug(`   ✅ Matched in ${matchDetails}`);
             }
           } catch (regexError) {
-            logger.warn(`⚠️ Invalid regex pattern for ${indicator.id}: ${indicator.pattern}`, regexError);
+            logger.warn(
+              `⚠️ Invalid regex pattern for ${indicator.id}: ${indicator.pattern}`,
+              regexError
+            );
             continue;
           }
 
           // Special handling for additional_checks (phi_014, phi_015)
-          if (!matches && indicator.additional_checks && Array.isArray(indicator.additional_checks)) {
-            logger.debug(`   🔍 Testing ${indicator.additional_checks.length} additional checks`);
+          if (
+            !matches &&
+            indicator.additional_checks &&
+            Array.isArray(indicator.additional_checks)
+          ) {
+            logger.debug(
+              `   🔍 Testing ${indicator.additional_checks.length} additional checks`
+            );
             for (const check of indicator.additional_checks) {
               if (pageSource.includes(check)) {
                 matches = true;
@@ -1197,32 +1394,47 @@ if (window.checkExtensionLoaded) {
               confidence: indicator.confidence,
               description: indicator.description,
               action: indicator.action,
-              matchDetails: matchDetails
+              matchDetails: matchDetails,
             };
-            
+
             threats.push(threat);
-            
+
             // Calculate score based on severity and confidence
             let scoreWeight = 0;
             switch (indicator.severity) {
-              case "critical": scoreWeight = 25; break;
-              case "high": scoreWeight = 15; break;
-              case "medium": scoreWeight = 10; break;
-              case "low": scoreWeight = 5; break;
+              case "critical":
+                scoreWeight = 25;
+                break;
+              case "high":
+                scoreWeight = 15;
+                break;
+              case "medium":
+                scoreWeight = 10;
+                break;
+              case "low":
+                scoreWeight = 5;
+                break;
             }
-            
+
             totalScore += scoreWeight * (indicator.confidence || 0.5);
-            
-            logger.warn(`🚨 PHISHING INDICATOR DETECTED: ${indicator.id} - ${indicator.description}`);
+
+            logger.warn(
+              `🚨 PHISHING INDICATOR DETECTED: ${indicator.id} - ${indicator.description}`
+            );
           } else {
             logger.debug(`   ❌ No match for ${indicator.id}`);
           }
         } catch (error) {
-          logger.warn(`Error processing phishing indicator ${indicator.id}:`, error.message);
+          logger.warn(
+            `Error processing phishing indicator ${indicator.id}:`,
+            error.message
+          );
         }
       }
 
-      logger.log(`Phishing indicators check: ${threats.length} threats found, score: ${totalScore}`);
+      logger.log(
+        `Phishing indicators check: ${threats.length} threats found, score: ${totalScore}`
+      );
       return { threats, score: totalScore };
     } catch (error) {
       logger.error("Error processing phishing indicators:", error.message);
@@ -1687,47 +1899,60 @@ if (window.checkExtensionLoaded) {
         logger.log(
           "❌ NOT DETECTED as Microsoft logon page - checking for phishing indicators anyway"
         );
-        
+
         // Even if not detected as Microsoft login page, check for phishing indicators
         // This catches attempts that don't perfectly mimic Microsoft but still contain threats
         const phishingResult = processPhishingIndicators();
-        
+
         if (phishingResult.threats.length > 0) {
-          logger.warn(`🚨 PHISHING INDICATORS FOUND on non-Microsoft page: ${phishingResult.threats.length} threats`);
-          
-          // Check for critical threats that should be blocked regardless
-          const criticalThreats = phishingResult.threats.filter(t => 
-            t.severity === "critical" && t.action === "block"
+          logger.warn(
+            `🚨 PHISHING INDICATORS FOUND on non-Microsoft page: ${phishingResult.threats.length} threats`
           );
-          
+
+          // Check for critical threats that should be blocked regardless
+          const criticalThreats = phishingResult.threats.filter(
+            (t) => t.severity === "critical" && t.action === "block"
+          );
+
           if (criticalThreats.length > 0) {
-            const reason = `Critical phishing indicators detected on non-Microsoft page: ${criticalThreats.map(t => t.id).join(", ")}`;
-            
+            const reason = `Critical phishing indicators detected on non-Microsoft page: ${criticalThreats
+              .map((t) => t.id)
+              .join(", ")}`;
+
             // Store detection result
             lastDetectionResult = {
               verdict: "blocked",
               isSuspicious: true,
               isBlocked: protectionEnabled,
-              threats: criticalThreats.map(t => ({
+              threats: criticalThreats.map((t) => ({
                 type: t.category,
                 description: t.description,
-                confidence: t.confidence
+                confidence: t.confidence,
               })),
               reason: reason,
               score: 0, // Critical threats get lowest score
               threshold: 85,
-              phishingIndicators: criticalThreats.map(t => t.id),
+              phishingIndicators: criticalThreats.map((t) => t.id),
             };
 
             if (protectionEnabled) {
-              logger.error("🛡️ PROTECTION ACTIVE: Blocking page due to critical phishing indicators");
-              showBlockingOverlay(reason, { threats: criticalThreats, score: phishingResult.score });
+              logger.error(
+                "🛡️ PROTECTION ACTIVE: Blocking page due to critical phishing indicators"
+              );
+              showBlockingOverlay(reason, {
+                threats: criticalThreats,
+                score: phishingResult.score,
+              });
               disableFormSubmissions();
               disableCredentialInputs();
               stopDOMMonitoring();
             } else {
-              logger.warn("⚠️ PROTECTION DISABLED: Would block critical threats but showing warning banner instead");
-              showWarningBanner(`CRITICAL THREATS DETECTED: ${reason}`, { threats: criticalThreats });
+              logger.warn(
+                "⚠️ PROTECTION DISABLED: Would block critical threats but showing warning banner instead"
+              );
+              showWarningBanner(`CRITICAL THREATS DETECTED: ${reason}`, {
+                threats: criticalThreats,
+              });
               if (!isRerun) {
                 setupDOMMonitoring();
                 setupDynamicScriptMonitoring();
@@ -1738,7 +1963,9 @@ if (window.checkExtensionLoaded) {
             const clientInfo = await extractClientInfo(location.href);
 
             logProtectionEvent({
-              type: protectionEnabled ? "threat_blocked" : "threat_detected_no_action",
+              type: protectionEnabled
+                ? "threat_blocked"
+                : "threat_detected_no_action",
               url: location.href,
               reason: reason,
               severity: "critical",
@@ -1747,7 +1974,7 @@ if (window.checkExtensionLoaded) {
               clientId: clientInfo.clientId,
               clientSuspicious: clientInfo.isMalicious,
               clientReason: clientInfo.reason,
-              phishingIndicators: criticalThreats.map(t => t.id),
+              phishingIndicators: criticalThreats.map((t) => t.id),
             });
 
             sendCippReport({
@@ -1757,39 +1984,45 @@ if (window.checkExtensionLoaded) {
               severity: "critical",
               legitimate: false,
               timestamp: new Date().toISOString(),
-              phishingIndicators: criticalThreats.map(t => t.id),
+              phishingIndicators: criticalThreats.map((t) => t.id),
             });
 
             return;
           }
-          
+
           // Handle non-critical threats (warnings)
-          const warningThreats = phishingResult.threats.filter(t => 
-            t.action === "warn" || (t.severity !== "critical")
+          const warningThreats = phishingResult.threats.filter(
+            (t) => t.action === "warn" || t.severity !== "critical"
           );
-          
+
           if (warningThreats.length > 0) {
-            const reason = `Suspicious phishing indicators detected: ${warningThreats.map(t => t.id).join(", ")}`;
-            
+            const reason = `Suspicious phishing indicators detected: ${warningThreats
+              .map((t) => t.id)
+              .join(", ")}`;
+
             // Store detection result
             lastDetectionResult = {
               verdict: "suspicious",
               isSuspicious: true,
               isBlocked: false,
-              threats: warningThreats.map(t => ({
+              threats: warningThreats.map((t) => ({
                 type: t.category,
                 description: t.description,
-                confidence: t.confidence
+                confidence: t.confidence,
               })),
               reason: reason,
               score: 50, // Medium suspicion score
               threshold: 85,
-              phishingIndicators: warningThreats.map(t => t.id),
+              phishingIndicators: warningThreats.map((t) => t.id),
             };
-            
-            logger.warn(`⚠️ SUSPICIOUS CONTENT: Showing warning for phishing indicators`);
-            showWarningBanner(`SUSPICIOUS CONTENT DETECTED: ${reason}`, { threats: warningThreats });
-            
+
+            logger.warn(
+              `⚠️ SUSPICIOUS CONTENT: Showing warning for phishing indicators`
+            );
+            showWarningBanner(`SUSPICIOUS CONTENT DETECTED: ${reason}`, {
+              threats: warningThreats,
+            });
+
             const redirectHostname = extractRedirectHostname(location.href);
             const clientInfo = await extractClientInfo(location.href);
 
@@ -1803,7 +2036,7 @@ if (window.checkExtensionLoaded) {
               clientId: clientInfo.clientId,
               clientSuspicious: clientInfo.isMalicious,
               clientReason: clientInfo.reason,
-              phishingIndicators: warningThreats.map(t => t.id),
+              phishingIndicators: warningThreats.map((t) => t.id),
             });
 
             sendCippReport({
@@ -1813,19 +2046,19 @@ if (window.checkExtensionLoaded) {
               severity: "medium",
               legitimate: false,
               timestamp: new Date().toISOString(),
-              phishingIndicators: warningThreats.map(t => t.id),
+              phishingIndicators: warningThreats.map((t) => t.id),
             });
-            
+
             // Continue monitoring for suspicious pages
             if (!isRerun) {
               setupDOMMonitoring();
               setupDynamicScriptMonitoring();
             }
-            
+
             return;
           }
         }
-        
+
         // No phishing indicators found - page appears legitimate
         logger.log(
           `✅ Page analysis result: Site appears legitimate (not Microsoft-related, no phishing indicators)`
@@ -1837,7 +2070,8 @@ if (window.checkExtensionLoaded) {
             type: "UPDATE_VERDICT_TO_SAFE",
             url: location.href,
             origin: location.origin,
-            reason: "Not a Microsoft login page and no phishing indicators detected",
+            reason:
+              "Not a Microsoft login page and no phishing indicators detected",
             analysis: true,
             legitimacyScore: 100,
             threshold: 85,
@@ -2060,47 +2294,58 @@ if (window.checkExtensionLoaded) {
 
       // Step 5: Run phishing indicators analysis
       const phishingResult = processPhishingIndicators();
-      
+
       // Step 6: No immediate blocking - run detection rules for legitimacy scoring
       const detectionResult = runDetectionRules();
 
       // Combine scores from detection rules and phishing indicators
       const combinedScore = detectionResult.score - phishingResult.score; // Subtract phishing score from legitimacy
       const allThreats = [...phishingResult.threats];
-      
+
       // Check for critical phishing indicators first
-      const criticalThreats = phishingResult.threats.filter(t => 
-        t.severity === "critical" && t.action === "block"
+      const criticalThreats = phishingResult.threats.filter(
+        (t) => t.severity === "critical" && t.action === "block"
       );
-      
+
       if (criticalThreats.length > 0) {
-        const reason = `Critical phishing indicators detected: ${criticalThreats.map(t => t.id).join(", ")}`;
-        
+        const reason = `Critical phishing indicators detected: ${criticalThreats
+          .map((t) => t.id)
+          .join(", ")}`;
+
         // Store detection result
         lastDetectionResult = {
           verdict: "blocked",
           isSuspicious: true,
           isBlocked: protectionEnabled,
-          threats: criticalThreats.map(t => ({
+          threats: criticalThreats.map((t) => ({
             type: t.category,
             description: t.description,
-            confidence: t.confidence
+            confidence: t.confidence,
           })),
           reason: reason,
           score: 0, // Critical threats get lowest score
           threshold: detectionResult.threshold,
-          phishingIndicators: criticalThreats.map(t => t.id),
+          phishingIndicators: criticalThreats.map((t) => t.id),
         };
 
         if (protectionEnabled) {
-          logger.error("🛡️ PROTECTION ACTIVE: Blocking page due to critical phishing indicators");
-          showBlockingOverlay(reason, { threats: criticalThreats, score: phishingResult.score });
+          logger.error(
+            "🛡️ PROTECTION ACTIVE: Blocking page due to critical phishing indicators"
+          );
+          showBlockingOverlay(reason, {
+            threats: criticalThreats,
+            score: phishingResult.score,
+          });
           disableFormSubmissions();
           disableCredentialInputs();
           stopDOMMonitoring();
         } else {
-          logger.warn("⚠️ PROTECTION DISABLED: Would block critical threats but showing warning banner instead");
-          showWarningBanner(`CRITICAL THREATS DETECTED: ${reason}`, { threats: criticalThreats });
+          logger.warn(
+            "⚠️ PROTECTION DISABLED: Would block critical threats but showing warning banner instead"
+          );
+          showWarningBanner(`CRITICAL THREATS DETECTED: ${reason}`, {
+            threats: criticalThreats,
+          });
           if (!isRerun) {
             setupDOMMonitoring();
             setupDynamicScriptMonitoring();
@@ -2111,7 +2356,9 @@ if (window.checkExtensionLoaded) {
         const clientInfo = await extractClientInfo(location.href);
 
         logProtectionEvent({
-          type: protectionEnabled ? "threat_blocked" : "threat_detected_no_action",
+          type: protectionEnabled
+            ? "threat_blocked"
+            : "threat_detected_no_action",
           url: location.href,
           reason: reason,
           severity: "critical",
@@ -2120,7 +2367,7 @@ if (window.checkExtensionLoaded) {
           clientId: clientInfo.clientId,
           clientSuspicious: clientInfo.isMalicious,
           clientReason: clientInfo.reason,
-          phishingIndicators: criticalThreats.map(t => t.id),
+          phishingIndicators: criticalThreats.map((t) => t.id),
         });
 
         sendCippReport({
@@ -2130,7 +2377,7 @@ if (window.checkExtensionLoaded) {
           severity: "critical",
           legitimate: false,
           timestamp: new Date().toISOString(),
-          phishingIndicators: criticalThreats.map(t => t.id),
+          phishingIndicators: criticalThreats.map((t) => t.id),
         });
 
         return;
@@ -2139,10 +2386,14 @@ if (window.checkExtensionLoaded) {
       // Determine action based on combined legitimacy score
       if (combinedScore < detectionResult.threshold) {
         const severity =
-          combinedScore < detectionResult.threshold * 0.3
-            ? "high"
-            : "medium";
-        const reason = `Low legitimacy score: ${combinedScore}/${detectionResult.threshold}${phishingResult.threats.length > 0 ? `, phishing indicators: ${phishingResult.threats.length}` : ''}`;
+          combinedScore < detectionResult.threshold * 0.3 ? "high" : "medium";
+        const reason = `Low legitimacy score: ${combinedScore}/${
+          detectionResult.threshold
+        }${
+          phishingResult.threats.length > 0
+            ? `, phishing indicators: ${phishingResult.threats.length}`
+            : ""
+        }`;
 
         // Store detection result
         lastDetectionResult = {
@@ -2154,17 +2405,17 @@ if (window.checkExtensionLoaded) {
               type: severity === "high" ? "high-threat" : "medium-threat",
               description: reason,
             },
-            ...allThreats.map(t => ({
+            ...allThreats.map((t) => ({
               type: t.category,
               description: t.description,
-              confidence: t.confidence
-            }))
+              confidence: t.confidence,
+            })),
           ],
           reason: reason,
           score: combinedScore,
           threshold: detectionResult.threshold,
           triggeredRules: detectionResult.triggeredRules,
-          phishingIndicators: phishingResult.threats.map(t => t.id),
+          phishingIndicators: phishingResult.threats.map((t) => t.id),
         };
 
         if (severity === "high") {
@@ -2414,7 +2665,9 @@ if (window.checkExtensionLoaded) {
               runProtection(true);
             }, 500);
           } else if (showingBanner) {
-            logger.debug("🚫 Ignoring DOM changes while banner is being displayed");
+            logger.debug(
+              "🚫 Ignoring DOM changes while banner is being displayed"
+            );
           } else if (newElementsAdded) {
             logger.debug(
               "🔍 DOM changes detected but not significant enough to re-run analysis"
@@ -2435,7 +2688,9 @@ if (window.checkExtensionLoaded) {
       // Fallback: Check periodically for content that might have loaded without triggering observer
       const checkInterval = setInterval(() => {
         if (showingBanner) {
-          logger.debug("🚫 Fallback timer skipping check while banner is displayed");
+          logger.debug(
+            "🚫 Fallback timer skipping check while banner is displayed"
+          );
           return;
         }
 
@@ -2604,7 +2859,7 @@ if (window.checkExtensionLoaded) {
     try {
       // Set flag to prevent DOM monitoring loops
       showingBanner = true;
-      
+
       const detailsText = analysisData?.score
         ? ` (Score: ${analysisData.score}/${analysisData.threshold})`
         : "";
@@ -2693,7 +2948,7 @@ if (window.checkExtensionLoaded) {
       document.body.style.marginTop = `${bannerHeight}px`;
 
       logger.log("Warning banner displayed");
-      
+
       // Clear flag after a short delay to allow banner to fully render
       setTimeout(() => {
         showingBanner = false;
