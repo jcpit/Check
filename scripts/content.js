@@ -1269,22 +1269,64 @@ if (window.checkExtensionLoaded) {
       const currentUrl = window.location.href;
       const hostname = new URL(currentUrl).hostname.toLowerCase();
       const majorTrustedDomains = [
-        'google.com', 'google.co', 'google.ca', 'google.co.uk',
-        'bing.com', 'yahoo.com', 'duckduckgo.com', 'ask.com', 'askjeeves.com',
-        'baidu.com', 'yandex.com', 'startpage.com', 'searx.org',
-        'amazon.com', 'amazon.co.uk', 'amazon.ca', 'amazon.de', 'amazon.fr',
-        'facebook.com', 'twitter.com', 'x.com', 'linkedin.com', 'instagram.com',
-        'github.com', 'gitlab.com', 'bitbucket.org', 'stackoverflow.com', 'stackexchange.com',
-        'reddit.com', 'wikipedia.org', 'youtube.com', 'youtu.be', 'vimeo.com',
-        'apple.com', 'microsoft.com', 'office.com', 'office365.com',
-        'dropbox.com', 'slack.com', 'zoom.us', 'teams.microsoft.com', 'discord.com',
-        'ebay.com', 'paypal.com', 'stripe.com', 'shopify.com',
-        'cnn.com', 'bbc.com', 'nytimes.com', 'theguardian.com', 'reuters.com'
+        "google.com",
+        "google.co",
+        "google.ca",
+        "google.co.uk",
+        "bing.com",
+        "yahoo.com",
+        "duckduckgo.com",
+        "ask.com",
+        "askjeeves.com",
+        "baidu.com",
+        "yandex.com",
+        "startpage.com",
+        "searx.org",
+        "amazon.com",
+        "amazon.co.uk",
+        "amazon.ca",
+        "amazon.de",
+        "amazon.fr",
+        "facebook.com",
+        "twitter.com",
+        "x.com",
+        "linkedin.com",
+        "instagram.com",
+        "github.com",
+        "gitlab.com",
+        "bitbucket.org",
+        "stackoverflow.com",
+        "stackexchange.com",
+        "reddit.com",
+        "wikipedia.org",
+        "youtube.com",
+        "youtu.be",
+        "vimeo.com",
+        "apple.com",
+        "microsoft.com",
+        "office.com",
+        "office365.com",
+        "dropbox.com",
+        "slack.com",
+        "zoom.us",
+        "teams.microsoft.com",
+        "discord.com",
+        "ebay.com",
+        "paypal.com",
+        "stripe.com",
+        "shopify.com",
+        "cnn.com",
+        "bbc.com",
+        "nytimes.com",
+        "theguardian.com",
+        "reuters.com",
       ];
 
       for (const domain of majorTrustedDomains) {
         if (hostname.includes(domain)) {
-          logger.log(`🚫 Major trusted domain detected (${domain}), skipping phishing indicators`);
+          logger.log(
+            `🚫 Major trusted domain detected (${domain}), skipping phishing indicators`
+          );
           return { threats: [], score: 0 };
         }
       }
@@ -1306,10 +1348,14 @@ if (window.checkExtensionLoaded) {
 
       // Performance protection: Check for extremely large content that could cause regex hangs
       const LARGE_CONTENT_THRESHOLD = 200000; // 200KB
-      const isLargeContent = pageSource.length > LARGE_CONTENT_THRESHOLD || pageText.length > LARGE_CONTENT_THRESHOLD;
-      
+      const isLargeContent =
+        pageSource.length > LARGE_CONTENT_THRESHOLD ||
+        pageText.length > LARGE_CONTENT_THRESHOLD;
+
       if (isLargeContent) {
-        logger.log(`⚠️ Large content detected (${pageSource.length} + ${pageText.length} chars), using performance mode`);
+        logger.log(
+          `⚠️ Large content detected (${pageSource.length} + ${pageText.length} chars), using performance mode`
+        );
       }
 
       logger.log(
@@ -1346,19 +1392,26 @@ if (window.checkExtensionLoaded) {
       for (const indicator of detectionRules.phishing_indicators) {
         // Check if we've exceeded the timeout
         if (Date.now() - startTime > PROCESSING_TIMEOUT) {
-          logger.warn(`⏱️ Processing timeout reached after ${Date.now() - startTime}ms, stopping at ${indicator.id}`);
+          logger.warn(
+            `⏱️ Processing timeout reached after ${
+              Date.now() - startTime
+            }ms, stopping at ${indicator.id}`
+          );
           break;
         }
 
         try {
           let matches = false;
           let matchDetails = "";
-          
+
           // Performance protection: For large content, use safer detection methods
           if (isLargeContent) {
             // For large content, only test against URL and use simple string matching for content
-            const pattern = new RegExp(indicator.pattern, indicator.flags || "i");
-            
+            const pattern = new RegExp(
+              indicator.pattern,
+              indicator.flags || "i"
+            );
+
             // Always test URL (safe)
             if (pattern.test(currentUrl)) {
               matches = true;
@@ -1369,8 +1422,10 @@ if (window.checkExtensionLoaded) {
               // Extract simple keywords from the pattern for string matching
               const simpleKeywords = extractSimpleKeywords(indicator.pattern);
               for (const keyword of simpleKeywords) {
-                if (pageSource.toLowerCase().includes(keyword.toLowerCase()) || 
-                    pageText.toLowerCase().includes(keyword.toLowerCase())) {
+                if (
+                  pageSource.toLowerCase().includes(keyword.toLowerCase()) ||
+                  pageText.toLowerCase().includes(keyword.toLowerCase())
+                ) {
                   matches = true;
                   matchDetails = "content (simple match)";
                   break;
@@ -1379,7 +1434,10 @@ if (window.checkExtensionLoaded) {
             }
           } else {
             // Normal processing for smaller content
-            const pattern = new RegExp(indicator.pattern, indicator.flags || "i");
+            const pattern = new RegExp(
+              indicator.pattern,
+              indicator.flags || "i"
+            );
 
             // Test against page source
             if (pattern.test(pageSource)) {
@@ -1519,7 +1577,11 @@ if (window.checkExtensionLoaded) {
 
       const processingTime = Date.now() - startTime;
       logger.log(
-        `Phishing indicators check: ${threats.length} threats found, score: ${totalScore} (${processingTime}ms, ${isLargeContent ? 'performance mode' : 'normal mode'})`
+        `Phishing indicators check: ${
+          threats.length
+        } threats found, score: ${totalScore} (${processingTime}ms, ${
+          isLargeContent ? "performance mode" : "normal mode"
+        })`
       );
       return { threats, score: totalScore };
     } catch (error) {
@@ -1533,21 +1595,31 @@ if (window.checkExtensionLoaded) {
    */
   function extractSimpleKeywords(pattern) {
     const keywords = [];
-    
+
     // Extract words that are 3+ characters and not regex operators
     const wordMatches = pattern.match(/[a-zA-Z]{3,}/g);
     if (wordMatches) {
       keywords.push(...wordMatches);
     }
-    
+
     // Extract specific common phishing terms
-    const commonTerms = ['microsoft', 'office', 'login', 'secure', 'verify', 'account', 'auth', 'oauth', 'security'];
+    const commonTerms = [
+      "microsoft",
+      "office",
+      "login",
+      "secure",
+      "verify",
+      "account",
+      "auth",
+      "oauth",
+      "security",
+    ];
     for (const term of commonTerms) {
       if (pattern.toLowerCase().includes(term)) {
         keywords.push(term);
       }
     }
-    
+
     // Remove duplicates and return unique keywords
     return [...new Set(keywords)];
   }
