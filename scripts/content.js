@@ -750,17 +750,58 @@ if (window.checkExtensionLoaded) {
         }
       }
 
-      // Very low threshold - if we detect ANY significant Microsoft elements, check for phishing
-      // This catches potential phishing attempts while avoiding processing on completely unrelated sites
-      const hasElements = totalWeight >= 2 || totalElements >= 1;
+      // Tightened threshold - require either:
+      // 1. At least one primary element (Microsoft-specific), OR
+      // 2. High weight secondary elements (weight >= 4), OR
+      // 3. Multiple secondary elements (3+) with decent weight (>= 3)
+      const primaryElements = allElements.filter(
+        (el) => el.category === "primary"
+      );
+      const foundPrimaryElements = [];
+
+      // Check if any primary elements were found
+      for (const element of primaryElements) {
+        try {
+          let found = false;
+
+          if (element.type === "source_content") {
+            const regex = new RegExp(element.pattern, "i");
+            found = regex.test(pageSource);
+          } else if (element.type === "css_pattern") {
+            found = element.patterns.some((pattern) => {
+              const regex = new RegExp(pattern, "i");
+              return regex.test(pageSource);
+            });
+          }
+
+          if (found) {
+            foundPrimaryElements.push(element.id);
+          }
+        } catch (error) {
+          // Skip invalid patterns
+        }
+      }
+
+      const hasElements =
+        foundPrimaryElements.length > 0 ||
+        totalWeight >= 4 ||
+        (totalElements >= 3 && totalWeight >= 3);
 
       if (hasElements) {
-        logger.log(
-          `🔍 Microsoft elements detected (Weight: ${totalWeight}, Elements: ${totalElements}) - will check phishing indicators`
-        );
+        if (foundPrimaryElements.length > 0) {
+          logger.log(
+            `🔍 Microsoft-specific elements detected (Primary: ${foundPrimaryElements.join(
+              ", "
+            )}) - will check phishing indicators`
+          );
+        } else {
+          logger.log(
+            `🔍 High-confidence Microsoft elements detected (Weight: ${totalWeight}, Elements: ${totalElements}) - will check phishing indicators`
+          );
+        }
       } else {
         logger.log(
-          `📄 No Microsoft elements detected - skipping phishing indicators for performance`
+          `📄 Insufficient Microsoft indicators (Weight: ${totalWeight}, Elements: ${totalElements}, Primary: ${foundPrimaryElements.length}) - skipping phishing indicators for performance`
         );
       }
 
