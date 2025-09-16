@@ -47,7 +47,10 @@
       "^https://[^/]*\\.salesforce\\.com(/.*)?$",
       "^https://[^/]*\\.servicenow\\.com(/.*)?$",
       "^https://[^/]*\\.wikipedia\\.org(/.*)?$",
-      "^https://[^/]*\\.hubspot\\.com\\/.*$"
+      "^https://[^/]*\\.hubspot\\.com\\/.*$",
+      "^https://[^/]*\\.cipp\\.app(/.*)?$",
+      "^https://[^/]*\\.cyberdrain\\.com(/.*)?$",
+      "^https://[^/]*\\.cow\\.tech(/.*)?$"
     ],
     "context_indicators": {
       "description": "Additional context that indicates legitimate discussion vs phishing",
@@ -78,7 +81,9 @@
         "oauth provider",
         "identity provider",
         "federated login",
-        "social login"
+        "social login",
+        "azure static web apps",
+        "/.auth/login/"
       ],
       "suspicious_contexts": [
         "verify now",
@@ -542,7 +547,7 @@
     },
     {
       "id": "phi_001_enhanced",
-      "pattern": "(?!.*(?:sign\\s+in\\s+with\\s+microsoft|continue\\s+with\\s+microsoft|login\\s+with\\s+microsoft|authenticate\\s+with\\s+microsoft|sso\\s+microsoft|oauth\\s+microsoft))(?:secure-?(?:microsoft|office|365|outlook)|microsoft-?(?:secure|login|auth)|office-?(?:secure|login|auth)|365-?(?:secure|login|auth))",
+      "pattern": "(?!.*(?:sign\\s+in\\s+with\\s+microsoft|continue\\s+with\\s+microsoft|login\\s+with\\s+microsoft|authenticate\\s+with\\s+microsoft|sso\\s+microsoft|oauth\\s+microsoft|\\.auth/login/|azure\\s+static\\s+web\\s+apps|easy\\s+auth))(?:secure-?(?:microsoft|office|365|outlook)|microsoft-?(?:secure|login|auth)|office-?(?:secure|login|auth)|365-?(?:secure|login|auth))",
       "flags": "i",
       "severity": "critical",
       "description": "Enhanced detection of domains mimicking Microsoft services with security/login keywords (excludes legitimate SSO)",
@@ -552,7 +557,7 @@
     },
     {
       "id": "phi_002",
-      "pattern": "(?!.*(?:sign\\s+in\\s+with\\s+microsoft|continue\\s+with\\s+microsoft|login\\s+with\\s+microsoft|sso|oauth|third.?party\\s+auth))(?:microsoft|office|365).*(?:security|verification|account).*(?:team|department|support)",
+      "pattern": "(?!.*(?:sign\\s+in\\s+with\\s+microsoft|continue\\s+with\\s+microsoft|login\\s+with\\s+microsoft|sso|oauth|third.?party\\s+auth|\\.auth/login/|azure\\s+static\\s+web\\s+apps|easy\\s+auth))(?:microsoft|office|365).*(?:security|verification|account).*(?:team|department|support)",
       "flags": "i",
       "severity": "high",
       "description": "Impersonation of Microsoft security team (excludes legitimate SSO and third-party auth)",
@@ -562,7 +567,7 @@
     },
     {
       "id": "phi_003",
-      "pattern": "(?!.*(?:sign\\s+in\\s+with\\s+microsoft|continue\\s+with\\s+microsoft|login\\s+with\\s+microsoft|authenticate\\s+with\\s+microsoft|sso|oauth|third.?party\\s+auth))(?:verify.*account|suspended.*365|update.*office|secure.*microsoft|account.*security|security.*verification|365.*suspended|office.*update|microsoft.*secure|login.*microsoft|microsoft.*login|microsoft.*authentication|authentication.*microsoft|office.*365.*login|365.*office.*login)",
+      "pattern": "(?!.*(?:sign\\s+in\\s+with\\s+microsoft|continue\\s+with\\s+microsoft|login\\s+with\\s+microsoft|authenticate\\s+with\\s+microsoft|sso|oauth|third.?party\\s+auth|\\.auth/login/|azure\\s+static\\s+web\\s+apps|easy\\s+auth))(?:verify.*account|suspended.*365|update.*office|secure.*microsoft|account.*security|security.*verification|365.*suspended|office.*update|microsoft.*secure|login.*microsoft|microsoft.*login|microsoft.*authentication|authentication.*microsoft|office.*365.*login|365.*office.*login)",
       "flags": "i",
       "severity": "high",
       "description": "Common Microsoft 365 phishing keywords and variations",
@@ -592,7 +597,7 @@
     },
     {
       "id": "phi_006",
-      "pattern": "(?=.*(?:microsoft|office|365))(?=.*(?:login|password|signin))(?=.*form.*action)(?!.*login\\.microsoftonline\\.com)",
+      "pattern": "(?=.*(?:microsoft|office|365))(?=.*(?:login|password|signin))(?=.*form.*action)(?!.*login\\.microsoftonline\\.com)(?!.*\\.auth/login/)(?!.*azure\\s+static\\s+web\\s+apps)(?!.*easy\\s+auth)",
       "flags": "i",
       "severity": "high",
       "description": "Microsoft-branded login form POST URL not pointing to login.microsoftonline.com",
@@ -700,7 +705,7 @@
       "severity": "high",
       "description": "Page contains suspicious JavaScript obfuscation patterns commonly used in malware",
       "action": "warn",
-      "category": "code_obfuscation", 
+      "category": "code_obfuscation",
       "confidence": 0.85,
       "context_required": [
         "(?:microsoft|office|365|login|password|credential)"
@@ -739,7 +744,7 @@
     },
     {
       "id": "phi_017_microsoft_brand_abuse",
-      "pattern": "(?!.*(?:sign\\s+in\\s+with\\s+microsoft|continue\\s+with\\s+microsoft|login\\s+with\\s+microsoft|authenticate\\s+with\\s+microsoft|sso|oauth|third.?party\\s+auth))(?:(?:microsoft|office|365).*(?:login|sign.*in|authentication)|(?:login|sign.*in|authentication).*(?:microsoft|office|365))",
+      "pattern": "(?!.*(?:sign\\s+in\\s+with\\s+microsoft|continue\\s+with\\s+microsoft|login\\s+with\\s+microsoft|authenticate\\s+with\\s+microsoft|sso|oauth|third.?party\\s+auth|\\.auth/login/|azure\\s+static\\s+web\\s+apps|easy\\s+auth))(?:(?:microsoft|office|365).*(?:login|sign.*in|authentication)|(?:login|sign.*in|authentication).*(?:microsoft|office|365))",
       "flags": "i",
       "severity": "high",
       "description": "Microsoft branding combined with login/authentication terms on non-Microsoft domain",
