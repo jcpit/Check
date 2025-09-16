@@ -893,22 +893,24 @@ class CheckOptions {
     // Exclusion System
     if (config.exclusion_system) {
       const exclusions = config.exclusion_system;
+      const domainPatterns = exclusions.domain_patterns || [];
+      const legitimateContexts = exclusions.context_indicators?.legitimate_contexts || [];
+      const legitimateSsoPatterns = exclusions.context_indicators?.legitimate_sso_patterns || [];
+      const suspiciousContexts = exclusions.context_indicators?.suspicious_contexts || [];
+      
       sections.push(`
         <div class="config-section">
           <div class="config-section-title">Exclusion System</div>
-          <div class="config-item"><strong>Excluded Domains:</strong> <span class="config-value">${
-            exclusions.domains ? exclusions.domains.length : 0
-          }</span></div>
-          <div class="config-item"><strong>Excluded Keywords:</strong> <span class="config-value">${
-            exclusions.keywords ? exclusions.keywords.length : 0
-          }</span></div>
-          <div class="config-item"><strong>Trusted Services:</strong> <span class="config-value">${
-            exclusions.trusted_services ? exclusions.trusted_services.length : 0
-          }</span></div>
-          ${exclusions.domains && exclusions.domains.length > 0 ? 
+          <div class="config-item"><strong>Domain Patterns:</strong> <span class="config-value">${domainPatterns.length}</span></div>
+          <div class="config-item"><strong>Legitimate Context Indicators:</strong> <span class="config-value">${legitimateContexts.length}</span></div>
+          <div class="config-item"><strong>Legitimate SSO Patterns:</strong> <span class="config-value">${legitimateSsoPatterns.length}</span></div>
+          <div class="config-item"><strong>Suspicious Context Indicators:</strong> <span class="config-value">${suspiciousContexts.length}</span></div>
+          <div class="config-item"><strong>Description:</strong> ${exclusions.description || 'No description'}</div>
+          ${domainPatterns.length > 0 ? 
             `<div class="config-subsection">
-              <div class="config-subsection-title">Excluded Domains:</div>
-              ${exclusions.domains.map(domain => `<div class="config-item">• ${domain}</div>`).join('')}
+              <div class="config-subsection-title">Sample Domain Patterns:</div>
+              ${domainPatterns.slice(0, 5).map(pattern => `<div class="config-item">• ${pattern}</div>`).join('')}
+              ${domainPatterns.length > 5 ? `<div class="config-item">... and ${domainPatterns.length - 5} more</div>` : ''}
             </div>` : ''}
         </div>
       `);
@@ -1027,9 +1029,10 @@ class CheckOptions {
 
     let totalExclusions = 0;
     if (config.exclusion_system) {
-      if (config.exclusion_system.domains) totalExclusions += config.exclusion_system.domains.length;
-      if (config.exclusion_system.keywords) totalExclusions += config.exclusion_system.keywords.length;
-      if (config.exclusion_system.trusted_services) totalExclusions += config.exclusion_system.trusted_services.length;
+      if (config.exclusion_system.domain_patterns) totalExclusions += config.exclusion_system.domain_patterns.length;
+      if (config.exclusion_system.context_indicators?.legitimate_contexts) totalExclusions += config.exclusion_system.context_indicators.legitimate_contexts.length;
+      if (config.exclusion_system.context_indicators?.legitimate_sso_patterns) totalExclusions += config.exclusion_system.context_indicators.legitimate_sso_patterns.length;
+      if (config.exclusion_system.context_indicators?.suspicious_contexts) totalExclusions += config.exclusion_system.context_indicators.suspicious_contexts.length;
     }
 
     let criticalRules = 0;
