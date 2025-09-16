@@ -344,7 +344,7 @@ if (window.checkExtensionLoaded) {
   /**
    * Debug function to test phishing indicators - call from console
    */
-  function testPhishingIndicators() {
+  async function testPhishingIndicators() {
     console.log("🔍 TESTING PHISHING INDICATORS");
 
     if (!detectionRules) {
@@ -443,8 +443,12 @@ if (window.checkExtensionLoaded) {
 
     // Also test the actual function
     console.log("\n🔧 Testing processPhishingIndicators() function...");
-    const result = processPhishingIndicators();
-    console.log("Function result:", result);
+    try {
+      const result = await processPhishingIndicators();
+      console.log("Function result:", result);
+    } catch (error) {
+      console.error("Error running processPhishingIndicators:", error);
+    }
 
     return {
       totalIndicators: detectionRules.phishing_indicators.length,
@@ -456,7 +460,7 @@ if (window.checkExtensionLoaded) {
   /**
    * Debug function to show current detection rules status
    */
-  function debugDetectionRules() {
+  async function debugDetectionRules() {
     console.log("🔍 DETECTION RULES DEBUG");
     console.log("Detection rules loaded:", !!detectionRules);
 
@@ -497,9 +501,9 @@ if (window.checkExtensionLoaded) {
   /**
    * Manual trigger function for testing
    */
-  window.manualPhishingCheck = function () {
+  window.manualPhishingCheck = async function () {
     console.log("🚨 MANUAL PHISHING CHECK TRIGGERED");
-    const result = processPhishingIndicators();
+    const result = await processPhishingIndicators();
     console.log("Manual check result:", result);
 
     if (result.threats.length > 0) {
@@ -576,87 +580,6 @@ if (window.checkExtensionLoaded) {
    * Manual test function for phishing indicators
    * Call this from browser console: testPhishingIndicators()
    */
-  function testPhishingIndicators() {
-    console.log("🔍 MANUAL PHISHING INDICATORS TESTING");
-    console.log("=".repeat(50));
-
-    if (!detectionRules?.phishing_indicators) {
-      console.error("❌ No phishing indicators loaded!");
-      console.log("Detection rules:", detectionRules);
-      return;
-    }
-
-    console.log(
-      `✅ Found ${detectionRules.phishing_indicators.length} phishing indicators`
-    );
-
-    const pageSource = document.documentElement.outerHTML;
-    const pageText = document.body?.textContent || "";
-    const currentUrl = window.location.href;
-
-    console.log(`📄 Page source length: ${pageSource.length} chars`);
-    console.log(`📝 Page text length: ${pageText.length} chars`);
-    console.log(`🌐 Current URL: ${currentUrl}`);
-    console.log("");
-
-    // Test each phishing indicator
-    detectionRules.phishing_indicators.forEach((indicator, index) => {
-      console.log(
-        `Testing ${index + 1}/${detectionRules.phishing_indicators.length}: ${
-          indicator.id
-        }`
-      );
-      console.log(`  Pattern: ${indicator.pattern}`);
-      console.log(`  Flags: ${indicator.flags || "i"}`);
-
-      try {
-        const pattern = new RegExp(indicator.pattern, indicator.flags || "i");
-
-        let matched = false;
-        let matchLocation = "";
-
-        if (pattern.test(pageSource)) {
-          matched = true;
-          matchLocation = "page source";
-        } else if (pattern.test(pageText)) {
-          matched = true;
-          matchLocation = "page text";
-        } else if (pattern.test(currentUrl)) {
-          matched = true;
-          matchLocation = "URL";
-        }
-
-        // Test additional_checks
-        if (!matched && indicator.additional_checks) {
-          for (const check of indicator.additional_checks) {
-            if (pageSource.includes(check) || pageText.includes(check)) {
-              matched = true;
-              matchLocation = `additional check: ${check}`;
-              break;
-            }
-          }
-        }
-
-        if (matched) {
-          console.log(`  ✅ MATCH found in: ${matchLocation}`);
-          console.log(
-            `  🚨 Severity: ${indicator.severity}, Action: ${indicator.action}`
-          );
-        } else {
-          console.log(`  ❌ No match`);
-        }
-      } catch (error) {
-        console.log(`  💥 Pattern error: ${error.message}`);
-      }
-
-      console.log("");
-    });
-
-    // Run the actual function
-    console.log("Running processPhishingIndicators()...");
-    const result = processPhishingIndicators();
-    console.log("Result:", result);
-  }
 
   // Make it globally available for testing
   window.testPhishingIndicators = testPhishingIndicators;
@@ -664,7 +587,7 @@ if (window.checkExtensionLoaded) {
   /**
    * Global function to analyze current page - call from browser console: analyzeCurrentPage()
    */
-  window.analyzeCurrentPage = function () {
+  window.analyzeCurrentPage = async function () {
     console.log("🔍 MANUAL PAGE ANALYSIS");
     console.log("=".repeat(50));
 
@@ -689,7 +612,7 @@ if (window.checkExtensionLoaded) {
     console.log("Detected as M365 Login:", isMSLogon);
 
     // Run phishing indicators
-    const phishingResult = processPhishingIndicators();
+    const phishingResult = await processPhishingIndicators();
     console.log("Phishing Analysis:", {
       threatsFound: phishingResult.threats.length,
       totalScore: phishingResult.score,
@@ -770,6 +693,83 @@ if (window.checkExtensionLoaded) {
       legitimacyScore: detectionResult.score,
     };
   };
+
+  /**
+   * Check if page has ANY Microsoft-related elements (lower threshold than full detection)
+   * Used to determine if phishing indicators should be checked
+   */
+  function hasMicrosoftElements() {
+    try {
+      if (!detectionRules?.m365_detection_requirements) {
+        return false;
+      }
+
+      const requirements = detectionRules.m365_detection_requirements;
+      const pageSource = document.documentElement.outerHTML;
+      const pageText = document.body?.textContent || "";
+
+      // Lower threshold - just need ANY Microsoft-related elements
+      let totalWeight = 0;
+      let totalElements = 0;
+
+      const allElements = [
+        ...(requirements.primary_elements || []),
+        ...(requirements.secondary_elements || []),
+      ];
+
+      for (const element of allElements) {
+        try {
+          let found = false;
+
+          if (element.type === "source_content") {
+            const regex = new RegExp(element.pattern, "i");
+            found = regex.test(pageSource);
+          } else if (element.type === "css_pattern") {
+            found = element.patterns.some((pattern) => {
+              const regex = new RegExp(pattern, "i");
+              return regex.test(pageSource);
+            });
+          } else if (element.type === "url_pattern") {
+            found = element.patterns.some((pattern) => {
+              const regex = new RegExp(pattern, "i");
+              return regex.test(window.location.href);
+            });
+          } else if (element.type === "text_content") {
+            found = element.patterns.some((pattern) => {
+              const regex = new RegExp(pattern, "i");
+              return regex.test(pageText);
+            });
+          }
+
+          if (found) {
+            totalWeight += element.weight || 1;
+            totalElements++;
+          }
+        } catch (error) {
+          logger.warn(`Error checking element ${element.category}:`, error);
+        }
+      }
+
+      // Very low threshold - if we detect ANY significant Microsoft elements, check for phishing
+      // This catches potential phishing attempts while avoiding processing on completely unrelated sites
+      const hasElements = totalWeight >= 2 || totalElements >= 1;
+
+      if (hasElements) {
+        logger.log(
+          `🔍 Microsoft elements detected (Weight: ${totalWeight}, Elements: ${totalElements}) - will check phishing indicators`
+        );
+      } else {
+        logger.log(
+          `📄 No Microsoft elements detected - skipping phishing indicators for performance`
+        );
+      }
+
+      return hasElements;
+    } catch (error) {
+      logger.error("Error in hasMicrosoftElements:", error.message);
+      return true; // Default to checking on error to be safe
+    }
+  }
 
   /**
    * Check if page is Microsoft 365 logon page using categorized detection
@@ -1126,7 +1126,9 @@ if (window.checkExtensionLoaded) {
       // Override eval to detect dynamic script execution
       const originalEval = window.eval;
       window.eval = function (code) {
-        scanDynamicScript(code, "eval");
+        scanDynamicScript(code, "eval").catch((error) => {
+          logger.warn("Dynamic script scan error (eval):", error);
+        });
         return originalEval.call(this, code);
       };
 
@@ -1134,7 +1136,9 @@ if (window.checkExtensionLoaded) {
       const originalFunction = window.Function;
       window.Function = function () {
         const code = arguments[arguments.length - 1];
-        scanDynamicScript(code, "Function");
+        scanDynamicScript(code, "Function").catch((error) => {
+          logger.warn("Dynamic script scan error (Function):", error);
+        });
         return originalFunction.apply(this, arguments);
       };
 
@@ -1142,7 +1146,9 @@ if (window.checkExtensionLoaded) {
       const originalSetTimeout = window.setTimeout;
       window.setTimeout = function (code, delay) {
         if (typeof code === "string") {
-          scanDynamicScript(code, "setTimeout");
+          scanDynamicScript(code, "setTimeout").catch((error) => {
+            logger.warn("Dynamic script scan error (setTimeout):", error);
+          });
         }
         return originalSetTimeout.call(this, code, delay);
       };
@@ -1151,7 +1157,9 @@ if (window.checkExtensionLoaded) {
       const originalSetInterval = window.setInterval;
       window.setInterval = function (code, delay) {
         if (typeof code === "string") {
-          scanDynamicScript(code, "setInterval");
+          scanDynamicScript(code, "setInterval").catch((error) => {
+            logger.warn("Dynamic script scan error (setInterval):", error);
+          });
         }
         return originalSetInterval.call(this, code, delay);
       };
@@ -1165,12 +1173,12 @@ if (window.checkExtensionLoaded) {
   /**
    * Scan dynamically loaded script content using phishing indicators
    */
-  function scanDynamicScript(code, source) {
+  async function scanDynamicScript(code, source) {
     try {
       if (!code || typeof code !== "string") return;
 
       // Use phishing indicators to scan dynamic content
-      const result = processPhishingIndicators();
+      const result = await processPhishingIndicators();
       const dynamicResult = {
         threats: [],
         score: 0,
@@ -1263,7 +1271,7 @@ if (window.checkExtensionLoaded) {
   /**
    * Process phishing indicators from detection rules
    */
-  function processPhishingIndicators() {
+  async function processPhishingIndicators() {
     try {
       // Performance protection: Early exit for major trusted domains to prevent false positives
       const currentUrl = window.location.href;
@@ -1346,36 +1354,21 @@ if (window.checkExtensionLoaded) {
       const pageSource = document.documentElement.outerHTML;
       const pageText = document.body?.textContent || "";
 
-      // Performance protection: Check for extremely large content that could cause regex hangs
-      const LARGE_CONTENT_THRESHOLD = 200000; // 200KB
-      const isLargeContent =
-        pageSource.length > LARGE_CONTENT_THRESHOLD ||
-        pageText.length > LARGE_CONTENT_THRESHOLD;
-
-      if (isLargeContent) {
-        logger.log(
-          `⚠️ Large content detected (${pageSource.length} + ${pageText.length} chars), using performance mode`
-        );
-      }
-
       logger.log(
         `🔍 Testing ${detectionRules.phishing_indicators.length} phishing indicators against:`
       );
       logger.log(`   - Page source length: ${pageSource.length} chars`);
       logger.log(`   - Page text length: ${pageText.length} chars`);
       logger.log(`   - Current URL: ${currentUrl}`);
-      logger.log(`   - Large content mode: ${isLargeContent}`);
 
-      // Check if current URL matches exclusion patterns
-      const isExcludedDomain = checkDomainExclusion(currentUrl);
+      // Check for legitimate context indicators
       const legitimateContext = checkLegitimateContext(pageText, pageSource);
 
-      if (isExcludedDomain && legitimateContext) {
-        logger.log(`🚫 Domain excluded from phishing detection: ${currentUrl}`);
+      // For pages with legitimate context, log but continue with detection
+      if (legitimateContext) {
         logger.log(
-          `📋 Legitimate context detected, skipping phishing indicators`
+          `📋 Legitimate context detected - continuing with phishing detection`
         );
-        return { threats: [], score: 0 };
       }
 
       // Log first few indicators for debugging
@@ -1387,7 +1380,8 @@ if (window.checkExtensionLoaded) {
 
       // Performance protection: Add timeout mechanism
       const startTime = Date.now();
-      const PROCESSING_TIMEOUT = isLargeContent ? 1000 : 3000; // Shorter timeout for large content
+      const PROCESSING_TIMEOUT = 5000; // Standard timeout
+      let processedCount = 0;
 
       for (const indicator of detectionRules.phishing_indicators) {
         // Check if we've exceeded the timeout
@@ -1400,60 +1394,33 @@ if (window.checkExtensionLoaded) {
           break;
         }
 
+        // Yield control to main thread every 5 indicators
+        if (processedCount % 5 === 0 && processedCount > 0) {
+          await new Promise((resolve) => setTimeout(resolve, 0)); // Yield to main thread
+        }
+        processedCount++;
+
         try {
           let matches = false;
           let matchDetails = "";
 
-          // Performance protection: For large content, use safer detection methods
-          if (isLargeContent) {
-            // For large content, only test against URL and use simple string matching for content
-            const pattern = new RegExp(
-              indicator.pattern,
-              indicator.flags || "i"
-            );
+          // Standard processing
+          const pattern = new RegExp(indicator.pattern, indicator.flags || "i");
 
-            // Always test URL (safe)
-            if (pattern.test(currentUrl)) {
-              matches = true;
-              matchDetails = "URL";
-            }
-            // For large content, use simple string contains instead of regex on content
-            else {
-              // Extract simple keywords from the pattern for string matching
-              const simpleKeywords = extractSimpleKeywords(indicator.pattern);
-              for (const keyword of simpleKeywords) {
-                if (
-                  pageSource.toLowerCase().includes(keyword.toLowerCase()) ||
-                  pageText.toLowerCase().includes(keyword.toLowerCase())
-                ) {
-                  matches = true;
-                  matchDetails = "content (simple match)";
-                  break;
-                }
-              }
-            }
-          } else {
-            // Normal processing for smaller content
-            const pattern = new RegExp(
-              indicator.pattern,
-              indicator.flags || "i"
-            );
-
-            // Test against page source
-            if (pattern.test(pageSource)) {
-              matches = true;
-              matchDetails = "page source";
-            }
-            // Test against visible text
-            else if (pattern.test(pageText)) {
-              matches = true;
-              matchDetails = "page text";
-            }
-            // Test against URL
-            else if (pattern.test(currentUrl)) {
-              matches = true;
-              matchDetails = "URL";
-            }
+          // Test against page source
+          if (pattern.test(pageSource)) {
+            matches = true;
+            matchDetails = "page source";
+          }
+          // Test against visible text
+          else if (pattern.test(pageText)) {
+            matches = true;
+            matchDetails = "page text";
+          }
+          // Test against URL
+          else if (pattern.test(currentUrl)) {
+            matches = true;
+            matchDetails = "URL";
           }
 
           // Special handling for additional_checks (phi_014, phi_015)
@@ -1488,31 +1455,6 @@ if (window.checkExtensionLoaded) {
                 `🚫 ${indicator.id} excluded - required context not found`
               );
               matches = false;
-            }
-          }
-
-          // Apply centralized exclusion logic for social engineering patterns
-          if (matches && isExcludedDomain) {
-            if (
-              indicator.category === "social_engineering" ||
-              indicator.category === "brand_impersonation"
-            ) {
-              // Check if this is legitimate discussion vs actual phishing
-              const hasSuspiciousContext = checkSuspiciousContext(pageText);
-              const hasCredentialForm = document.querySelector(
-                'input[type="password"], input[type="email"]'
-              );
-
-              if (
-                legitimateContext &&
-                !hasSuspiciousContext &&
-                !hasCredentialForm
-              ) {
-                logger.debug(
-                  `🚫 ${indicator.id} excluded - legitimate discussion context`
-                );
-                matches = false;
-              }
             }
           }
 
@@ -1577,51 +1519,13 @@ if (window.checkExtensionLoaded) {
 
       const processingTime = Date.now() - startTime;
       logger.log(
-        `Phishing indicators check: ${
-          threats.length
-        } threats found, score: ${totalScore} (${processingTime}ms, ${
-          isLargeContent ? "performance mode" : "normal mode"
-        })`
+        `Phishing indicators check: ${threats.length} threats found, score: ${totalScore} (${processingTime}ms)`
       );
       return { threats, score: totalScore };
     } catch (error) {
       logger.error("Error processing phishing indicators:", error.message);
       return { threats: [], score: 0 };
     }
-  }
-
-  /**
-   * Extract simple keywords from regex patterns for performance-safe matching
-   */
-  function extractSimpleKeywords(pattern) {
-    const keywords = [];
-
-    // Extract words that are 3+ characters and not regex operators
-    const wordMatches = pattern.match(/[a-zA-Z]{3,}/g);
-    if (wordMatches) {
-      keywords.push(...wordMatches);
-    }
-
-    // Extract specific common phishing terms
-    const commonTerms = [
-      "microsoft",
-      "office",
-      "login",
-      "secure",
-      "verify",
-      "account",
-      "auth",
-      "oauth",
-      "security",
-    ];
-    for (const term of commonTerms) {
-      if (pattern.toLowerCase().includes(term)) {
-        keywords.push(term);
-      }
-    }
-
-    // Remove duplicates and return unique keywords
-    return [...new Set(keywords)];
   }
 
   /**
@@ -1720,6 +1624,34 @@ if (window.checkExtensionLoaded) {
               }
               break;
 
+            case "form_action_validation":
+              const validationForms = document.querySelectorAll(
+                rule.condition?.form_selector || "form"
+              );
+              for (const form of validationForms) {
+                const action = form.action || "";
+                const hasPasswordField = rule.condition?.has_password_field
+                  ? form.querySelector('input[type="password"]')
+                  : true;
+
+                if (
+                  hasPasswordField &&
+                  rule.condition?.action_must_not_contain
+                ) {
+                  // Rule triggers if form action does NOT contain the required domain
+                  if (
+                    !action.includes(rule.condition.action_must_not_contain)
+                  ) {
+                    ruleTriggered = true;
+                    logger.debug(
+                      `Form action validation failed: action="${action}" does not contain "${rule.condition.action_must_not_contain}"`
+                    );
+                    break;
+                  }
+                }
+              }
+              break;
+
             case "dom":
               if (rule.condition?.selectors) {
                 ruleTriggered = rule.condition.selectors.some((selector) => {
@@ -1774,6 +1706,105 @@ if (window.checkExtensionLoaded) {
                   // No referrer header - this could be suspicious for redirected login flows
                   ruleTriggered = false;
                   logger.debug("Referrer validation: No referrer header found");
+                }
+              }
+              break;
+
+            case "source_content":
+              if (rule.condition?.pattern) {
+                ruleTriggered = pageHTML.includes(rule.condition.pattern);
+              }
+              break;
+
+            case "css_pattern":
+              if (rule.condition?.pattern) {
+                ruleTriggered = pageHTML.includes(rule.condition.pattern);
+              }
+              break;
+
+            case "resource_validation":
+              const resourceValidationNodes = document.querySelectorAll(
+                "[src], link[rel='stylesheet'][href]"
+              );
+              for (const node of resourceValidationNodes) {
+                const url = node.src || node.href;
+                if (!url) continue;
+
+                if (
+                  rule.condition?.resource_pattern &&
+                  url.includes(rule.condition.resource_pattern)
+                ) {
+                  if (
+                    rule.condition?.required_origin &&
+                    !url.startsWith(rule.condition.required_origin)
+                  ) {
+                    if (rule.condition?.block_if_different_origin) {
+                      ruleTriggered = true;
+                      logger.debug(
+                        `Resource validation failed: ${url} does not start with ${rule.condition.required_origin}`
+                      );
+                      break;
+                    }
+                  }
+                }
+              }
+              break;
+
+            case "css_spoofing_validation":
+              if (
+                rule.condition?.css_indicators &&
+                rule.condition?.minimum_css_matches
+              ) {
+                let cssMatches = 0;
+                for (const indicator of rule.condition.css_indicators) {
+                  try {
+                    const regex = new RegExp(indicator, "i");
+                    if (regex.test(pageHTML)) {
+                      cssMatches++;
+                    }
+                  } catch (e) {
+                    // Skip invalid regex patterns
+                  }
+                }
+
+                const hasCredentialFields = rule.condition
+                  ?.has_credential_fields
+                  ? document.querySelector(
+                      'input[type="password"], input[name*="password"], input[name*="pass"]'
+                    )
+                  : true;
+
+                if (
+                  cssMatches >= rule.condition.minimum_css_matches &&
+                  hasCredentialFields
+                ) {
+                  const forms = document.querySelectorAll("form");
+                  for (const form of forms) {
+                    const action = form.action || "";
+                    if (
+                      rule.condition?.form_action_must_not_contain &&
+                      !action.includes(
+                        rule.condition.form_action_must_not_contain
+                      )
+                    ) {
+                      ruleTriggered = true;
+                      logger.debug(
+                        `CSS spoofing detected: ${cssMatches} CSS matches, form action "${action}" suspicious`
+                      );
+                      break;
+                    }
+                  }
+                }
+              }
+              break;
+
+            case "url_validation":
+              if (rule.condition?.pattern) {
+                try {
+                  const regex = new RegExp(rule.condition.pattern, "i");
+                  ruleTriggered = regex.test(location.href);
+                } catch (e) {
+                  // Skip invalid regex patterns
                 }
               }
               break;
@@ -1879,7 +1910,11 @@ if (window.checkExtensionLoaded) {
       );
 
       // Clear existing security UI when re-running protection due to DOM changes
-      if (isRerun) {
+      // ONLY clear if we're not currently showing a warning banner, or if this is the initial run
+      if (isRerun && !document.getElementById("ms365-warning-banner")) {
+        clearSecurityUI();
+      } else if (!isRerun) {
+        // Always clear on initial run to start fresh
         clearSecurityUI();
       }
 
@@ -2107,6 +2142,24 @@ if (window.checkExtensionLoaded) {
         return; // EXIT - legitimate Microsoft domain, no scanning needed
       }
 
+      // Step 3: Early domain exclusion check for trusted domains
+      // Check this before expensive Microsoft element detection
+      const isExcludedDomain = checkDomainExclusion(window.location.href);
+      if (isExcludedDomain) {
+        logger.log(
+          `🚫 Domain excluded from phishing detection: ${window.location.href}`
+        );
+        logger.log(`📋 Trusted domain - skipping all analysis for performance`);
+
+        // Set up monitoring for dynamic content but don't run expensive checks
+        if (!isRerun) {
+          setupDOMMonitoring();
+          setupDynamicScriptMonitoring();
+        }
+
+        return; // EXIT - Trusted domain, no analysis needed
+      }
+
       logger.log("❌ NON-TRUSTED ORIGIN - Continuing analysis");
       logger.debug(`Origin "${currentOrigin}" not in trusted login patterns`);
       logger.debug(
@@ -2118,7 +2171,7 @@ if (window.checkExtensionLoaded) {
         }`
       );
 
-      // Step 3: Pre-check domain for obvious non-threats only
+      // Step 4: Pre-check domain for obvious non-threats only
       // NOTE: We removed the restrictive domain check that was blocking training platforms
       // like KnowBe4. Phishing simulations use legitimate domains but copy Microsoft UI.
       // Let content-based detection handle all cases.
@@ -2130,16 +2183,33 @@ if (window.checkExtensionLoaded) {
         `Analyzing domain "${currentDomain}" - proceeding with content-based detection`
       );
 
-      // Step 4: Check if page is an MS logon page (using rule file requirements)
+      // Step 5: Check if page is an MS logon page (using rule file requirements)
       const isMSLogon = isMicrosoftLogonPage();
       if (!isMSLogon) {
+        // Check if page has ANY Microsoft-related elements before running expensive phishing indicators
+        const hasMSElements = hasMicrosoftElements();
+
+        if (!hasMSElements) {
+          logger.log(
+            "✅ Page analysis result: Site appears legitimate (not Microsoft-related, no phishing indicators checked)"
+          );
+
+          // Set up monitoring for dynamic content but don't run expensive checks
+          if (!isRerun) {
+            setupDOMMonitoring();
+            setupDynamicScriptMonitoring();
+          }
+
+          return; // EXIT - No Microsoft elements detected, no need for phishing checks
+        }
+
         logger.log(
-          "❌ NOT DETECTED as Microsoft logon page - checking for phishing indicators anyway"
+          "⚠️ Microsoft elements detected but not full login page - checking for phishing indicators"
         );
 
-        // Even if not detected as Microsoft login page, check for phishing indicators
-        // This catches attempts that don't perfectly mimic Microsoft but still contain threats
-        const phishingResult = processPhishingIndicators();
+        // Only run phishing indicators when Microsoft elements are present
+        // This catches attempts that mimic Microsoft but still contain threats
+        const phishingResult = await processPhishingIndicators();
 
         if (phishingResult.threats.length > 0) {
           logger.warn(
@@ -2336,6 +2406,18 @@ if (window.checkExtensionLoaded) {
         "🔍 Beginning security analysis for potential phishing attempt..."
       );
 
+      // Show early warning banner immediately while analysis runs
+      if (!protectionEnabled) {
+        showWarningBanner(
+          "Analyzing potentially suspicious Microsoft login page - please wait for security analysis to complete",
+          {
+            severity: "medium",
+            score: null, // No score yet
+            threshold: null,
+          }
+        );
+      }
+
       // Extract client info and redirect hostname for analysis
       const redirectHostname = extractRedirectHostname(location.href);
       const clientInfo = await extractClientInfo(location.href);
@@ -2529,17 +2611,132 @@ if (window.checkExtensionLoaded) {
         return;
       }
 
-      // Step 5: Run phishing indicators analysis
-      const phishingResult = processPhishingIndicators();
-
-      // Step 6: No immediate blocking - run detection rules for legitimacy scoring
+      // Step 5: Run detection rules for legitimacy scoring
       const detectionResult = runDetectionRules();
+
+      // Step 6: Check for critical blocking rules first
+      const criticalBlockingRules =
+        detectionResult.triggeredRules?.filter(
+          (rule) =>
+            rule.id === "form_post_not_microsoft" ||
+            rule.id === "customcss_wrong_origin" ||
+            rule.id === "css_spoofing_detection"
+        ) || [];
+
+      if (criticalBlockingRules.length > 0) {
+        // Critical detection rule triggered - block immediately without phishing indicators
+        const reason = `Critical detection rule triggered: ${criticalBlockingRules
+          .map((r) => r.id)
+          .join(", ")}`;
+
+        logger.error(
+          `🛡️ CRITICAL DETECTION RULE: ${reason} - blocking immediately`
+        );
+
+        // Store detection result
+        lastDetectionResult = {
+          verdict: "blocked",
+          isSuspicious: true,
+          isBlocked: protectionEnabled,
+          threats: criticalBlockingRules.map((rule) => ({
+            type: "critical-detection-rule",
+            description: rule.description,
+            confidence: 1.0,
+          })),
+          reason: reason,
+          score: 0, // Critical threats get lowest score
+          threshold: detectionResult.threshold,
+          triggeredRules: detectionResult.triggeredRules,
+          phishingIndicators: [], // Skipped for performance
+          skipReason: "critical-detection-rule",
+        };
+
+        if (protectionEnabled) {
+          logger.error(
+            "🛡️ PROTECTION ACTIVE: Blocking due to critical detection rule"
+          );
+          showBlockingOverlay(reason, {
+            threats: criticalBlockingRules.map((rule) => ({
+              description: rule.description,
+              severity: "critical",
+            })),
+            score: 0,
+          });
+          disableFormSubmissions();
+          disableCredentialInputs();
+          stopDOMMonitoring();
+        } else {
+          logger.warn(
+            "⚠️ PROTECTION DISABLED: Would block critical detection rule but showing warning banner instead"
+          );
+          showWarningBanner(`CRITICAL THREAT: ${reason}`, {
+            threats: criticalBlockingRules.map((rule) => ({
+              description: rule.description,
+              severity: "critical",
+            })),
+          });
+        }
+
+        const redirectHostname = extractRedirectHostname(location.href);
+        const clientInfo = await extractClientInfo(location.href);
+
+        logProtectionEvent({
+          type: protectionEnabled
+            ? "threat_blocked"
+            : "threat_detected_no_action",
+          url: location.href,
+          reason: reason,
+          severity: "critical",
+          protectionEnabled: protectionEnabled,
+          redirectTo: redirectHostname,
+          clientId: clientInfo.clientId,
+          clientSuspicious: clientInfo.isMalicious,
+          clientReason: clientInfo.reason,
+          skipReason: "critical-detection-rule",
+        });
+
+        sendCippReport({
+          type: "critical_detection_blocked",
+          url: location.href,
+          reason: reason,
+          severity: "critical",
+          legitimate: false,
+          timestamp: new Date().toISOString(),
+          skipReason: "critical-detection-rule",
+        });
+
+        return;
+      }
+
+      // Step 7: Check if we can skip phishing indicators based on detection rules confidence
+      let phishingResult = { threats: [], score: 0 };
+      let skipPhishingIndicators = false;
+
+      if (detectionResult.score >= detectionResult.threshold) {
+        // High confidence legitimate page - skip phishing indicators entirely
+        logger.log(
+          `🟢 High confidence legitimate page (score: ${detectionResult.score} >= ${detectionResult.threshold}) - skipping phishing indicators for performance`
+        );
+        skipPhishingIndicators = true;
+      } else if (detectionResult.score <= 25) {
+        // Very low legitimacy score - likely phishing, skip indicators and handle as suspicious
+        logger.warn(
+          `🔴 Very low legitimacy score (${detectionResult.score} <= 25) - treating as suspicious without phishing indicators`
+        );
+        skipPhishingIndicators = true;
+      } else {
+        // Uncertain legitimacy - run phishing indicators analysis
+        logger.log(
+          `🟡 Uncertain legitimacy (score: ${detectionResult.score}) - running phishing indicators analysis`
+        );
+        phishingResult = await processPhishingIndicators();
+      }
 
       // Combine scores from detection rules and phishing indicators
       const combinedScore = detectionResult.score - phishingResult.score; // Subtract phishing score from legitimacy
       const allThreats = [...phishingResult.threats];
 
-      // Check for critical phishing indicators first
+      // Check for critical phishing indicators first (only if we ran them)
       const criticalThreats = phishingResult.threats.filter(
         (t) => t.severity === "critical" && t.action === "block"
       );
@@ -2618,6 +2815,89 @@ if (window.checkExtensionLoaded) {
         });
 
         return;
+      }
+
+      // Handle cases where we skipped phishing indicators
+      if (skipPhishingIndicators) {
+        if (detectionResult.score <= 25) {
+          // Very low detection score - treat as high threat
+          const reason = `Very low legitimacy score (${detectionResult.score} <= 25) indicates likely phishing attempt`;
+
+          lastDetectionResult = {
+            verdict: "blocked",
+            isSuspicious: true,
+            isBlocked: protectionEnabled,
+            threats: [
+              {
+                type: "detection-rules-low-score",
+                description: reason,
+                confidence: 0.9,
+              },
+            ],
+            reason: reason,
+            score: detectionResult.score,
+            threshold: detectionResult.threshold,
+            triggeredRules: detectionResult.triggeredRules,
+            phishingIndicators: [], // Skipped for performance
+            skipReason: "low-detection-score",
+          };
+
+          if (protectionEnabled) {
+            logger.error(
+              "🛡️ PROTECTION ACTIVE: Blocking due to very low detection score"
+            );
+            showBlockingOverlay(reason, {
+              threats: [{ description: reason, severity: "high" }],
+              score: detectionResult.score,
+            });
+            disableFormSubmissions();
+            disableCredentialInputs();
+            stopDOMMonitoring();
+          } else {
+            logger.warn(
+              "⚠️ PROTECTION DISABLED: Would block low score but showing warning banner instead"
+            );
+            showWarningBanner(`HIGH THREAT: ${reason}`, {
+              threats: [{ description: reason, severity: "high" }],
+            });
+          }
+
+          const redirectHostname = extractRedirectHostname(location.href);
+          const clientInfo = await extractClientInfo(location.href);
+
+          logProtectionEvent({
+            type: protectionEnabled
+              ? "threat_blocked"
+              : "threat_detected_no_action",
+            url: location.href,
+            reason: reason,
+            severity: "high",
+            protectionEnabled: protectionEnabled,
+            redirectTo: redirectHostname,
+            clientId: clientInfo.clientId,
+            clientSuspicious: clientInfo.isMalicious,
+            clientReason: clientInfo.reason,
+            skipReason: "low-detection-score",
+          });
+
+          sendCippReport({
+            type: "low_score_blocked",
+            url: location.href,
+            reason: reason,
+            severity: "high",
+            legitimate: false,
+            timestamp: new Date().toISOString(),
+            skipReason: "low-detection-score",
+          });
+
+          return;
+        } else if (detectionResult.score >= detectionResult.threshold) {
+          // High confidence legitimate - proceed to success flow
+          logger.log(
+            `🟢 High confidence legitimate page (${detectionResult.score} >= ${detectionResult.threshold}) - proceeding to success flow`
+          );
+          // Continue to the end of function for legitimate handling
+        }
       }
 
       // Determine action based on combined legitimacy score
@@ -2731,6 +3011,10 @@ if (window.checkExtensionLoaded) {
           timestamp: new Date().toISOString(),
         });
       } else {
+        // Extract client info for legitimate access logging
+        const redirectHostname = extractRedirectHostname(location.href);
+        const clientInfo = await extractClientInfo(location.href);
+
         logger.log(
           `✅ ANALYSIS: Legitimacy score acceptable (${detectionResult.score}/${detectionResult.threshold}) - no threats detected`
         );
@@ -2844,7 +3128,7 @@ if (window.checkExtensionLoaded) {
         `Body content length: ${document.body?.textContent?.length || 0} chars`
       );
 
-      domObserver = new MutationObserver((mutations) => {
+      domObserver = new MutationObserver(async (mutations) => {
         try {
           let shouldRerun = false;
           let newElementsAdded = false;
@@ -3066,6 +3350,7 @@ if (window.checkExtensionLoaded) {
       const warningBanner = document.getElementById("ms365-warning-banner");
       if (warningBanner) {
         warningBanner.remove();
+        showingBanner = false; // Clear the flag when banner is removed
         logger.log("Cleared existing warning banner");
       }
 
@@ -3132,7 +3417,7 @@ if (window.checkExtensionLoaded) {
           <strong>${bannerTitle}</strong><br>
           <small>${reason}${detailsText}</small>
         </div>
-        <button onclick="this.parentElement.parentElement.remove(); document.body.style.marginTop = '0';" title="Dismiss" style="
+        <button onclick="this.parentElement.parentElement.remove(); document.body.style.marginTop = '0'; window.showingBanner = false;" title="Dismiss" style="
           position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
           background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
           color: white; padding: 0; border-radius: 4px; cursor: pointer;
@@ -3186,11 +3471,9 @@ if (window.checkExtensionLoaded) {
 
       logger.log("Warning banner displayed");
 
-      // Clear flag after a short delay to allow banner to fully render
-      setTimeout(() => {
-        showingBanner = false;
-        logger.debug("🟢 Banner display complete - DOM monitoring resumed");
-      }, 1000);
+      // Don't clear the showingBanner flag immediately - let it persist
+      // to prevent DOM monitoring from interfering while the user sees the warning
+      // The flag will be cleared when the banner is updated or removed
     } catch (error) {
       logger.error("Failed to show warning banner:", error.message);
       showingBanner = false; // Make sure flag is cleared on error

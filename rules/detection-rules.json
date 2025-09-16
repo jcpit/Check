@@ -49,8 +49,9 @@
       "^https://[^/]*\\.wikipedia\\.org(/.*)?$",
       "^https://[^/]*\\.hubspot\\.com\\/.*$",
       "^https://[^/]*\\.cipp\\.app(/.*)?$",
-      "^https://[^/]*\\.cyberdrain\\.com(/.*)?$",
-      "^https://[^/]*\\.cow\\.tech(/.*)?$"
+      "^https://(.*\\.)?cyberdrain\\.com(/.*)?$",
+      "^https://[^/]*\\.cow\\.tech(/.*)?$",
+      "^https://[^/]*\\.auth0\\.com(/.*)?$"
     ],
     "context_indicators": {
       "description": "Additional context that indicates legitimate discussion vs phishing",
@@ -128,6 +129,7 @@
     "microsoftteams.uservoice.com",
     "techcommunity.microsoft.com",
     "blog.office365.com",
+    "cyberdrain.com",
     "office365itpros.com",
     "petri.com",
     "bleepingcomputer.com",
@@ -744,7 +746,7 @@
     },
     {
       "id": "phi_017_microsoft_brand_abuse",
-      "pattern": "(?!.*(?:sign\\s+in\\s+with\\s+microsoft|continue\\s+with\\s+microsoft|login\\s+with\\s+microsoft|authenticate\\s+with\\s+microsoft|sso|oauth|third.?party\\s+auth|\\.auth/login/|azure\\s+static\\s+web\\s+apps|easy\\s+auth))(?:(?:microsoft|office|365).*(?:login|sign.*in|authentication)|(?:login|sign.*in|authentication).*(?:microsoft|office|365))",
+      "pattern": "(?!.*(?:sign\\s+in\\s+with\\s+microsoft|continue\\s+with\\s+microsoft|login\\s+with\\s+microsoft|authenticate\\s+with\\s+microsoft|sso|oauth|third.?party\\s+auth|\\.auth/login/|azure\\s+static\\s+web\\s+apps|easy\\s+auth|discussion|forum|community|tutorial|guide|documentation|support|help|wiki|blog|article|how\\s+to|step\\s+by\\s+step|configure|setup|administration|management))(?:(?:microsoft|office|365).*(?:login|sign.*in|authentication)|(?:login|sign.*in|authentication).*(?:microsoft|office|365))",
       "flags": "i",
       "severity": "high",
       "description": "Microsoft branding combined with login/authentication terms on non-Microsoft domain",
