@@ -1326,11 +1326,11 @@ if (window.checkExtensionLoaded) {
             const { indicators, pageSource, pageText, currentUrl } = e.data;
             const threats = [];
             let totalScore = 0;
-            
+
             try {
               for (let i = 0; i < indicators.length; i++) {
                 const indicator = indicators[i];
-                
+
                 // Send progress update every 3 indicators
                 if (i % 3 === 0) {
                   self.postMessage({
@@ -1340,13 +1340,13 @@ if (window.checkExtensionLoaded) {
                     currentIndicator: indicator.id
                   });
                 }
-                
+
                 try {
                   let matches = false;
                   let matchDetails = "";
-                  
+
                   const pattern = new RegExp(indicator.pattern, indicator.flags || "i");
-                  
+
                   // Test against page source
                   if (pattern.test(pageSource)) {
                     matches = true;
@@ -1362,7 +1362,7 @@ if (window.checkExtensionLoaded) {
                     matches = true;
                     matchDetails = "URL";
                   }
-                  
+
                   // Handle additional_checks
                   if (!matches && indicator.additional_checks) {
                     for (const check of indicator.additional_checks) {
@@ -1373,7 +1373,7 @@ if (window.checkExtensionLoaded) {
                       }
                     }
                   }
-                  
+
                   if (matches) {
                     const threat = {
                       id: indicator.id,
@@ -1384,9 +1384,9 @@ if (window.checkExtensionLoaded) {
                       action: indicator.action,
                       matchDetails: matchDetails,
                     };
-                    
+
                     threats.push(threat);
-                    
+
                     // Calculate score
                     let scoreWeight = 0;
                     switch (indicator.severity) {
@@ -1395,14 +1395,14 @@ if (window.checkExtensionLoaded) {
                       case "medium": scoreWeight = 10; break;
                       case "low": scoreWeight = 5; break;
                     }
-                    
+
                     totalScore += scoreWeight * (indicator.confidence || 0.5);
                   }
                 } catch (error) {
                   // Continue processing other indicators
                 }
               }
-              
+
               self.postMessage({
                 type: 'complete',
                 threats: threats,
@@ -2656,16 +2656,14 @@ if (window.checkExtensionLoaded) {
       );
 
       // Show early warning banner immediately while analysis runs
-      if (!protectionEnabled) {
-        showWarningBanner(
-          "Analyzing potentially suspicious Microsoft login page - please wait for security analysis to complete",
-          {
-            severity: "medium",
-            score: null, // No score yet
-            threshold: null,
-          }
-        );
-      }
+      showWarningBanner(
+        "🔍 Analyzing potentially suspicious Microsoft login page - security scan in progress...",
+        {
+          severity: "scanning",
+          score: null, // No score yet
+          threshold: null,
+        }
+      );
 
       // Extract client info and redirect hostname for analysis
       const redirectHostname = extractRedirectHostname(location.href);
@@ -2805,8 +2803,9 @@ if (window.checkExtensionLoaded) {
 
         if (protectionEnabled) {
           logger.error(
-            "🛡️ PROTECTION ACTIVE: Blocking page and disabling inputs"
+            "🛡️ PROTECTION ACTIVE: Blocking page - redirecting to blocking page"
           );
+          // Redirect to actual blocking page when protection is enabled
           showBlockingOverlay(blockingResult.reason, blockingResult);
           disableFormSubmissions();
           disableCredentialInputs();
@@ -3657,8 +3656,14 @@ if (window.checkExtensionLoaded) {
       let bannerIcon = "⚠️";
       let bannerColor = "linear-gradient(135deg, #ff9800, #f57c00)"; // Orange for warnings
 
+      // Check for scanning state
+      if (analysisData?.severity === "scanning") {
+        bannerTitle = "Security Scan in Progress";
+        bannerIcon = "🔍";
+        bannerColor = "linear-gradient(135deg, #2196f3, #1976d2)"; // Blue for scanning
+      }
       // Check for rogue app detection
-      if (
+      else if (
         analysisData?.type === "rogue_app_on_legitimate_domain" ||
         reason.toLowerCase().includes("rogue oauth") ||
         reason.toLowerCase().includes("rogue app")
