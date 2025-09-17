@@ -1472,71 +1472,7 @@ if (window.checkExtensionLoaded) {
    */
   async function processPhishingIndicators() {
     try {
-      // Performance protection: Early exit for major trusted domains to prevent false positives
       const currentUrl = window.location.href;
-      const hostname = new URL(currentUrl).hostname.toLowerCase();
-      const majorTrustedDomains = [
-        "google.com",
-        "google.co",
-        "google.ca",
-        "google.co.uk",
-        "bing.com",
-        "yahoo.com",
-        "duckduckgo.com",
-        "ask.com",
-        "askjeeves.com",
-        "baidu.com",
-        "yandex.com",
-        "startpage.com",
-        "searx.org",
-        "amazon.com",
-        "amazon.co.uk",
-        "amazon.ca",
-        "amazon.de",
-        "amazon.fr",
-        "facebook.com",
-        "twitter.com",
-        "x.com",
-        "linkedin.com",
-        "instagram.com",
-        "github.com",
-        "gitlab.com",
-        "bitbucket.org",
-        "stackoverflow.com",
-        "stackexchange.com",
-        "reddit.com",
-        "wikipedia.org",
-        "youtube.com",
-        "youtu.be",
-        "vimeo.com",
-        "apple.com",
-        "microsoft.com",
-        "office.com",
-        "office365.com",
-        "dropbox.com",
-        "slack.com",
-        "zoom.us",
-        "teams.microsoft.com",
-        "discord.com",
-        "ebay.com",
-        "paypal.com",
-        "stripe.com",
-        "shopify.com",
-        "cnn.com",
-        "bbc.com",
-        "nytimes.com",
-        "theguardian.com",
-        "reuters.com",
-      ];
-
-      for (const domain of majorTrustedDomains) {
-        if (hostname.includes(domain)) {
-          logger.log(
-            `🚫 Major trusted domain detected (${domain}), skipping phishing indicators`
-          );
-          return { threats: [], score: 0 };
-        }
-      }
 
       // Debug logging
       logger.log(
@@ -2448,22 +2384,29 @@ if (window.checkExtensionLoaded) {
         return; // EXIT - legitimate Microsoft domain, no scanning needed
       }
 
-      // Step 3: Early domain exclusion check for trusted domains
-      // Check this before expensive Microsoft element detection
+      // Step 3: Check for domain exclusion (trusted domains) - same level as Microsoft domains
       const isExcludedDomain = checkDomainExclusion(window.location.href);
       if (isExcludedDomain) {
         logger.log(
-          `🚫 Domain excluded from phishing detection: ${window.location.href}`
+          `✅ EXCLUDED TRUSTED DOMAIN - No scanning needed, exiting immediately`
         );
-        logger.log(`📋 Trusted domain - skipping all analysis for performance`);
+        logger.log(`📋 Domain in exclusion list: ${window.location.href}`);
 
-        // Set up monitoring for dynamic content but don't run expensive checks
+        // Log as legitimate access for excluded domains (only on first run)
         if (!isRerun) {
-          setupDOMMonitoring();
-          setupDynamicScriptMonitoring();
+          logProtectionEvent({
+            type: "legitimate_access",
+            url: location.href,
+            origin: location.origin,
+            reason: "Domain in exclusion system trusted list",
+            redirectTo: null,
+            clientId: null,
+            clientSuspicious: false,
+            clientReason: null,
+          });
         }
 
-        return; // EXIT - Trusted domain, no analysis needed
+        return; // EXIT IMMEDIATELY - can't be phishing on excluded trusted domain
       }
 
       logger.log("❌ NON-TRUSTED ORIGIN - Continuing analysis");
