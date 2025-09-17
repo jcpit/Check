@@ -580,17 +580,6 @@
       "confidence": 0.8
     },
     {
-      "id": "phi_009",
-      "pattern": "referer.*(?!login\\.microsoftonline\\.com|login\\.microsoft\\.net|login\\.microsoft\\.com|autologon\\.microsoftazuread-sso\\.com|tasks\\.office\\.com|login\\.windows\\.net|planner\\.cloud\\.microsoft)",
-      "flags": "i",
-      "severity": "high",
-      "description": "Invalid referrer not in custom allow list",
-      "action": "warn",
-      "category": "referrer_spoofing",
-      "confidence": 0.1,
-      "comment": "Lower confidence due to potential false positives from legitimate third-party services"
-    },
-    {
       "id": "phi_010_aad_fingerprint",
       "pattern": "(?=.*(?:loginfmt|i0116))(?=.*(?:idSIButton9|type=[\"']submit[\"']))(?!.*login\\.microsoftonline\\.com)",
       "flags": "i",
@@ -943,29 +932,6 @@
         "description": "Custom CSS must come from Microsoft CDN"
       }
     ]
-  },
-  "configuration": {
-    "enable_cryptographic_verification": true,
-    "verification_endpoint": "https://365branding.com/api/verify-badge",
-    "rules_update_endpoint": "https://api.m365security.com/rules/latest",
-    "reporting_endpoint": "https://api.m365security.com/reports/phishing",
-    "enable_reporting": true,
-    "cache_results": true,
-    "cache_ttl": 300000,
-    "max_analysis_time": 3000,
-    "enable_context_analysis": true,
-    "context_window_size": 500,
-    "cyberdrain_integration": {
-      "enable_aad_fingerprinting": true,
-      "enable_real_time_monitoring": true,
-      "monitoring_timeout": 20000,
-      "enable_credential_blocking": true,
-      "enable_form_submission_blocking": true,
-      "enable_valid_badge_display": true,
-      "enable_phishing_banner": true,
-      "strict_resource_audit": true,
-      "require_microsoft_action": true
-    }
   },
   "rules_metadata": {
     "total_rules": 25,
