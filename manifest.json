@@ -10,7 +10,6 @@
     "scripting",
     "webRequest",
     "alarms",
-    "management",
     "identity",
     "identity.email"
   ],
