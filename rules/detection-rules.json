@@ -570,16 +570,6 @@
       "confidence": 0.9
     },
     {
-      "id": "phi_016_suspicious_url_structure",
-      "pattern": "(?:https?://[^/]+/[A-Za-z0-9+/=]{50,})",
-      "flags": "i",
-      "severity": "high",
-      "description": "Suspicious URL with long encoded parameters typically used in phishing campaigns",
-      "action": "warn",
-      "category": "suspicious_url_structure",
-      "confidence": 0.85
-    },
-    {
       "id": "phi_006",
       "pattern": "(?=.*(?:microsoft|office|365))(?=.*(?:login|password|signin))(?=.*form.*action)(?!.*login\\.microsoftonline\\.com)(?!.*\\.auth/login/)(?!.*azure\\s+static\\s+web\\s+apps)(?!.*easy\\s+auth)",
       "flags": "i",
@@ -597,7 +587,8 @@
       "description": "Invalid referrer not in custom allow list",
       "action": "warn",
       "category": "referrer_spoofing",
-      "confidence": 0.85
+      "confidence": 0.35,
+      "comment": "Lower confidence due to potential false positives from legitimate third-party services"
     },
     {
       "id": "phi_010_aad_fingerprint",
