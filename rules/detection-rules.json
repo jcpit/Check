@@ -36,56 +36,23 @@
   "exclusion_system": {
     "description": "Centralized exclusion system to prevent false positives on legitimate sites",
     "domain_patterns": [
-      "^https://[^/]*\\.microsoft\\.(com|net|org)(/.*)?$",
-      "^https://[^/]*\\.office\\.(com|net)(/.*)?$",
-      "^https://[^/]*\\.(github|stackoverflow|serverfault|superuser)\\.com(/.*)?$",
-      "^https://[^/]*\\.(reddit|spiceworks)\\.com(/.*)?$",
-      "^https://community\\.[^/]+(/.*)?$",
-      "^https://docs\\.[^/]+(/.*)?$",
-      "^https://[^/]*\\.zendesk\\.com(/.*)?$",
-      "^https://[^/]*\\.atlassian\\.(com|net)(/.*)?$",
-      "^https://[^/]*\\.salesforce\\.com(/.*)?$",
-      "^https://[^/]*\\.servicenow\\.com(/.*)?$",
-      "^https://[^/]*\\.wikipedia\\.org(/.*)?$",
-      "^https://[^/]*\\.hubspot\\.com\\/.*$",
       "^https://[^/]*\\.cipp\\.app(/.*)?$",
       "^https://(.*\\.)?cyberdrain\\.com(/.*)?$",
       "^https://[^/]*\\.cow\\.tech(/.*)?$",
-      "^https://[^/]*\\.auth0\\.com(/.*)?$"
+      "^https://[^/]*\\.auth0\\.com(/.*)?$",
+      "^https://[^/]*\\.google\\.(com|co\\.uk|ca|de|fr|co|nl|com\\.au)(/.*)?$",
+      "^https://[^/]*\\.bing\\.com(/.*)?$",
+      "^https://[^/]*\\.yahoo\\.com(/.*)?$",
+      "^https://[^/]*\\.duckduckgo\\.com(/.*)?$",
+      "^https://[^/]*\\.amazon\\.(com|co\\.uk|ca|de|fr)(/.*)?$",
+      "^https://[^/]*\\.(facebook|twitter|x|linkedin|instagram)\\.com(/.*)?$",
+      "^https://[^/]*\\.(youtube|youtu)\\.be(/.*)?$",
+      "^https://[^/]*\\.apple\\.com(/.*)?$"
     ],
     "context_indicators": {
       "description": "Additional context that indicates legitimate discussion vs phishing",
-      "legitimate_contexts": [
-        "forum",
-        "community",
-        "discussion",
-        "documentation",
-        "support",
-        "help",
-        "wiki",
-        "knowledge base",
-        "faq",
-        "blog",
-        "article",
-        "tutorial",
-        "guide"
-      ],
-      "legitimate_sso_patterns": [
-        "sign in with microsoft",
-        "continue with microsoft",
-        "login with microsoft",
-        "authenticate with microsoft",
-        "microsoft sso",
-        "microsoft oauth",
-        "microsoft single sign-on",
-        "third party authentication",
-        "oauth provider",
-        "identity provider",
-        "federated login",
-        "social login",
-        "azure static web apps",
-        "/.auth/login/"
-      ],
+      "legitimate_contexts": [],
+      "legitimate_sso_patterns": [],
       "suspicious_contexts": [
         "verify now",
         "click here",
@@ -97,60 +64,7 @@
       ]
     }
   },
-  "legitimate_discussion_domains": [
-    "community.jamf.com",
-    "techcommunity.microsoft.com",
-    "docs.microsoft.com",
-    "github.com",
-    "stackoverflow.com",
-    "reddit.com",
-    "spiceworks.com",
-    "serverfault.com",
-    "superuser.com",
-    "technet.microsoft.com",
-    "answers.microsoft.com",
-    "social.technet.microsoft.com",
-    "social.msdn.microsoft.com",
-    "azure.microsoft.com",
-    "office365.com",
-    "support.microsoft.com",
-    "learn.microsoft.com",
-    "devblogs.microsoft.com",
-    "flow.microsoft.com",
-    "powerbi.microsoft.com",
-    "powerapps.microsoft.com",
-    "developer.microsoft.com",
-    "msdn.microsoft.com",
-    "channel9.msdn.microsoft.com",
-    "insider.windows.com",
-    "feedback.azure.com",
-    "uservoice.office.com",
-    "office365.uservoice.com",
-    "microsoftteams.uservoice.com",
-    "techcommunity.microsoft.com",
-    "blog.office365.com",
-    "cyberdrain.com",
-    "office365itpros.com",
-    "petri.com",
-    "bleepingcomputer.com",
-    "windowscentral.com",
-    "theverge.com",
-    "arstechnica.com",
-    "neowin.net",
-    "zdnet.com",
-    "computerworld.com",
-    "infoworld.com",
-    "itpro.co.uk",
-    "techrepublic.com",
-    "howtogeek.com",
-    "winaero.com",
-    "tenforums.com",
-    "elevenforum.com",
-    "winbeta.org",
-    "mspoweruser.com",
-    "onmsft.com",
-    "windowslatest.com"
-  ],
+  "legitimate_discussion_domains": [],
   "m365_detection_requirements": {
     "description": "Required elements to identify a Microsoft 365 login page with primary and secondary categorization",
     "primary_elements": [
@@ -933,25 +847,6 @@
       }
     ]
   },
-  "rules_metadata": {
-    "total_rules": 25,
-    "categories": [
-      "domain_spoofing",
-      "brand_impersonation",
-      "social_engineering",
-      "credential_harvesting",
-      "suspicious_behavior",
-      "resource_hijacking",
-      "header_manipulation",
-      "referrer_spoofing",
-      "interface_spoofing",
-      "incomplete_spoofing"
-    ],
-    "severity_levels": ["low", "medium", "high", "critical"],
-    "actions": ["monitor", "warn", "block"],
-    "confidence_range": [0.0, 1.0],
-    "update_frequency": "daily"
-  },
   "rogue_apps_detection": {
     "description": "Dynamic detection of known rogue OAuth applications",
     "enabled": true,
@@ -963,22 +858,5 @@
     "log_matches": true,
     "auto_update": true,
     "fallback_on_error": true
-  },
-  "metadata": {
-    "features": [
-      "Real-time AAD fingerprinting",
-      "Dynamic content monitoring",
-      "Form action validation",
-      "Credential input blocking",
-      "Trusted badge display",
-      "Enhanced phishing detection"
-    ],
-    "detection_methods": [
-      "DOM element analysis",
-      "Resource origin auditing",
-      "Form submission blocking",
-      "Referrer validation",
-      "CSP header validation"
-    ]
   }
 }
