@@ -1047,7 +1047,7 @@ if (window.checkExtensionLoaded) {
                   ruleTriggered = true;
                   reason = `Form action "${action}" does not contain ${rule.condition?.action_must_not_contain}`;
                   logger.warn(
-                    `BLOCKING RULE TRIGGERED: ${rule.id} - ${reason}`
+                    `BLOCKING RULE TRIGGERED: ${rule.id}  ${rule.description} - ${reason}`
                   );
                   break;
                 }
@@ -1069,7 +1069,7 @@ if (window.checkExtensionLoaded) {
                     ruleTriggered = true;
                     reason = `Resource "${url}" does not come from required origin "${requiredOrigin}"`;
                     logger.warn(
-                      `BLOCKING RULE TRIGGERED: ${rule.id} - ${reason}`
+                      `BLOCKING RULE TRIGGERED: ${rule.id}  ${rule.description} - ${reason}`
                     );
                     break;
                   }
@@ -1118,7 +1118,7 @@ if (window.checkExtensionLoaded) {
                     ruleTriggered = true;
                     reason = `CSS spoofing detected: ${cssMatches} Microsoft style indicators found, but form posts to "${action}" (not Microsoft)`;
                     logger.warn(
-                      `BLOCKING RULE TRIGGERED: ${rule.id} - ${reason}`
+                      `BLOCKING RULE TRIGGERED: ${rule.id}  ${rule.description} - ${reason}`
                     );
                     break;
                   }
@@ -2122,7 +2122,7 @@ if (window.checkExtensionLoaded) {
           if (ruleTriggered) {
             score += rule.weight || 0;
             triggeredRules.push({
-              id: rule.id,
+              id: rule.description || rule.id,
               type: rule.type,
               description: rule.description,
               weight: rule.weight,
@@ -3587,7 +3587,10 @@ if (window.checkExtensionLoaded) {
         reason: reason,
         url: location.href,
         timestamp: new Date().toISOString(),
-        rule: analysisData?.rule?.id || "unknown",
+        rule:
+          analysisData?.rule?.description ||
+          analysisData?.rule?.id ||
+          "unknown",
         ruleDescription: analysisData?.rule?.description || reason,
         score: analysisData?.score || 0,
         threshold: analysisData?.threshold || 85,
