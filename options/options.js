@@ -369,7 +369,26 @@ class CheckOptions {
 
   async loadBrandingConfiguration() {
     try {
-      // First try to load from storage (user settings)
+      // First try to load from managed storage (enterprise policies)
+      const safe = async (promise) => {
+        try {
+          return await promise;
+        } catch (_) {
+          return {};
+        }
+      };
+
+      const managedPolicies = await safe(chrome.storage.managed.get(null));
+      if (managedPolicies && managedPolicies.customBranding) {
+        this.brandingConfig = managedPolicies.customBranding;
+        console.log(
+          "Loaded branding from managed policies:",
+          managedPolicies.customBranding
+        );
+        return;
+      }
+
+      // Second try to load from storage (user settings)
       const storageResult = await new Promise((resolve) => {
         chrome.storage.local.get(["brandingConfig"], (result) => {
           resolve(result.brandingConfig);
@@ -843,16 +862,26 @@ class CheckOptions {
     }
 
     // Trusted Login Patterns
-    if (config.trusted_login_patterns && config.trusted_login_patterns.length > 0) {
+    if (
+      config.trusted_login_patterns &&
+      config.trusted_login_patterns.length > 0
+    ) {
       sections.push(`
         <div class="config-section">
-          <div class="config-section-title">Trusted Login Patterns (${config.trusted_login_patterns.length})</div>
+          <div class="config-section-title">Trusted Login Patterns (${
+            config.trusted_login_patterns.length
+          })</div>
           ${config.trusted_login_patterns
             .slice(0, 5)
             .map((pattern) => `<div class="config-item">• ${pattern}</div>`)
             .join("")}
-          ${config.trusted_login_patterns.length > 5 ? 
-            `<div class="config-item">... and ${config.trusted_login_patterns.length - 5} more</div>` : ''}
+          ${
+            config.trusted_login_patterns.length > 5
+              ? `<div class="config-item">... and ${
+                  config.trusted_login_patterns.length - 5
+                } more</div>`
+              : ""
+          }
         </div>
       `);
     }
@@ -860,21 +889,30 @@ class CheckOptions {
     // Microsoft 365 Detection Requirements
     if (config.m365_detection_requirements) {
       const req = config.m365_detection_requirements;
-      const primaryCount = req.primary_elements ? req.primary_elements.length : 0;
-      const secondaryCount = req.secondary_elements ? req.secondary_elements.length : 0;
-      
+      const primaryCount = req.primary_elements
+        ? req.primary_elements.length
+        : 0;
+      const secondaryCount = req.secondary_elements
+        ? req.secondary_elements.length
+        : 0;
+
       sections.push(`
         <div class="config-section">
           <div class="config-section-title">Microsoft 365 Detection Requirements</div>
           <div class="config-item"><strong>Primary Elements:</strong> <span class="config-value">${primaryCount}</span></div>
           <div class="config-item"><strong>Secondary Elements:</strong> <span class="config-value">${secondaryCount}</span></div>
-          <div class="config-item"><strong>Description:</strong> ${req.description || 'No description'}</div>
+          <div class="config-item"><strong>Description:</strong> ${
+            req.description || "No description"
+          }</div>
         </div>
       `);
     }
 
     // Microsoft Domain Patterns
-    if (config.microsoft_domain_patterns && config.microsoft_domain_patterns.length > 0) {
+    if (
+      config.microsoft_domain_patterns &&
+      config.microsoft_domain_patterns.length > 0
+    ) {
       sections.push(`
         <div class="config-section">
           <div class="config-section-title">Microsoft Domain Patterns (${
@@ -884,8 +922,13 @@ class CheckOptions {
             .slice(0, 10)
             .map((pattern) => `<div class="config-item">• ${pattern}</div>`)
             .join("")}
-          ${config.microsoft_domain_patterns.length > 10 ? 
-            `<div class="config-item">... and ${config.microsoft_domain_patterns.length - 10} more</div>` : ''}
+          ${
+            config.microsoft_domain_patterns.length > 10
+              ? `<div class="config-item">... and ${
+                  config.microsoft_domain_patterns.length - 10
+                } more</div>`
+              : ""
+          }
         </div>
       `);
     }
@@ -894,24 +937,49 @@ class CheckOptions {
     if (config.exclusion_system) {
       const exclusions = config.exclusion_system;
       const domainPatterns = exclusions.domain_patterns || [];
-      const legitimateContexts = exclusions.context_indicators?.legitimate_contexts || [];
-      const legitimateSsoPatterns = exclusions.context_indicators?.legitimate_sso_patterns || [];
-      const suspiciousContexts = exclusions.context_indicators?.suspicious_contexts || [];
-      
+      const legitimateContexts =
+        exclusions.context_indicators?.legitimate_contexts || [];
+      const legitimateSsoPatterns =
+        exclusions.context_indicators?.legitimate_sso_patterns || [];
+      const suspiciousContexts =
+        exclusions.context_indicators?.suspicious_contexts || [];
+
       sections.push(`
         <div class="config-section">
           <div class="config-section-title">Exclusion System</div>
-          <div class="config-item"><strong>Domain Patterns:</strong> <span class="config-value">${domainPatterns.length}</span></div>
-          <div class="config-item"><strong>Legitimate Context Indicators:</strong> <span class="config-value">${legitimateContexts.length}</span></div>
-          <div class="config-item"><strong>Legitimate SSO Patterns:</strong> <span class="config-value">${legitimateSsoPatterns.length}</span></div>
-          <div class="config-item"><strong>Suspicious Context Indicators:</strong> <span class="config-value">${suspiciousContexts.length}</span></div>
-          <div class="config-item"><strong>Description:</strong> ${exclusions.description || 'No description'}</div>
-          ${domainPatterns.length > 0 ? 
-            `<div class="config-subsection">
+          <div class="config-item"><strong>Domain Patterns:</strong> <span class="config-value">${
+            domainPatterns.length
+          }</span></div>
+          <div class="config-item"><strong>Legitimate Context Indicators:</strong> <span class="config-value">${
+            legitimateContexts.length
+          }</span></div>
+          <div class="config-item"><strong>Legitimate SSO Patterns:</strong> <span class="config-value">${
+            legitimateSsoPatterns.length
+          }</span></div>
+          <div class="config-item"><strong>Suspicious Context Indicators:</strong> <span class="config-value">${
+            suspiciousContexts.length
+          }</span></div>
+          <div class="config-item"><strong>Description:</strong> ${
+            exclusions.description || "No description"
+          }</div>
+          ${
+            domainPatterns.length > 0
+              ? `<div class="config-subsection">
               <div class="config-subsection-title">Sample Domain Patterns:</div>
-              ${domainPatterns.slice(0, 5).map(pattern => `<div class="config-item">• ${pattern}</div>`).join('')}
-              ${domainPatterns.length > 5 ? `<div class="config-item">... and ${domainPatterns.length - 5} more</div>` : ''}
-            </div>` : ''}
+              ${domainPatterns
+                .slice(0, 5)
+                .map((pattern) => `<div class="config-item">• ${pattern}</div>`)
+                .join("")}
+              ${
+                domainPatterns.length > 5
+                  ? `<div class="config-item">... and ${
+                      domainPatterns.length - 5
+                    } more</div>`
+                  : ""
+              }
+            </div>`
+              : ""
+          }
         </div>
       `);
     }
@@ -919,16 +987,21 @@ class CheckOptions {
     // Phishing Indicators Summary
     if (config.phishing_indicators && config.phishing_indicators.length > 0) {
       const indicatorTypes = {};
-      const criticalCount = config.phishing_indicators.filter(indicator => indicator.severity === 'critical').length;
-      
-      config.phishing_indicators.forEach(indicator => {
-        const type = indicator.type || 'unknown';
+      const criticalCount = config.phishing_indicators.filter(
+        (indicator) => indicator.severity === "critical"
+      ).length;
+
+      config.phishing_indicators.forEach((indicator) => {
+        const type = indicator.type || "unknown";
         indicatorTypes[type] = (indicatorTypes[type] || 0) + 1;
       });
 
-      const indicatorSections = Object.entries(indicatorTypes).map(([type, count]) => 
-        `<div class="config-item"><strong>${type}:</strong> <span class="config-value">${count}</span></div>`
-      ).join('');
+      const indicatorSections = Object.entries(indicatorTypes)
+        .map(
+          ([type, count]) =>
+            `<div class="config-item"><strong>${type}:</strong> <span class="config-value">${count}</span></div>`
+        )
+        .join("");
 
       sections.push(`
         <div class="config-section">
@@ -1015,29 +1088,45 @@ class CheckOptions {
 
     // Configuration statistics
     let totalPatterns = 0;
-    if (config.phishing_indicators) totalPatterns += config.phishing_indicators.length;
+    if (config.phishing_indicators)
+      totalPatterns += config.phishing_indicators.length;
     if (config.phishing) totalPatterns += config.phishing.length;
     if (config.malicious) totalPatterns += config.malicious.length;
     if (config.suspicious) totalPatterns += config.suspicious.length;
-    if (config.legitimate_patterns) totalPatterns += config.legitimate_patterns.length;
+    if (config.legitimate_patterns)
+      totalPatterns += config.legitimate_patterns.length;
 
     let totalDetectionElements = 0;
     if (config.m365_detection_requirements) {
-      if (config.m365_detection_requirements.primary_elements) totalDetectionElements += config.m365_detection_requirements.primary_elements.length;
-      if (config.m365_detection_requirements.secondary_elements) totalDetectionElements += config.m365_detection_requirements.secondary_elements.length;
+      if (config.m365_detection_requirements.primary_elements)
+        totalDetectionElements +=
+          config.m365_detection_requirements.primary_elements.length;
+      if (config.m365_detection_requirements.secondary_elements)
+        totalDetectionElements +=
+          config.m365_detection_requirements.secondary_elements.length;
     }
 
     let totalExclusions = 0;
     if (config.exclusion_system) {
-      if (config.exclusion_system.domain_patterns) totalExclusions += config.exclusion_system.domain_patterns.length;
-      if (config.exclusion_system.context_indicators?.legitimate_contexts) totalExclusions += config.exclusion_system.context_indicators.legitimate_contexts.length;
-      if (config.exclusion_system.context_indicators?.legitimate_sso_patterns) totalExclusions += config.exclusion_system.context_indicators.legitimate_sso_patterns.length;
-      if (config.exclusion_system.context_indicators?.suspicious_contexts) totalExclusions += config.exclusion_system.context_indicators.suspicious_contexts.length;
+      if (config.exclusion_system.domain_patterns)
+        totalExclusions += config.exclusion_system.domain_patterns.length;
+      if (config.exclusion_system.context_indicators?.legitimate_contexts)
+        totalExclusions +=
+          config.exclusion_system.context_indicators.legitimate_contexts.length;
+      if (config.exclusion_system.context_indicators?.legitimate_sso_patterns)
+        totalExclusions +=
+          config.exclusion_system.context_indicators.legitimate_sso_patterns
+            .length;
+      if (config.exclusion_system.context_indicators?.suspicious_contexts)
+        totalExclusions +=
+          config.exclusion_system.context_indicators.suspicious_contexts.length;
     }
 
     let criticalRules = 0;
     if (config.phishing_indicators) {
-      criticalRules = config.phishing_indicators.filter(indicator => indicator.severity === 'critical').length;
+      criticalRules = config.phishing_indicators.filter(
+        (indicator) => indicator.severity === "critical"
+      ).length;
     }
 
     sections.push(`
@@ -1046,10 +1135,14 @@ class CheckOptions {
         <div class="config-item"><strong>Total Detection Patterns:</strong> <span class="config-value">${totalPatterns}</span></div>
         <div class="config-item"><strong>Microsoft 365 Detection Elements:</strong> <span class="config-value">${totalDetectionElements}</span></div>
         <div class="config-item"><strong>Trusted Login Patterns:</strong> <span class="config-value">${
-          config.trusted_login_patterns ? config.trusted_login_patterns.length : 0
+          config.trusted_login_patterns
+            ? config.trusted_login_patterns.length
+            : 0
         }</span></div>
         <div class="config-item"><strong>Microsoft Domain Patterns:</strong> <span class="config-value">${
-          config.microsoft_domain_patterns ? config.microsoft_domain_patterns.length : 0
+          config.microsoft_domain_patterns
+            ? config.microsoft_domain_patterns.length
+            : 0
         }</span></div>
         <div class="config-item"><strong>Critical Severity Rules:</strong> <span class="config-value">${criticalRules}</span></div>
         <div class="config-item"><strong>Total Exclusions:</strong> <span class="config-value">${totalExclusions}</span></div>
@@ -1730,7 +1823,7 @@ class CheckOptions {
             "https://raw.githubusercontent.com/CyberDrain/ProjectX/refs/heads/main/rules/detection-rules.json",
           updateInterval: 24,
           enableDebugLogging: false,
-          enableDeveloperConsoleLogging: false,
+          // Note: enableDeveloperConsoleLogging is not policy-managed - remains under user control
 
           // Custom branding (matches managed_schema.json structure)
           customBranding: {
@@ -1856,8 +1949,7 @@ class CheckOptions {
       customRulesUrl: this.elements.customRulesUrl,
       updateInterval: this.elements.updateInterval,
       enableDebugLogging: this.elements.enableDebugLogging,
-      enableDeveloperConsoleLogging:
-        this.elements.enableDeveloperConsoleLogging,
+      // Note: enableDeveloperConsoleLogging is excluded - should remain available for debugging
       // Branding fields (if customBranding policy is present)
       companyName: this.elements.companyName,
       productName: this.elements.productName,
@@ -1950,15 +2042,7 @@ class CheckOptions {
       this.elements.enableDebugLogging.classList.add("policy-managed");
     }
 
-    // Disable the developer console logging checkbox specifically
-    if (this.elements.enableDeveloperConsoleLogging) {
-      this.elements.enableDeveloperConsoleLogging.disabled = true;
-      this.elements.enableDeveloperConsoleLogging.title =
-        "Developer console logging is managed by your organization's policy";
-      this.elements.enableDeveloperConsoleLogging.classList.add(
-        "policy-managed"
-      );
-    }
+    // Note: Developer console logging remains available for troubleshooting in managed mode
 
     // If currently on a restricted tab, switch to logs tab
     if (restrictedTabs.includes(this.currentSection)) {

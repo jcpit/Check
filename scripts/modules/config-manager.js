@@ -101,13 +101,28 @@ export class ConfigManager {
   mergeConfigurations(localConfig, enterpriseConfig, brandingConfig) {
     const defaultConfig = this.getDefaultConfig();
 
+    // Handle enterprise custom branding separately
+    let finalBrandingConfig = brandingConfig;
+    if (enterpriseConfig.customBranding) {
+      // Enterprise custom branding takes precedence over file-based branding
+      finalBrandingConfig = {
+        ...brandingConfig,
+        ...enterpriseConfig.customBranding,
+      };
+    }
+
     // Merge in order of precedence: enterprise > local > branding > default
     const merged = {
       ...defaultConfig,
-      ...brandingConfig,
+      ...finalBrandingConfig,
       ...localConfig,
       ...enterpriseConfig,
     };
+
+    // Remove customBranding from the top level since it's been merged into branding
+    if (merged.customBranding) {
+      delete merged.customBranding;
+    }
 
     // Ensure enterprise policies cannot be overridden
     if (enterpriseConfig.enforcedPolicies) {
@@ -148,6 +163,15 @@ export class ConfigManager {
       // UI settings
       showNotifications: true,
       notificationDuration: 5000,
+      enableValidPageBadge: true,
+      enablePageBlocking: true,
+
+      // Debug settings
+      enableDebugLogging: false,
+
+      // Custom rules
+      customRulesUrl: "",
+      updateInterval: 24, // hours
 
       // Performance settings
       scanDelay: 100,
@@ -161,6 +185,11 @@ export class ConfigManager {
       enterpriseMode: false,
       centralManagement: false,
       reportingEndpoint: "",
+
+      // CIPP integration
+      enableCippReporting: false,
+      cippServerUrl: "",
+      cippTenantId: "",
 
       // Feature flags
       features: {

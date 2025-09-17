@@ -239,7 +239,40 @@ class CheckPopup {
 
   async loadBrandingConfiguration() {
     try {
-      // First try to load from storage (user settings)
+      // First try to load from managed storage (enterprise policies)
+      const safe = async (promise) => {
+        try {
+          return await promise;
+        } catch (_) {
+          return {};
+        }
+      };
+
+      const managedPolicies = await safe(chrome.storage.managed.get(null));
+      if (managedPolicies && managedPolicies.customBranding) {
+        this.brandingConfig = {
+          companyName:
+            managedPolicies.customBranding.companyName || "CyberDrain",
+          productName: managedPolicies.customBranding.productName || "Check",
+          logoUrl:
+            managedPolicies.customBranding.logoUrl || "images/icon32.png",
+          supportUrl:
+            managedPolicies.customBranding.supportUrl ||
+            "https://support.cyberdrain.com",
+          privacyPolicyUrl:
+            managedPolicies.customBranding.privacyPolicyUrl ||
+            "https://cyberdrain.com/privacy",
+          primaryColor:
+            managedPolicies.customBranding.primaryColor || "#F77F00",
+        };
+        console.log(
+          "Loaded branding from managed policies:",
+          this.brandingConfig
+        );
+        return;
+      }
+
+      // Second try to load from storage (user settings)
       const storageResult = await new Promise((resolve) => {
         chrome.storage.local.get(["brandingConfig"], (result) => {
           resolve(result.brandingConfig);
