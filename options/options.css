@@ -823,6 +823,26 @@ body {
   cursor: not-allowed;
 }
 
+/* Managed mode save button styling */
+.btn.managed-mode {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-teal-dark));
+  color: white;
+  border-color: var(--primary-color);
+  position: relative;
+}
+
+.btn.managed-mode:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--primary-hover), var(--secondary-teal-medium));
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn.managed-mode::after {
+  content: "🔐";
+  font-size: 12px;
+  margin-left: 4px;
+}
+
 .setting-actions {
   display: flex;
   gap: 8px;

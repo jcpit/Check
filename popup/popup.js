@@ -239,80 +239,45 @@ class CheckPopup {
 
   async loadBrandingConfiguration() {
     try {
-      // First try to load from managed storage (enterprise policies)
-      const safe = async (promise) => {
-        try {
-          return await promise;
-        } catch (_) {
-          return {};
-        }
-      };
+      // Get branding configuration from background script (centralized through config manager)
+      const response = await new Promise((resolve) => {
+        chrome.runtime.sendMessage(
+          { type: "GET_BRANDING_CONFIG" },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              console.warn(
+                "Failed to get branding from background:",
+                chrome.runtime.lastError.message
+              );
+              resolve(null);
+            } else {
+              resolve(response);
+            }
+          }
+        );
+      });
 
-      const managedPolicies = await safe(chrome.storage.managed.get(null));
-      if (managedPolicies && managedPolicies.customBranding) {
-        this.brandingConfig = {
-          companyName:
-            managedPolicies.customBranding.companyName || "CyberDrain",
-          productName: managedPolicies.customBranding.productName || "Check",
-          logoUrl:
-            managedPolicies.customBranding.logoUrl || "images/icon32.png",
-          supportUrl:
-            managedPolicies.customBranding.supportUrl ||
-            "https://support.cyberdrain.com",
-          privacyPolicyUrl:
-            managedPolicies.customBranding.privacyPolicyUrl ||
-            "https://cyberdrain.com/privacy",
-          primaryColor:
-            managedPolicies.customBranding.primaryColor || "#F77F00",
-        };
+      if (response && response.success && response.branding) {
+        this.brandingConfig = response.branding;
         console.log(
-          "Loaded branding from managed policies:",
+          "Popup: Loaded branding from background script:",
           this.brandingConfig
         );
         return;
       }
 
-      // Second try to load from storage (user settings)
-      const storageResult = await new Promise((resolve) => {
-        chrome.storage.local.get(["brandingConfig"], (result) => {
-          resolve(result.brandingConfig);
-        });
-      });
-
-      if (storageResult) {
-        this.brandingConfig = {
-          companyName: storageResult.companyName || "CyberDrain",
-          productName: storageResult.productName || "Check",
-          logoUrl: storageResult.logoUrl || "images/icon32.png",
-          supportUrl:
-            storageResult.supportUrl || "https://support.cyberdrain.com",
-          privacyPolicyUrl:
-            storageResult.privacyPolicyUrl || "https://cyberdrain.com/privacy",
-          primaryColor: storageResult.primaryColor || "#F77F00",
-        };
-        console.log("Loaded branding from storage:", this.brandingConfig);
-        return;
-      }
-
-      // Fallback to loading from branding.json file
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      try {
-        const response = await fetch(
-          chrome.runtime.getURL("config/branding.json"),
-          { signal: controller.signal }
-        );
-        clearTimeout(timeoutId);
-
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        this.brandingConfig = await response.json();
-        console.log("Loaded branding from file:", this.brandingConfig);
-      } finally {
-        clearTimeout(timeoutId);
-      }
+      // Fallback to default branding if background script fails
+      console.warn("Popup: Using fallback branding configuration");
+      this.brandingConfig = {
+        companyName: "CyberDrain",
+        productName: "Check",
+        logoUrl: "images/icon32.png",
+        supportUrl: "https://support.cyberdrain.com",
+        privacyPolicyUrl: "https://cyberdrain.com/privacy",
+        primaryColor: "#F77F00",
+      };
     } catch (error) {
-      console.log("Using default branding configuration");
+      console.error("Error loading branding configuration:", error);
       this.brandingConfig = {
         companyName: "CyberDrain",
         productName: "Check",

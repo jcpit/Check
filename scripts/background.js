@@ -593,13 +593,14 @@ class CheckBackground {
   // CyberDrain integration - Apply branding to extension action with guards and timeouts
   async applyBrandingToAction() {
     try {
-      // Load branding from storage first, then fallback to policy
-      const storageResult = await safe(
-        chrome.storage.local.get(["brandingConfig"])
+      // Get branding configuration from config manager
+      const brandingConfig = await this.configManager.getFinalBrandingConfig();
+      console.log(
+        "Background: Loaded branding from config manager:",
+        brandingConfig
       );
-      const brandingConfig = storageResult?.brandingConfig || {};
 
-      // Determine title from storage or policy
+      // Determine title from branding config or policy fallback
       const title =
         brandingConfig.productName ||
         this.policy?.BrandingName ||
@@ -609,7 +610,7 @@ class CheckBackground {
       await safe(chrome.action.setTitle({ title }));
       console.log("Extension title set to:", title);
 
-      // Determine logo URL from storage or policy
+      // Determine logo URL from branding config or policy fallback
       const logoUrl = brandingConfig.logoUrl || this.policy?.BrandingImage;
 
       // Icon (optional) with platform feature guards and size limits
@@ -1089,6 +1090,23 @@ class CheckBackground {
 
         case "REQUEST_POLICY":
           sendResponse({ policy: this.policy });
+          break;
+
+        case "GET_BRANDING_CONFIG":
+          try {
+            // Use config manager to get branding configuration
+            const branding = await this.configManager.getFinalBrandingConfig();
+            sendResponse({
+              success: true,
+              branding: branding,
+            });
+          } catch (error) {
+            logger.error("Failed to get branding config:", error);
+            sendResponse({
+              success: false,
+              error: error.message,
+            });
+          }
           break;
 
         case "REQUEST_SHOW_VALID_BADGE":

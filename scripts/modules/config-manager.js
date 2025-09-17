@@ -58,6 +58,49 @@ export class ConfigManager {
         }
       };
 
+      // Check if we're in development mode for mock policies
+      const isDevelopment = this.isDevelopmentMode();
+
+      // Check if enterprise simulation mode is enabled (dev only)
+      let simulateEnterpriseMode = false;
+      if (isDevelopment) {
+        const simulateMode = await safe(
+          chrome.storage.local.get(["simulateEnterpriseMode"])
+        );
+        simulateEnterpriseMode = simulateMode?.simulateEnterpriseMode || false;
+      }
+
+      if (isDevelopment && simulateEnterpriseMode) {
+        // Return mock enterprise configuration for development/testing
+        logger.log(
+          "Check: Using mock enterprise configuration (simulate mode enabled)"
+        );
+        return {
+          // Extension configuration
+          showNotifications: true,
+          enableValidPageBadge: true,
+          enablePageBlocking: true,
+          enableCippReporting: false,
+          cippServerUrl: "",
+          cippTenantId: "",
+          customRulesUrl:
+            "https://raw.githubusercontent.com/CyberDrain/ProjectX/refs/heads/main/rules/detection-rules.json",
+          updateInterval: 24,
+          enableDebugLogging: false,
+          // Note: enableDeveloperConsoleLogging is not policy-managed - remains under user control
+
+          // Custom branding (matches managed_schema.json structure)
+          customBranding: {
+            companyName: "CyberDrain",
+            productName: "Check Enterprise",
+            supportEmail: "support@cyberdrain.com",
+            primaryColor: "#F77F00",
+            logoUrl:
+              "https://cyberdrain.com/images/favicon_hu_20e77b0e20e363e.png",
+          },
+        };
+      }
+
       // Attempt to load from managed storage (deployed via GPO/Intune)
       const managedConfig = await safe(chrome.storage.managed.get(null));
 
@@ -70,6 +113,19 @@ export class ConfigManager {
     } catch (error) {
       logger.log("Check: No enterprise configuration available");
       return {};
+    }
+  }
+
+  isDevelopmentMode() {
+    // Check if we're in development mode
+    // This could be based on environment, hostname, or other indicators
+    try {
+      // Check if we're running in an extension context and in development
+      const manifestData = chrome.runtime.getManifest();
+      const isDev = !("update_url" in manifestData); // No update_url means unpacked extension
+      return isDev;
+    } catch (error) {
+      return false;
     }
   }
 
@@ -327,6 +383,27 @@ export class ConfigManager {
       await this.loadConfig();
     }
     return this.brandingConfig;
+  }
+
+  async getFinalBrandingConfig() {
+    // Get the enterprise config to check for custom branding
+    if (!this.enterpriseConfig) {
+      await this.loadConfig();
+    }
+
+    // Start with the base branding config
+    let finalBranding = await this.getBrandingConfig();
+
+    // If enterprise has custom branding, merge it in (takes precedence)
+    if (this.enterpriseConfig && this.enterpriseConfig.customBranding) {
+      finalBranding = {
+        ...finalBranding,
+        ...this.enterpriseConfig.customBranding,
+      };
+      logger.log("Check: Applied enterprise custom branding");
+    }
+
+    return finalBranding;
   }
 
   async refreshConfig() {

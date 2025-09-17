@@ -13,6 +13,7 @@ class CheckOptions {
     this.configViewMode = "formatted"; // "formatted" or "raw"
     this.currentConfigData = null;
     this.isEnterpriseManaged = false; // Track enterprise management state
+    this.simulateEnterpriseMode = false; // Track simulated enterprise mode (dev only)
 
     this.elements = {};
     this.bindElements();
@@ -67,6 +68,9 @@ class CheckOptions {
       document.getElementById("enableDebugLogging");
     this.elements.enableDeveloperConsoleLogging = document.getElementById(
       "enableDeveloperConsoleLogging"
+    );
+    this.elements.simulateEnterpriseMode = document.getElementById(
+      "simulateEnterpriseMode"
     );
 
     // Logs
@@ -146,6 +150,11 @@ class CheckOptions {
       this.toggleConfigView()
     );
 
+    // Simulate enterprise mode toggle (dev only)
+    this.elements.simulateEnterpriseMode?.addEventListener("change", () =>
+      this.toggleSimulateEnterpriseMode()
+    );
+
     // Detection rules management
     this.elements.refreshDetectionRules?.addEventListener("click", () =>
       this.refreshDetectionRules()
@@ -218,6 +227,8 @@ class CheckOptions {
       // Load configurations
       await this.loadConfiguration();
       await this.loadBrandingConfiguration();
+      // Load simulate enterprise mode state (dev only)
+      await this.loadSimulateEnterpriseMode();
       // Load policy info and apply enterprise restrictions
       await this.loadPolicyInfo();
       // Initialize dark mode
@@ -369,77 +380,103 @@ class CheckOptions {
 
   async loadBrandingConfiguration() {
     try {
-      // First try to load from managed storage (enterprise policies)
-      const safe = async (promise) => {
-        try {
-          return await promise;
-        } catch (_) {
-          return {};
-        }
-      };
-
-      const managedPolicies = await safe(chrome.storage.managed.get(null));
-      if (managedPolicies && managedPolicies.customBranding) {
-        this.brandingConfig = managedPolicies.customBranding;
-        console.log(
-          "Loaded branding from managed policies:",
-          managedPolicies.customBranding
+      // Get branding configuration from background script (centralized through config manager)
+      const response = await new Promise((resolve) => {
+        chrome.runtime.sendMessage(
+          { type: "GET_BRANDING_CONFIG" },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              console.warn(
+                "Failed to get branding from background:",
+                chrome.runtime.lastError.message
+              );
+              resolve(null);
+            } else {
+              resolve(response);
+            }
+          }
         );
-        return;
-      }
-
-      // Second try to load from storage (user settings)
-      const storageResult = await new Promise((resolve) => {
-        chrome.storage.local.get(["brandingConfig"], (result) => {
-          resolve(result.brandingConfig);
-        });
       });
 
-      if (storageResult) {
-        this.brandingConfig = storageResult;
-        console.log("Loaded branding from storage:", storageResult);
+      if (response && response.success && response.branding) {
+        this.brandingConfig = response.branding;
+        console.log(
+          "Options: Loaded branding from background script:",
+          this.brandingConfig
+        );
         return;
       }
 
-      // Fallback to loading from branding.json file
-      await this.waitForRuntimeReady();
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      try {
-        const response = await fetch(
-          chrome.runtime.getURL("config/branding.json"),
-          { signal: controller.signal }
-        );
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          throw new Error(
-            `Failed to load branding config: ${response.status} ${response.statusText}`
-          );
-        }
-
-        this.brandingConfig = await response.json();
-        console.log("Loaded branding from file:", this.brandingConfig);
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    } catch (error) {
-      console.warn(
-        "Failed to load branding configuration, using defaults:",
-        error
-      );
+      // Fallback to default branding if background script fails
+      console.warn("Options: Using fallback branding configuration");
       this.brandingConfig = {
         companyName: "CyberDrain",
         productName: "Check",
-        supportEmail: "support@cyberdrain.com",
         primaryColor: "#F77F00",
         logoUrl: "images/icon48.png",
-        supportUrl: "https://support.cyberdrain.com",
-        privacyPolicyUrl: "https://cyberdrain.com/privacy",
-        termsOfServiceUrl: "https://cyberdrain.com/terms",
       };
+    } catch (error) {
+      console.error("Error loading branding configuration:", error);
+      this.brandingConfig = {
+        companyName: "CyberDrain",
+        productName: "Check",
+        primaryColor: "#F77F00",
+        logoUrl: "images/icon48.png",
+      };
+    }
+  }
+
+  async loadSimulateEnterpriseMode() {
+    try {
+      // Only load simulate mode in development environment
+      const manifestData = chrome.runtime.getManifest();
+      const isDev = !("update_url" in manifestData); // No update_url means unpacked extension
+
+      if (!isDev) {
+        this.simulateEnterpriseMode = false;
+        // Hide the entire toggle in production (find the label element)
+        if (this.elements.simulateEnterpriseMode) {
+          const labelElement =
+            this.elements.simulateEnterpriseMode.closest(".setting-label");
+          if (labelElement) {
+            labelElement.style.display = "none";
+            console.log(
+              "Simulate Enterprise Mode toggle hidden (production build)"
+            );
+          }
+        }
+        return;
+      }
+
+      // In development, ensure the toggle is visible
+      if (this.elements.simulateEnterpriseMode) {
+        const labelElement =
+          this.elements.simulateEnterpriseMode.closest(".setting-label");
+        if (labelElement) {
+          labelElement.style.display = ""; // Reset to default display
+        }
+      }
+
+      // Load the stored simulate mode state
+      const result = await chrome.storage.local.get(["simulateEnterpriseMode"]);
+      this.simulateEnterpriseMode = result.simulateEnterpriseMode || false;
+
+      console.log(
+        "Simulate Enterprise Mode loaded:",
+        this.simulateEnterpriseMode
+      );
+    } catch (error) {
+      console.error("Error loading simulate enterprise mode:", error);
+      this.simulateEnterpriseMode = false;
+
+      // Hide toggle on error as well (safer approach)
+      if (this.elements.simulateEnterpriseMode) {
+        const labelElement =
+          this.elements.simulateEnterpriseMode.closest(".setting-label");
+        if (labelElement) {
+          labelElement.style.display = "none";
+        }
+      }
     }
   }
 
@@ -561,6 +598,12 @@ class CheckOptions {
       this.config.enableDebugLogging || false;
     this.elements.enableDeveloperConsoleLogging.checked =
       this.config.enableDeveloperConsoleLogging || false;
+
+    // Development settings (only visible in dev mode)
+    if (this.elements.simulateEnterpriseMode) {
+      this.elements.simulateEnterpriseMode.checked =
+        this.simulateEnterpriseMode;
+    }
 
     // Branding settings
     this.elements.companyName.value = this.brandingConfig?.companyName || "";
@@ -706,7 +749,7 @@ class CheckOptions {
   }
 
   gatherFormData() {
-    return {
+    const formData = {
       // Extension settings
       enablePageBlocking: this.elements.enablePageBlocking?.checked !== false,
       enableCippReporting: this.elements.enableCippReporting?.checked || false,
@@ -727,6 +770,37 @@ class CheckOptions {
       enableDeveloperConsoleLogging:
         this.elements.enableDeveloperConsoleLogging?.checked || false,
     };
+
+    // If in managed mode, filter out settings that are managed by policy
+    if (this.managedPolicies && Object.keys(this.managedPolicies).length > 0) {
+      const filteredData = {};
+      const managedSettingsList = Object.keys(this.managedPolicies);
+
+      // Add custom branding properties to managed list if present
+      if (this.managedPolicies.customBranding) {
+        managedSettingsList.push(
+          ...Object.keys(this.managedPolicies.customBranding)
+        );
+      }
+
+      // Only include settings that are NOT managed by policy
+      Object.keys(formData).forEach((key) => {
+        if (!managedSettingsList.includes(key)) {
+          filteredData[key] = formData[key];
+        } else {
+          console.log(`⚠️ Skipping managed setting: ${key}`);
+        }
+      });
+
+      console.log(
+        "💾 Saving only non-managed settings:",
+        Object.keys(filteredData)
+      );
+      return filteredData;
+    }
+
+    // If not in managed mode, return all settings
+    return formData;
   }
 
   validateConfiguration(config) {
@@ -1192,6 +1266,30 @@ class CheckOptions {
         this.elements.mobileMenuToggle.setAttribute("aria-expanded", !isOpen);
       }
     }
+  }
+
+  async toggleSimulateEnterpriseMode() {
+    this.simulateEnterpriseMode = this.elements.simulateEnterpriseMode.checked;
+
+    // Save the simulate mode state to storage for persistence
+    await chrome.storage.local.set({
+      simulateEnterpriseMode: this.simulateEnterpriseMode,
+    });
+
+    console.log("Simulate Enterprise Mode:", this.simulateEnterpriseMode);
+
+    // Reload the policy information to apply/remove enterprise restrictions
+    await this.loadPolicyInfo();
+
+    // Refresh the UI to reflect the change
+    this.populateFormFields();
+
+    // Show notification to user
+    const mode = this.simulateEnterpriseMode ? "enabled" : "disabled";
+    this.showToast(
+      `Enterprise simulation mode ${mode}. Page will reflect policy restrictions.`,
+      "info"
+    );
   }
 
   updateConfigDisplay() {
@@ -1801,15 +1899,18 @@ class CheckOptions {
 
   async loadPolicyInfo() {
     try {
-      // Development mode flag - set to true for sideloaded extension testing
-      const DEVELOPMENT_MODE = false; // Set to false for production
+      // Check if we're in development mode
+      const manifestData = chrome.runtime.getManifest();
+      const isDev = !("update_url" in manifestData); // No update_url means unpacked extension
 
       let policies = {};
       let isManaged = false;
 
-      if (DEVELOPMENT_MODE) {
-        // Mock managed policies for development testing
-        console.log("🔧 Development mode: Using mock managed policies");
+      if (isDev && this.simulateEnterpriseMode) {
+        // Mock managed policies for development testing (only when simulate mode is enabled)
+        console.log(
+          "🔧 Development mode: Using mock managed policies (simulate mode enabled)"
+        );
 
         policies = {
           // Extension configuration
@@ -1831,14 +1932,15 @@ class CheckOptions {
             productName: "Check Enterprise",
             supportEmail: "support@cyberdrain.com",
             primaryColor: "#F77F00",
-            logoUrl: "https://cyberdrain.com/logo.png",
+            logoUrl:
+              "https://cyberdrain.com/images/favicon_hu_20e77b0e20e363e.png",
           },
         };
 
         isManaged = true;
         this.showDevelopmentNotice();
       } else {
-        // Production mode: Use actual managed storage
+        // Either production mode or dev mode with simulate disabled: Use actual managed storage
         const safe = async (promise) => {
           try {
             return await promise;
@@ -1854,6 +1956,18 @@ class CheckOptions {
       if (isManaged) {
         console.log("📋 Managed policies active:", policies);
 
+        // Store managed policies for use during saving
+        this.managedPolicies = policies;
+
+        // Update branding configuration with managed custom branding
+        if (policies.customBranding) {
+          this.brandingConfig = policies.customBranding;
+          console.log(
+            "Updated branding with managed custom branding:",
+            this.brandingConfig
+          );
+        }
+
         // Show policy badge
         if (this.elements.policyBadge) {
           this.elements.policyBadge.style.display = "flex";
@@ -1864,6 +1978,9 @@ class CheckOptions {
 
         // Disable policy-managed fields
         this.disablePolicyManagedFields(policies);
+
+        // Re-apply branding in case managed branding is different
+        this.applyBranding();
       } else {
         console.log("👤 No managed policies found - user mode");
 
@@ -2025,13 +2142,13 @@ class CheckOptions {
       }
     });
 
-    // Disable the save button
+    // Modify the save button for mixed mode (some settings managed, some user-controlled)
     if (this.elements.saveSettings) {
-      this.elements.saveSettings.disabled = true;
+      // Don't fully disable the save button - allow saving of non-managed settings
       this.elements.saveSettings.title =
-        "Settings are managed by your organization and cannot be modified";
-      this.elements.saveSettings.textContent = "Managed by Policy";
-      this.elements.saveSettings.classList.add("policy-managed");
+        "Save non-managed settings (managed settings cannot be modified)";
+      this.elements.saveSettings.textContent = "Save Available Settings";
+      this.elements.saveSettings.classList.add("managed-mode");
     }
 
     // Disable the debug logging checkbox specifically
