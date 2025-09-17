@@ -587,7 +587,7 @@
       "description": "Invalid referrer not in custom allow list",
       "action": "warn",
       "category": "referrer_spoofing",
-      "confidence": 0.35,
+      "confidence": 0.1,
       "comment": "Lower confidence due to potential false positives from legitimate third-party services"
     },
     {
