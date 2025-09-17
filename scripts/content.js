@@ -27,8 +27,8 @@ if (window.checkExtensionLoaded) {
   let lastDetectionResult = null; // Store last detection analysis
   let developerConsoleLoggingEnabled = false; // Cache for developer console logging setting
   let showingBanner = false; // Flag to prevent DOM monitoring loops when showing banners
-  const MAX_SCANS = 10; // Prevent infinite scanning
-  const SCAN_COOLDOWN = 1000; // 1 second between scans
+  const MAX_SCANS = 5; // Prevent infinite scanning - reduced for performance
+  const SCAN_COOLDOWN = 1200; // 1200ms between scans - increased for performance
 
   /**
    * Check if a URL matches any pattern in the given pattern array
@@ -1424,137 +1424,150 @@ if (window.checkExtensionLoaded) {
       const PROCESSING_TIMEOUT = 5000; // Standard timeout
       let processedCount = 0;
 
-      for (const indicator of detectionRules.phishing_indicators) {
-        // Check if we've exceeded the timeout
+      // Process indicators in chunks to prevent browser lock-up
+      const CHUNK_SIZE = 3; // Process 3 indicators at a time
+      const indicators = detectionRules.phishing_indicators;
+
+      for (let i = 0; i < indicators.length; i += CHUNK_SIZE) {
+        // Check timeout before each chunk
         if (Date.now() - startTime > PROCESSING_TIMEOUT) {
           logger.warn(
             `⏱️ Processing timeout reached after ${
               Date.now() - startTime
-            }ms, stopping at ${indicator.id}`
+            }ms, stopping at chunk ${Math.floor(i / CHUNK_SIZE)}`
           );
           break;
         }
 
-        // Yield control to main thread every 5 indicators
-        if (processedCount % 5 === 0 && processedCount > 0) {
-          await new Promise((resolve) => setTimeout(resolve, 0)); // Yield to main thread
-        }
-        processedCount++;
+        // Process chunk of indicators
+        const chunk = indicators.slice(i, i + CHUNK_SIZE);
+        for (const indicator of chunk) {
+          processedCount++;
 
-        try {
-          let matches = false;
-          let matchDetails = "";
+          try {
+            let matches = false;
+            let matchDetails = "";
 
-          // Standard processing
-          const pattern = new RegExp(indicator.pattern, indicator.flags || "i");
+            // Standard processing
+            const pattern = new RegExp(
+              indicator.pattern,
+              indicator.flags || "i"
+            );
 
-          // Test against page source
-          if (pattern.test(pageSource)) {
-            matches = true;
-            matchDetails = "page source";
-          }
-          // Test against visible text
-          else if (pattern.test(pageText)) {
-            matches = true;
-            matchDetails = "page text";
-          }
-          // Test against URL
-          else if (pattern.test(currentUrl)) {
-            matches = true;
-            matchDetails = "URL";
-          }
-
-          // Special handling for additional_checks (phi_014, phi_015)
-          if (!matches && indicator.additional_checks) {
-            for (const check of indicator.additional_checks) {
-              if (pageSource.includes(check) || pageText.includes(check)) {
-                matches = true;
-                matchDetails = "additional checks";
-                break;
-              }
+            // Test against page source
+            if (pattern.test(pageSource)) {
+              matches = true;
+              matchDetails = "page source";
             }
-          }
+            // Test against visible text
+            else if (pattern.test(pageText)) {
+              matches = true;
+              matchDetails = "page text";
+            }
+            // Test against URL
+            else if (pattern.test(currentUrl)) {
+              matches = true;
+              matchDetails = "URL";
+            }
 
-          // Handle context_required field for conditional detection
-          if (matches && indicator.context_required) {
-            let contextFound = false;
-
-            for (const requiredContext of indicator.context_required) {
-              if (
-                pageSource
-                  .toLowerCase()
-                  .includes(requiredContext.toLowerCase()) ||
-                pageText.toLowerCase().includes(requiredContext.toLowerCase())
-              ) {
-                contextFound = true;
-                break;
+            // Special handling for additional_checks (phi_014, phi_015)
+            if (!matches && indicator.additional_checks) {
+              for (const check of indicator.additional_checks) {
+                if (pageSource.includes(check) || pageText.includes(check)) {
+                  matches = true;
+                  matchDetails = "additional checks";
+                  break;
+                }
               }
             }
 
-            if (!contextFound) {
-              logger.debug(
-                `🚫 ${indicator.id} excluded - required context not found`
+            // Handle context_required field for conditional detection
+            if (matches && indicator.context_required) {
+              let contextFound = false;
+
+              for (const requiredContext of indicator.context_required) {
+                if (
+                  pageSource
+                    .toLowerCase()
+                    .includes(requiredContext.toLowerCase()) ||
+                  pageText.toLowerCase().includes(requiredContext.toLowerCase())
+                ) {
+                  contextFound = true;
+                  break;
+                }
+              }
+
+              if (!contextFound) {
+                logger.debug(
+                  `🚫 ${indicator.id} excluded - required context not found`
+                );
+                matches = false;
+              }
+            }
+
+            // Special handling for Microsoft branding indicators (phi_001_enhanced, phi_002)
+            if (
+              matches &&
+              (indicator.id === "phi_001_enhanced" ||
+                indicator.id === "phi_002")
+            ) {
+              const hasLegitimateSSO = checkLegitimateSSO(pageText, pageSource);
+
+              if (hasLegitimateSSO) {
+                logger.debug(
+                  `🚫 ${indicator.id} excluded - legitimate SSO detected`
+                );
+                matches = false;
+              }
+            }
+
+            if (matches) {
+              const threat = {
+                id: indicator.id,
+                category: indicator.category,
+                severity: indicator.severity,
+                confidence: indicator.confidence,
+                description: indicator.description,
+                action: indicator.action,
+                matchDetails: matchDetails,
+              };
+
+              threats.push(threat);
+
+              // Calculate score based on severity and confidence
+              let scoreWeight = 0;
+              switch (indicator.severity) {
+                case "critical":
+                  scoreWeight = 25;
+                  break;
+                case "high":
+                  scoreWeight = 15;
+                  break;
+                case "medium":
+                  scoreWeight = 10;
+                  break;
+                case "low":
+                  scoreWeight = 5;
+                  break;
+              }
+
+              totalScore += scoreWeight * (indicator.confidence || 0.5);
+
+              logger.warn(
+                `🚨 PHISHING INDICATOR DETECTED: ${indicator.id} - ${indicator.description}`
               );
-              matches = false;
             }
-          }
-
-          // Special handling for Microsoft branding indicators (phi_001_enhanced, phi_002)
-          if (
-            matches &&
-            (indicator.id === "phi_001_enhanced" || indicator.id === "phi_002")
-          ) {
-            const hasLegitimateSSO = checkLegitimateSSO(pageText, pageSource);
-
-            if (hasLegitimateSSO) {
-              logger.debug(
-                `🚫 ${indicator.id} excluded - legitimate SSO detected`
-              );
-              matches = false;
-            }
-          }
-
-          if (matches) {
-            const threat = {
-              id: indicator.id,
-              category: indicator.category,
-              severity: indicator.severity,
-              confidence: indicator.confidence,
-              description: indicator.description,
-              action: indicator.action,
-              matchDetails: matchDetails,
-            };
-
-            threats.push(threat);
-
-            // Calculate score based on severity and confidence
-            let scoreWeight = 0;
-            switch (indicator.severity) {
-              case "critical":
-                scoreWeight = 25;
-                break;
-              case "high":
-                scoreWeight = 15;
-                break;
-              case "medium":
-                scoreWeight = 10;
-                break;
-              case "low":
-                scoreWeight = 5;
-                break;
-            }
-
-            totalScore += scoreWeight * (indicator.confidence || 0.5);
-
+          } catch (error) {
             logger.warn(
-              `🚨 PHISHING INDICATOR DETECTED: ${indicator.id} - ${indicator.description}`
+              `Error processing phishing indicator ${indicator.id}:`,
+              error.message
             );
           }
-        } catch (error) {
-          logger.warn(
-            `Error processing phishing indicator ${indicator.id}:`,
-            error.message
-          );
+        }
+
+        // Yield to main thread after each chunk (except last)
+        if (i + CHUNK_SIZE < indicators.length) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
         }
       }
 
@@ -2756,9 +2769,15 @@ if (window.checkExtensionLoaded) {
       if (detectionResult.score >= detectionResult.threshold) {
         // High confidence legitimate page - skip phishing indicators entirely
         logger.log(
-          `🟢 High confidence legitimate page (score: ${detectionResult.score} >= ${detectionResult.threshold}) - skipping phishing indicators for performance`
+          `🟢 High confidence legitimate page (score: ${detectionResult.score} >= ${detectionResult.threshold}) - skipping ALL phishing indicators for performance`
         );
         skipPhishingIndicators = true;
+      } else if (detectionResult.score >= detectionResult.threshold * 0.8) {
+        // Medium-high confidence - run limited phishing indicators only for critical threats
+        logger.log(
+          `🟡 Medium-high confidence page (score: ${detectionResult.score}) - running critical phishing indicators only`
+        );
+        skipPhishingIndicators = true; // Skip for now, can be enhanced later with limited scanning
       } else if (detectionResult.score <= 25) {
         // Very low legitimacy score - likely phishing, skip indicators and handle as suspicious
         logger.warn(
@@ -3216,16 +3235,24 @@ if (window.checkExtensionLoaded) {
           }
 
           if (shouldRerun && !showingBanner) {
+            // Check scan rate limiting
+            if (scanCount >= MAX_SCANS) {
+              logger.log(
+                "🛑 Maximum scans reached for this page, ignoring DOM changes"
+              );
+              return;
+            }
+
             logger.log(
               "🔄 Significant DOM changes detected - re-running protection analysis"
             );
             logger.log(
               `Page now has ${document.querySelectorAll("*").length} elements`
             );
-            // Debounce re-runs
+            // Enhanced debounce delay from 500ms to 1000ms for performance
             setTimeout(() => {
               runProtection(true);
-            }, 500);
+            }, 1000);
           } else if (showingBanner) {
             logger.debug(
               "🚫 Ignoring DOM changes while banner is being displayed"
