@@ -1310,6 +1310,164 @@ if (window.checkExtensionLoaded) {
   }
 
   /**
+   * Process phishing indicators using Web Worker for background processing
+   */
+  async function processPhishingIndicatorsInBackground(
+    indicators,
+    pageSource,
+    pageText,
+    currentUrl
+  ) {
+    return new Promise((resolve) => {
+      try {
+        // Create inline Web Worker for background regex processing
+        const workerCode = `
+          self.onmessage = function(e) {
+            const { indicators, pageSource, pageText, currentUrl } = e.data;
+            const threats = [];
+            let totalScore = 0;
+            
+            try {
+              for (let i = 0; i < indicators.length; i++) {
+                const indicator = indicators[i];
+                
+                // Send progress update every 3 indicators
+                if (i % 3 === 0) {
+                  self.postMessage({
+                    type: 'progress',
+                    processed: i,
+                    total: indicators.length,
+                    currentIndicator: indicator.id
+                  });
+                }
+                
+                try {
+                  let matches = false;
+                  let matchDetails = "";
+                  
+                  const pattern = new RegExp(indicator.pattern, indicator.flags || "i");
+                  
+                  // Test against page source
+                  if (pattern.test(pageSource)) {
+                    matches = true;
+                    matchDetails = "page source";
+                  }
+                  // Test against visible text
+                  else if (pattern.test(pageText)) {
+                    matches = true;
+                    matchDetails = "page text";
+                  }
+                  // Test against URL
+                  else if (pattern.test(currentUrl)) {
+                    matches = true;
+                    matchDetails = "URL";
+                  }
+                  
+                  // Handle additional_checks
+                  if (!matches && indicator.additional_checks) {
+                    for (const check of indicator.additional_checks) {
+                      if (pageSource.includes(check) || pageText.includes(check)) {
+                        matches = true;
+                        matchDetails = "additional checks";
+                        break;
+                      }
+                    }
+                  }
+                  
+                  if (matches) {
+                    const threat = {
+                      id: indicator.id,
+                      category: indicator.category,
+                      severity: indicator.severity,
+                      confidence: indicator.confidence,
+                      description: indicator.description,
+                      action: indicator.action,
+                      matchDetails: matchDetails,
+                    };
+                    
+                    threats.push(threat);
+                    
+                    // Calculate score
+                    let scoreWeight = 0;
+                    switch (indicator.severity) {
+                      case "critical": scoreWeight = 25; break;
+                      case "high": scoreWeight = 15; break;
+                      case "medium": scoreWeight = 10; break;
+                      case "low": scoreWeight = 5; break;
+                    }
+                    
+                    totalScore += scoreWeight * (indicator.confidence || 0.5);
+                  }
+                } catch (error) {
+                  // Continue processing other indicators
+                }
+              }
+              
+              self.postMessage({
+                type: 'complete',
+                threats: threats,
+                score: totalScore
+              });
+            } catch (error) {
+              self.postMessage({
+                type: 'error',
+                error: error.message
+              });
+            }
+          };
+        `;
+
+        const blob = new Blob([workerCode], { type: "application/javascript" });
+        const worker = new Worker(URL.createObjectURL(blob));
+
+        let progressCallback = (data) => {
+          logger.log(
+            `⏱️ PERF: Background processing ${data.processed}/${data.total} - ${data.currentIndicator}`
+          );
+        };
+
+        worker.onmessage = function (e) {
+          const {
+            type,
+            threats,
+            score,
+            processed,
+            total,
+            currentIndicator,
+            error,
+          } = e.data;
+
+          if (type === "progress") {
+            progressCallback({ processed, total, currentIndicator });
+          } else if (type === "complete") {
+            worker.terminate();
+            URL.revokeObjectURL(blob);
+            resolve({ threats: threats || [], score: score || 0 });
+          } else if (type === "error") {
+            worker.terminate();
+            URL.revokeObjectURL(blob);
+            logger.error("Web Worker error:", error);
+            resolve({ threats: [], score: 0 });
+          }
+        };
+
+        worker.onerror = function (error) {
+          worker.terminate();
+          URL.revokeObjectURL(blob);
+          logger.error("Web Worker failed:", error);
+          resolve({ threats: [], score: 0 });
+        };
+
+        // Start background processing
+        worker.postMessage({ indicators, pageSource, pageText, currentUrl });
+      } catch (error) {
+        logger.error("Failed to create Web Worker:", error);
+        resolve({ threats: [], score: 0 });
+      }
+    });
+  }
+
+  /**
    * Process phishing indicators from detection rules
    */
   async function processPhishingIndicators() {
@@ -1424,67 +1582,33 @@ if (window.checkExtensionLoaded) {
       const PROCESSING_TIMEOUT = 5000; // Standard timeout
       let processedCount = 0;
 
-      // Process indicators in chunks to prevent browser lock-up
-      const CHUNK_SIZE = 3; // Process 3 indicators at a time
-      const indicators = detectionRules.phishing_indicators;
+      // Try Web Worker for background processing first
+      logger.log(`⏱️ PERF: Attempting background processing with Web Worker`);
+      try {
+        const backgroundResult = await processPhishingIndicatorsInBackground(
+          detectionRules.phishing_indicators,
+          pageSource,
+          pageText,
+          currentUrl
+        );
 
-      for (let i = 0; i < indicators.length; i += CHUNK_SIZE) {
-        // Check timeout before each chunk
-        if (Date.now() - startTime > PROCESSING_TIMEOUT) {
-          logger.warn(
-            `⏱️ Processing timeout reached after ${
-              Date.now() - startTime
-            }ms, stopping at chunk ${Math.floor(i / CHUNK_SIZE)}`
-          );
-          break;
-        }
+        if (
+          backgroundResult &&
+          (backgroundResult.threats.length > 0 || backgroundResult.score >= 0)
+        ) {
+          logger.log(`⏱️ PERF: Background processing completed successfully`);
 
-        // Process chunk of indicators
-        const chunk = indicators.slice(i, i + CHUNK_SIZE);
-        for (const indicator of chunk) {
-          processedCount++;
+          // Apply context filtering and SSO checks to background results
+          const filteredThreats = [];
+          for (const threat of backgroundResult.threats) {
+            let includeThread = true;
 
-          try {
-            let matches = false;
-            let matchDetails = "";
-
-            // Standard processing
-            const pattern = new RegExp(
-              indicator.pattern,
-              indicator.flags || "i"
+            // Apply context_required filtering from rules
+            const indicator = detectionRules.phishing_indicators.find(
+              (ind) => ind.id === threat.id
             );
-
-            // Test against page source
-            if (pattern.test(pageSource)) {
-              matches = true;
-              matchDetails = "page source";
-            }
-            // Test against visible text
-            else if (pattern.test(pageText)) {
-              matches = true;
-              matchDetails = "page text";
-            }
-            // Test against URL
-            else if (pattern.test(currentUrl)) {
-              matches = true;
-              matchDetails = "URL";
-            }
-
-            // Special handling for additional_checks (phi_014, phi_015)
-            if (!matches && indicator.additional_checks) {
-              for (const check of indicator.additional_checks) {
-                if (pageSource.includes(check) || pageText.includes(check)) {
-                  matches = true;
-                  matchDetails = "additional checks";
-                  break;
-                }
-              }
-            }
-
-            // Handle context_required field for conditional detection
-            if (matches && indicator.context_required) {
+            if (indicator?.context_required) {
               let contextFound = false;
-
               for (const requiredContext of indicator.context_required) {
                 if (
                   pageSource
@@ -1496,80 +1620,208 @@ if (window.checkExtensionLoaded) {
                   break;
                 }
               }
-
               if (!contextFound) {
+                includeThread = false;
                 logger.debug(
-                  `🚫 ${indicator.id} excluded - required context not found`
+                  `🚫 ${threat.id} excluded - required context not found`
                 );
-                matches = false;
               }
             }
 
-            // Special handling for Microsoft branding indicators (phi_001_enhanced, phi_002)
+            // Apply SSO exclusion from rules
             if (
-              matches &&
-              (indicator.id === "phi_001_enhanced" ||
-                indicator.id === "phi_002")
+              includeThread &&
+              (threat.id === "phi_001_enhanced" || threat.id === "phi_002")
             ) {
               const hasLegitimateSSO = checkLegitimateSSO(pageText, pageSource);
-
               if (hasLegitimateSSO) {
+                includeThread = false;
                 logger.debug(
-                  `🚫 ${indicator.id} excluded - legitimate SSO detected`
+                  `🚫 ${threat.id} excluded - legitimate SSO detected`
                 );
-                matches = false;
               }
             }
 
-            if (matches) {
-              const threat = {
-                id: indicator.id,
-                category: indicator.category,
-                severity: indicator.severity,
-                confidence: indicator.confidence,
-                description: indicator.description,
-                action: indicator.action,
-                matchDetails: matchDetails,
-              };
-
-              threats.push(threat);
-
-              // Calculate score based on severity and confidence
-              let scoreWeight = 0;
-              switch (indicator.severity) {
-                case "critical":
-                  scoreWeight = 25;
-                  break;
-                case "high":
-                  scoreWeight = 15;
-                  break;
-                case "medium":
-                  scoreWeight = 10;
-                  break;
-                case "low":
-                  scoreWeight = 5;
-                  break;
-              }
-
-              totalScore += scoreWeight * (indicator.confidence || 0.5);
-
-              logger.warn(
-                `🚨 PHISHING INDICATOR DETECTED: ${indicator.id} - ${indicator.description}`
-              );
+            if (includeThread) {
+              filteredThreats.push(threat);
             }
-          } catch (error) {
-            logger.warn(
-              `Error processing phishing indicator ${indicator.id}:`,
-              error.message
-            );
           }
-        }
 
-        // Yield to main thread after each chunk (except last)
-        if (i + CHUNK_SIZE < indicators.length) {
-          await new Promise((resolve) => setTimeout(resolve, 0));
+          return { threats: filteredThreats, score: backgroundResult.score };
         }
+      } catch (workerError) {
+        logger.warn(
+          "Web Worker processing failed, falling back to main thread:",
+          workerError.message
+        );
       }
+
+      // Fallback to main thread processing with requestIdleCallback optimization
+      logger.log(`⏱️ PERF: Using main thread with idle callback optimization`);
+
+      return new Promise((resolve) => {
+        const processWithIdleCallback = async () => {
+          const threats = [];
+          let totalScore = 0;
+          let processedCount = 0;
+
+          const processNextBatch = async () => {
+            const BATCH_SIZE = 2; // Smaller batches for idle processing
+            const startIdx = processedCount;
+            const endIdx = Math.min(
+              startIdx + BATCH_SIZE,
+              detectionRules.phishing_indicators.length
+            );
+
+            for (let i = startIdx; i < endIdx; i++) {
+              const indicator = detectionRules.phishing_indicators[i];
+              processedCount++;
+
+              try {
+                let matches = false;
+                let matchDetails = "";
+
+                const pattern = new RegExp(
+                  indicator.pattern,
+                  indicator.flags || "i"
+                );
+
+                // Test against page source
+                if (pattern.test(pageSource)) {
+                  matches = true;
+                  matchDetails = "page source";
+                }
+                // Test against visible text
+                else if (pattern.test(pageText)) {
+                  matches = true;
+                  matchDetails = "page text";
+                }
+                // Test against URL
+                else if (pattern.test(currentUrl)) {
+                  matches = true;
+                  matchDetails = "URL";
+                }
+
+                // Handle additional_checks
+                if (!matches && indicator.additional_checks) {
+                  for (const check of indicator.additional_checks) {
+                    if (
+                      pageSource.includes(check) ||
+                      pageText.includes(check)
+                    ) {
+                      matches = true;
+                      matchDetails = "additional checks";
+                      break;
+                    }
+                  }
+                }
+
+                // Handle context_required field for conditional detection
+                if (matches && indicator.context_required) {
+                  let contextFound = false;
+                  for (const requiredContext of indicator.context_required) {
+                    if (
+                      pageSource
+                        .toLowerCase()
+                        .includes(requiredContext.toLowerCase()) ||
+                      pageText
+                        .toLowerCase()
+                        .includes(requiredContext.toLowerCase())
+                    ) {
+                      contextFound = true;
+                      break;
+                    }
+                  }
+                  if (!contextFound) {
+                    logger.debug(
+                      `🚫 ${indicator.id} excluded - required context not found`
+                    );
+                    matches = false;
+                  }
+                }
+
+                // Special handling for Microsoft branding indicators
+                if (
+                  matches &&
+                  (indicator.id === "phi_001_enhanced" ||
+                    indicator.id === "phi_002")
+                ) {
+                  const hasLegitimateSSO = checkLegitimateSSO(
+                    pageText,
+                    pageSource
+                  );
+                  if (hasLegitimateSSO) {
+                    logger.debug(
+                      `🚫 ${indicator.id} excluded - legitimate SSO detected`
+                    );
+                    matches = false;
+                  }
+                }
+
+                if (matches) {
+                  const threat = {
+                    id: indicator.id,
+                    category: indicator.category,
+                    severity: indicator.severity,
+                    confidence: indicator.confidence,
+                    description: indicator.description,
+                    action: indicator.action,
+                    matchDetails: matchDetails,
+                  };
+
+                  threats.push(threat);
+
+                  // Calculate score based on severity and confidence
+                  let scoreWeight = 0;
+                  switch (indicator.severity) {
+                    case "critical":
+                      scoreWeight = 25;
+                      break;
+                    case "high":
+                      scoreWeight = 15;
+                      break;
+                    case "medium":
+                      scoreWeight = 10;
+                      break;
+                    case "low":
+                      scoreWeight = 5;
+                      break;
+                  }
+
+                  totalScore += scoreWeight * (indicator.confidence || 0.5);
+
+                  logger.warn(
+                    `🚨 PHISHING INDICATOR DETECTED: ${indicator.id} - ${indicator.description}`
+                  );
+                }
+              } catch (error) {
+                logger.warn(
+                  `Error processing phishing indicator ${indicator.id}:`,
+                  error.message
+                );
+              }
+            }
+
+            // Continue processing if more indicators remain
+            if (processedCount < detectionRules.phishing_indicators.length) {
+              // Use requestIdleCallback if available, otherwise setTimeout
+              if (window.requestIdleCallback) {
+                requestIdleCallback(processNextBatch, { timeout: 100 });
+              } else {
+                setTimeout(processNextBatch, 0);
+              }
+            } else {
+              // Processing complete
+              resolve({ threats, score: totalScore });
+            }
+          };
+
+          // Start processing
+          processNextBatch();
+        };
+
+        processWithIdleCallback();
+      });
 
       const processingTime = Date.now() - startTime;
       logger.log(
