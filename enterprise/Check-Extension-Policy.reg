@@ -2,7 +2,11 @@ Windows Registry Editor Version 5.00
 
 ; Microsoft Edge Enterprise Policy for Check Extension by CyberDrain
 ; This registry file configures managed settings for the Check phishing protection extension
-; Apply this via Group Policy or direct registry modification
+
+; =============================================================================
+; Edge Enterprise Policy for Check Extension by CyberDrain
+; Edge Extension ID: knepjpocdagponkonnbggpcnhnaikajg
+; =============================================================================
 
 ; Configure extension settings via managed storage
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\knepjpocdagponkonnbggpcnhnaikajg\policy]
@@ -30,6 +34,42 @@ Windows Registry Editor Version 5.00
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge\ExtensionSettings\knepjpocdagponkonnbggpcnhnaikajg]
 "installation_mode"="force_installed"
 "update_url"="https://edge.microsoft.com/extensionwebstorebase/v1/crx"
+"blocked_permissions"="-"
+"allowed_permissions"="*"
+"runtime_blocked_hosts"="-"
+"runtime_allowed_hosts"="*"
+
+; =============================================================================
+; Google Chrome Enterprise Policy for Check Extension by CyberDrain
+; Chrome Extension ID: benimdeioplgkhanklclahllklceahbe
+; =============================================================================
+
+; Configure extension settings via managed storage
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\3rdparty\extensions\benimdeioplgkhanklclahllklceahbe\policy]
+"showNotifications"=dword:00000001
+"enableValidPageBadge"=dword:00000000
+"enablePageBlocking"=dword:00000001
+"enableCippReporting"=dword:00000001
+"cippServerUrl"=""
+"cippTenantId"=""
+"customRulesUrl"=""
+"updateInterval"=dword:00000018
+"enableDebugLogging"=dword:00000000
+
+; Custom branding configuration for Chrome
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\3rdparty\extensions\benimdeioplgkhanklclahllklceahbe\policy\customBranding]
+"companyName"="CyberDrain"
+"productName"="Check"
+"supportEmail"=""
+"primaryColor"="#F77F00"
+"logoUrl"=""
+
+; Optional: Prevent users from disabling the extension in Chrome
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\ExtensionSettings]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\ExtensionSettings\benimdeioplgkhanklclahllklceahbe]
+"installation_mode"="force_installed"
+"update_url"="https://clients2.google.com/service/update2/crx"
 "blocked_permissions"="-"
 "allowed_permissions"="*"
 "runtime_blocked_hosts"="-"
