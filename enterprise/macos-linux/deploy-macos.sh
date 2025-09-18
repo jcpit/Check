@@ -347,6 +347,106 @@ uninstall_profile() {
     else
         print_warning "Edge managed policy not found or already removed"
     fi
+
+    # Force browsers to reload policies by clearing preferences cache
+    print_info "Clearing browser policy cache..."
+
+    # Clear Chrome policy cache
+    if command -v defaults >/dev/null 2>&1; then
+        defaults delete com.google.Chrome 2>/dev/null || true
+        print_info "Chrome preferences cache cleared"
+    fi
+
+    # Clear Edge policy cache
+    if command -v defaults >/dev/null 2>&1; then
+        defaults delete com.microsoft.Edge 2>/dev/null || true
+        print_info "Edge preferences cache cleared"
+    fi
+
+    # Kill browser processes to force policy reload
+    print_info "Forcing browser restart to reload policies..."
+
+    # Kill Chrome processes
+    pkill -f "Google Chrome" 2>/dev/null || true
+    pkill -f "Chromium" 2>/dev/null || true
+
+    # Kill Edge processes
+    pkill -f "Microsoft Edge" 2>/dev/null || true
+
+    print_success "Browser processes terminated - policies will reload on next launch"
+
+    # Clear system policy cache
+    print_info "Clearing system policy cache..."
+    if command -v mcxrefresh >/dev/null 2>&1; then
+        mcxrefresh -n "$USER" 2>/dev/null || true
+        print_info "System policy cache refreshed"
+    fi
+
+    print_warning "Important: Restart Chrome and Edge to ensure all policies are cleared"
+}
+
+# Function to completely clean all extension policies and cache
+clean_all() {
+    print_info "Performing complete cleanup of Check extension policies..."
+
+    # Run normal uninstall first
+    uninstall_profile
+
+    echo
+    print_info "Performing deep cleanup..."
+
+    # Remove any remaining profile files from desktop
+    local desktop_dir="$HOME/Desktop"
+    if [[ -n "$SUDO_USER" ]]; then
+        desktop_dir=$(eval echo "~$SUDO_USER/Desktop")
+    fi
+
+    if [[ -f "$desktop_dir/Check-Chrome-Extension.mobileconfig" ]]; then
+        rm -f "$desktop_dir/Check-Chrome-Extension.mobileconfig"
+        print_info "Removed Chrome profile from Desktop"
+    fi
+
+    if [[ -f "$desktop_dir/Check-Edge-Extension.mobileconfig" ]]; then
+        rm -f "$desktop_dir/Check-Edge-Extension.mobileconfig"
+        print_info "Removed Edge profile from Desktop"
+    fi
+
+    # Clear all browser data related to extension policies
+    print_info "Clearing all browser extension data..."
+
+    # Clear Chrome extension cache
+    local chrome_cache_dirs=(
+        "/Library/Application Support/Google/Chrome/Default/Local Extension Settings"
+        "/Library/Application Support/Google/Chrome/Default/Extensions"
+        "/Library/Caches/com.google.Chrome"
+    )
+
+    for dir in "${chrome_cache_dirs[@]}"; do
+        if [[ -d "$dir" ]]; then
+            find "$dir" -name "*benimdeioplgkhanklclahllklceahbe*" -exec rm -rf {} + 2>/dev/null || true
+        fi
+    done
+
+    # Clear Edge extension cache
+    local edge_cache_dirs=(
+        "/Library/Application Support/Microsoft Edge/Default/Local Extension Settings"
+        "/Library/Application Support/Microsoft Edge/Default/Extensions"
+        "/Library/Caches/com.microsoft.Edge"
+    )
+
+    for dir in "${edge_cache_dirs[@]}"; do
+        if [[ -d "$dir" ]]; then
+            find "$dir" -name "*knepjpocdagponkonnbggpcnhnaikajg*" -exec rm -rf {} + 2>/dev/null || true
+        fi
+    done
+
+    print_success "Deep cleanup completed"
+    print_warning "IMPORTANT: You must restart Chrome and Edge browsers completely"
+    print_info "After restart, verify cleanup at:"
+    echo "  - chrome://policy/ (should show no Check extension policies)"
+    echo "  - edge://policy/ (should show no Check extension policies)"
+    echo "  - chrome://extensions/ (extension should be gone)"
+    echo "  - edge://extensions/ (extension should be gone)"
 }
 
 # Function to show status
@@ -407,6 +507,41 @@ show_status() {
     echo
     print_info "Active configuration profiles:"
     profiles -P 2>/dev/null | grep -E "(com\.cyberdrain|Check|check)" || print_warning "No Check-related profiles found"
+
+    echo
+    print_info "Browser policy cache status:"
+
+    # Check Chrome defaults
+    if defaults read com.google.Chrome >/dev/null 2>&1; then
+        local chrome_policies
+        chrome_policies=$(defaults read com.google.Chrome 2>/dev/null | grep -E "(ExtensionSettings|3rdparty)" || echo "")
+        if [[ -n "$chrome_policies" ]]; then
+            print_success "Chrome has cached policies"
+        else
+            print_warning "Chrome has no cached extension policies"
+        fi
+    else
+        print_warning "Chrome preferences not found or not accessible"
+    fi
+
+    # Check Edge defaults
+    if defaults read com.microsoft.Edge >/dev/null 2>&1; then
+        local edge_policies
+        edge_policies=$(defaults read com.microsoft.Edge 2>/dev/null | grep -E "(ExtensionSettings|3rdparty)" || echo "")
+        if [[ -n "$edge_policies" ]]; then
+            print_success "Edge has cached policies"
+        else
+            print_warning "Edge has no cached extension policies"
+        fi
+    else
+        print_warning "Edge preferences not found or not accessible"
+    fi
+
+    echo
+    print_info "To clear cached policies completely:"
+    echo "  1. Run: sudo ./deploy-macos.sh uninstall"
+    echo "  2. Restart Chrome and Edge browsers"
+    echo "  3. Check chrome://policy/ and edge://policy/ pages"
 }
 
 # Function to show help
@@ -418,6 +553,7 @@ show_help() {
     echo "Commands:"
     echo "  install     Install the Check extension configuration profile and Chrome policy"
     echo "  uninstall   Remove the Check extension configuration profile and Chrome policy"
+    echo "  clean       Completely remove all extension policies, cache, and data"
     echo "  status      Show current installation status"
     echo "  help        Show this help message"
     echo
@@ -463,6 +599,13 @@ main() {
             uninstall_profile
             echo
             print_success "Uninstallation complete!"
+            ;;
+        clean)
+            check_root
+            echo
+            clean_all
+            echo
+            print_success "Complete cleanup finished!"
             ;;
         status)
             echo
