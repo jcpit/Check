@@ -4,27 +4,23 @@ Windows Registry Editor Version 5.00
 ; This registry file configures managed settings for the Check phishing protection extension
 ; Apply this via Group Policy or direct registry modification
 
-; Force install the extension (using actual Edge Add-ons Store ID)
-[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge\ExtensionInstallForcelist]
-"1"="knepjpocdagponkonnbggpcnhnaikajg;https://edge.microsoft.com/extensionwebstorebase/v1/crx"
-
 ; Configure extension settings via managed storage
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\knepjpocdagponkonnbggpcnhnaikajg\policy]
 "showNotifications"=dword:00000001
 "enableValidPageBadge"=dword:00000000
 "enablePageBlocking"=dword:00000001
 "enableCippReporting"=dword:00000001
-"cippServerUrl"="http://localhost:4280"
-"cippTenantId"="dev.johnwduprey.com"
+"cippServerUrl"=""
+"cippTenantId"=""
 "customRulesUrl"=""
 "updateInterval"=dword:00000018
-"enableDebugLogging"=dword:00000001
+"enableDebugLogging"=dword:00000000
 
 ; Custom branding configuration
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\knepjpocdagponkonnbggpcnhnaikajg\policy\customBranding]
-"companyName"="CyberDrain Internal"
-"productName"="Check - Phishing Protection"
-"supportEmail"="donotreply@cyberdrain.com"
+"companyName"="CyberDrain"
+"productName"="Check"
+"supportEmail"=""
 "primaryColor"="#F77F00"
 "logoUrl"=""
 
