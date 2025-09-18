@@ -1,4 +1,4 @@
-# Contributing to ProjectX
+# Contributing to Check
 
 Thanks for taking the time to contribute! These guidelines help keep contributions consistent and reliable for this Chrome extension.
 
