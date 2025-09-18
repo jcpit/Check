@@ -19,8 +19,8 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $AdmxPath = Join-Path $ScriptDir 'admx'
 
 # Define source files
-$AdmxFile = Join-Path $AdmxPath 'check.admx'
-$AdmlFile = Join-Path $AdmxPath 'en-US\check.adml'
+$AdmxFile = Join-Path $AdmxPath 'Check-Extension.admx'
+$AdmlFile = Join-Path $AdmxPath 'en-US\Check-Extension.adml'
 
 # Validate source files exist
 if (-not (Test-Path $AdmxFile)) {
@@ -47,8 +47,8 @@ if ($Scope -eq 'Domain') {
     $DestAdmlPath = "$env:SystemRoot\PolicyDefinitions\en-US"
 }
 
-$DestAdmxFile = Join-Path $DestAdmxPath 'check.admx'
-$DestAdmlFile = Join-Path $DestAdmlPath 'check.adml'
+$DestAdmxFile = Join-Path $DestAdmxPath 'Check-Extension.admx'
+$DestAdmlFile = Join-Path $DestAdmlPath 'Check-Extension.adml'
 
 Write-Host 'Check Extension ADMX Template Deployment' -ForegroundColor Cyan
 Write-Host '=========================================' -ForegroundColor Cyan
@@ -119,7 +119,7 @@ if ($Uninstall) {
 
     Write-Host "`nInstallation complete!" -ForegroundColor Green
     Write-Host "`nThe policies are now available at:" -ForegroundColor Cyan
-    Write-Host 'Computer Configuration > Administrative Templates > CyberDrain > Check' -ForegroundColor White
+    Write-Host 'Computer Configuration > Administrative Templates > CyberDrain > Check - Phishing Protection' -ForegroundColor White
 
     if ($Scope -eq 'Domain') {
         Write-Host "`nDomain deployment notes:" -ForegroundColor Yellow
