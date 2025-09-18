@@ -56,6 +56,9 @@ function parseUrlParams() {
           "threatCategory"
         ).textContent = `Score: ${details.score}/${details.threshold}`;
       }
+
+      // Populate technical details section
+      populateTechnicalDetails(details);
     } catch (error) {
       console.warn("Failed to parse block details:", error);
       console.log("Error details:", error.message);
@@ -121,27 +124,53 @@ function goBack() {
 function contactAdmin() {
   console.log("contactAdmin function called");
 
-  // Try to get support email from storage, with fallback
+  // Get support email from background script (centralized through config manager)
   try {
-    if (
-      typeof chrome !== "undefined" &&
-      chrome.storage &&
-      chrome.storage.local
-    ) {
-      chrome.storage.local.get(["brandingConfig"], (result) => {
-        console.log("Storage result:", result);
-        const supportEmail =
-          result.brandingConfig?.supportEmail || "support@cyberdrain.com";
-        console.log("Using support email:", supportEmail);
-        openMailto(supportEmail);
-      });
+    if (typeof chrome !== "undefined" && chrome.runtime) {
+      chrome.runtime.sendMessage(
+        { type: "GET_BRANDING_CONFIG" },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            console.warn(
+              "Failed to get branding from background:",
+              chrome.runtime.lastError.message
+            );
+            alert(
+              "No support contact information has been configured by your administrator."
+            );
+            return;
+          }
+
+          if (
+            response &&
+            response.success &&
+            response.branding &&
+            response.branding.supportEmail
+          ) {
+            console.log(
+              "Using branded support email:",
+              response.branding.supportEmail
+            );
+            openMailto(response.branding.supportEmail);
+          } else {
+            console.log("No branded support email available");
+            alert(
+              "No support contact information has been configured by your administrator."
+            );
+          }
+        }
+      );
     } else {
-      console.log("Chrome storage not available, using default email");
-      openMailto("support@cyberdrain.com");
+      console.log("Chrome runtime not available, no support contact available");
+      alert(
+        "No support contact information has been configured by your administrator."
+      );
     }
   } catch (error) {
-    console.error("Error accessing storage:", error);
-    openMailto("support@cyberdrain.com");
+    console.error("Error accessing branding config:", error);
+    alert(
+      "No support contact information has been configured by your administrator."
+    );
   }
 }
 
@@ -150,21 +179,194 @@ function openMailto(supportEmail) {
   const reason = document.getElementById("blockReason").textContent;
 
   // Create subject with defanged URL
-  const subject = encodeURIComponent(`Blocked page: ${blockedUrl}`);
+  const subject = encodeURIComponent(
+    `Security Alert: Website Blocked - ${blockedUrl}`
+  );
 
-  const body =
-    encodeURIComponent(`I am requesting access to a website that was blocked by Microsoft 365 Protection.
+  // Get phishing indicators from URL parameters if available
+  const urlParams = new URLSearchParams(window.location.search);
+  const detailsParam = urlParams.get("details");
+  let phishingIndicators = "Not available";
+
+  console.log("=== BLOCKED.JS DEBUG INFO ===");
+  console.log("Blocked URL:", blockedUrl);
+  console.log("Block Reason:", reason);
+  console.log("URL Params:", urlParams.toString());
+  console.log("Raw details param:", detailsParam);
+
+  if (detailsParam) {
+    try {
+      const details = JSON.parse(decodeURIComponent(detailsParam));
+
+      // Comprehensive logging of the details object
+      console.log("=== PARSED DETAILS OBJECT ===");
+      console.log("Full details object:", details);
+      console.log("Details keys:", Object.keys(details));
+      console.log("Details values:", Object.values(details));
+
+      // Log each property individually
+      Object.keys(details).forEach((key) => {
+        console.log(`details.${key}:`, details[key]);
+        if (Array.isArray(details[key])) {
+          console.log(
+            `  - Array with ${details[key].length} items:`,
+            details[key]
+          );
+        }
+      });
+
+      // Try to extract phishing indicators from various possible fields
+      if (
+        details.phishingIndicators &&
+        Array.isArray(details.phishingIndicators)
+      ) {
+        console.log("Using phishingIndicators field");
+        phishingIndicators = details.phishingIndicators
+          .map(
+            (indicator) =>
+              `- ${indicator.id || indicator.name || "Unknown"}: ${
+                indicator.description || indicator.reason || "Detected"
+              }`
+          )
+          .join("\n");
+      } else if (details.matchedRules && Array.isArray(details.matchedRules)) {
+        console.log("Using matchedRules field");
+        phishingIndicators = details.matchedRules
+          .map(
+            (rule) =>
+              `- ${rule.id || rule.name || "Unknown"}: ${
+                rule.description || rule.reason || "Rule matched"
+              }`
+          )
+          .join("\n");
+      } else if (details.threats && Array.isArray(details.threats)) {
+        console.log("Using threats field");
+        // Filter out the summary threat and show only specific indicators
+        const specificThreats = details.threats.filter((threat, index) => {
+          // Skip first threat if it's a summary (contains "legitimacy score" or is a general threat type)
+          // Keep threats with specific IDs (phishing rules)
+          if (threat.id && threat.id.startsWith("phi_")) {
+            return true;
+          }
+          // Keep threats with specific types that aren't summary types
+          if (
+            threat.type &&
+            !threat.type.includes("threat") &&
+            threat.description
+          ) {
+            return true;
+          }
+
+          // Keep anything else that looks like a specific threat
+          return (
+            threat.description && threat.description.length > 10 && threat.id
+          );
+        });
+        console.log("Filtered specific threats for email:", specificThreats);
+        phishingIndicators = specificThreats
+          .map(
+            (threat) =>
+              `- ${
+                threat.type ||
+                threat.category ||
+                threat.id ||
+                "Phishing Indicator"
+              }: ${threat.description || threat.reason || "Threat detected"}`
+          )
+          .join("\n");
+      } else if (details.foundThreats && Array.isArray(details.foundThreats)) {
+        console.log("Using foundThreats field");
+        phishingIndicators = details.foundThreats
+          .map(
+            (threat) =>
+              `- ${threat.id || threat}: ${threat.description || "Detected"}`
+          )
+          .join("\n");
+      } else if (details.indicators && Array.isArray(details.indicators)) {
+        console.log("Using indicators field");
+        phishingIndicators = details.indicators
+          .map(
+            (indicator) =>
+              `- ${indicator.id}: ${indicator.description || indicator.id} (${
+                indicator.severity || "unknown"
+              })`
+          )
+          .join("\n");
+      } else if (
+        details.foundIndicators &&
+        Array.isArray(details.foundIndicators)
+      ) {
+        console.log("Using foundIndicators field");
+        phishingIndicators = details.foundIndicators
+          .map(
+            (indicator) =>
+              `- ${indicator.id || indicator}: ${indicator.description || ""}`
+          )
+          .join("\n");
+      } else {
+        // Fallback: Look for any array properties that might contain indicators
+        const arrayProps = Object.keys(details).filter(
+          (key) => Array.isArray(details[key]) && details[key].length > 0
+        );
+        console.log(
+          "No standard indicator fields found. Array properties:",
+          arrayProps
+        );
+
+        if (arrayProps.length > 0) {
+          console.log("Examining array properties:");
+          arrayProps.forEach((prop) => {
+            console.log(`  ${prop}:`, details[prop]);
+          });
+          phishingIndicators = `Multiple indicators detected (${
+            details.reason || "see browser console for details"
+          })`;
+        } else {
+          console.log("No array properties found, using reason as fallback");
+          phishingIndicators = `${
+            details.reason || "Unknown detection criteria"
+          }`;
+        }
+      }
+
+      console.log("Final phishing indicators:", phishingIndicators);
+    } catch (error) {
+      console.error("Failed to parse phishing indicators:", error);
+      phishingIndicators = "Parse error - check browser console";
+    }
+  } else {
+    console.log("No details parameter found in URL");
+  }
+
+  console.log("=== END DEBUG INFO ==="); // Create a simplified body that won't exceed URL length limits
+  const body = encodeURIComponent(`Security Alert: Website Access Blocked
 
 Blocked URL: ${blockedUrl}
+Timestamp: ${new Date().toLocaleString()}
 Block Reason: ${reason}
-Time: ${new Date().toLocaleString()}
 
-I believe this website should be accessible for business purposes. Please review and whitelist if appropriate.
+Phishing Indicators Found:
+${phishingIndicators}
 
-Additional context:
-[Please provide any additional business justification]`);
+This automated report was generated when a user attempted to access the above URL and was blocked by the security system. Please review the details to determine if this was a legitimate block or if the URL should be added to an allow list.
+
+User Comment:
+[Please provide additional context about your intended use of this website and/or how you got here]
+
+---
+Technical Details Available in the Activity Logs`);
 
   const mailtoUrl = `mailto:${supportEmail}?subject=${subject}&body=${body}`;
+
+  // Check URL length and warn if too long
+  if (mailtoUrl.length > 2000) {
+    console.warn(
+      "Mailto URL might be too long:",
+      mailtoUrl.length,
+      "characters"
+    );
+  }
+
   console.log("Opening mailto URL:", mailtoUrl);
 
   try {
@@ -186,30 +388,39 @@ async function loadBranding() {
   console.log("loadBranding function called");
 
   try {
-    // Load branding from extension storage with Promise wrapper
-    const storageResult = await new Promise((resolve) => {
-      if (
-        typeof chrome !== "undefined" &&
-        chrome.storage &&
-        chrome.storage.local
-      ) {
-        chrome.storage.local.get(["brandingConfig"], (result) => {
-          console.log("Storage get result:", result);
-          resolve(result.brandingConfig || null);
-        });
+    // Get branding configuration from background script (centralized through config manager)
+    const brandingResult = await new Promise((resolve) => {
+      if (typeof chrome !== "undefined" && chrome.runtime) {
+        chrome.runtime.sendMessage(
+          { type: "GET_BRANDING_CONFIG" },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              console.warn(
+                "Failed to get branding from background:",
+                chrome.runtime.lastError.message
+              );
+              resolve(null);
+            } else {
+              resolve(response);
+            }
+          }
+        );
       } else {
-        console.log("Chrome storage not available");
+        console.log("Chrome runtime not available");
         resolve(null);
       }
     });
 
-    console.log("Storage branding config:", storageResult);
+    console.log("Branding response from background:", brandingResult);
 
-    if (storageResult) {
-      // Apply branding from storage
+    if (brandingResult && brandingResult.success && brandingResult.branding) {
+      const storageResult = brandingResult.branding;
+      console.log("Using branding from background script:", storageResult);
+
+      // Apply branding from background script
       const companyName =
         storageResult.companyName || storageResult.productName || "Check";
-      console.log("Setting company name from storage to:", companyName);
+      console.log("Setting company name from background to:", companyName);
       document.getElementById("companyName").textContent = companyName;
       document.title = `Access Blocked - ${companyName}`;
 
@@ -257,7 +468,9 @@ async function loadBranding() {
           };
         }
       } else {
-        console.log("No custom logo in storage, using default shield icon");
+        console.log(
+          "No custom logo in background config, using default shield icon"
+        );
         const customLogo = document.getElementById("customLogo");
         const defaultIcon = document.getElementById("defaultIcon");
         if (customLogo && defaultIcon) {
@@ -283,11 +496,25 @@ async function loadBranding() {
         document.head.appendChild(style);
       }
 
-      return; // Exit early if we loaded from storage
+      // Check if support email is available and hide/show contact button accordingly
+      const contactBtn = document.getElementById("contactAdminBtn");
+      if (storageResult.supportEmail && storageResult.supportEmail.trim()) {
+        console.log("Support email available, showing contact button");
+        if (contactBtn) {
+          contactBtn.style.display = "inline-block";
+        }
+      } else {
+        console.log("No support email available, hiding contact button");
+        if (contactBtn) {
+          contactBtn.style.display = "none";
+        }
+      }
+
+      return; // Exit early if we loaded from background script
     }
 
     // Fallback: try to load from branding.json file
-    console.log("No storage config, trying branding.json file");
+    console.log("No background config available, trying branding.json file");
     try {
       const response = await fetch(
         chrome.runtime.getURL("config/branding.json")
@@ -316,6 +543,21 @@ async function loadBranding() {
     document.title = "Access Blocked - Check";
   }
 
+  // Hide contact button by default if no background config was loaded
+  const contactBtn = document.getElementById("contactAdminBtn");
+  if (
+    contactBtn &&
+    (!brandingResult ||
+      !brandingResult.success ||
+      !brandingResult.branding ||
+      !brandingResult.branding.supportEmail)
+  ) {
+    console.log(
+      "No branded config loaded or no support email, hiding contact button"
+    );
+    contactBtn.style.display = "none";
+  }
+
   console.log(
     "Final company name:",
     document.getElementById("companyName").textContent
@@ -331,6 +573,15 @@ document.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("contactAdminBtn")
     .addEventListener("click", contactAdmin);
+
+  // Add technical details toggle listener
+  const techDetailsHeader = document.querySelector(".technical-details-header");
+  if (techDetailsHeader) {
+    console.log("Adding click listener to technical details header");
+    techDetailsHeader.addEventListener("click", toggleTechnicalDetails);
+  } else {
+    console.log("Technical details header not found");
+  }
 
   // Parse URL parameters and load branding
   parseUrlParams();
@@ -362,3 +613,215 @@ document.addEventListener("keydown", (e) => {
 document.addEventListener("contextmenu", (e) => {
   e.preventDefault();
 });
+
+// Toggle technical details section
+function toggleTechnicalDetails() {
+  console.log("toggleTechnicalDetails called");
+  const details = document.getElementById("technicalDetails");
+  console.log("Technical details element:", details);
+  console.log("Current classes:", details.className);
+
+  details.classList.toggle("expanded");
+
+  console.log("After toggle classes:", details.className);
+}
+
+// Make sure function is accessible globally
+window.toggleTechnicalDetails = toggleTechnicalDetails;
+
+// Populate technical details from parsed data
+function populateTechnicalDetails(details) {
+  console.log("=== POPULATING TECHNICAL DETAILS ===");
+  console.log("Full details object:", details);
+  console.log("Details.threats:", details.threats);
+  console.log("Details.phishingIndicators:", details.phishingIndicators);
+  console.log("Details.foundIndicators:", details.foundIndicators);
+
+  // Detection Scores
+  if (details.score !== undefined) {
+    document.getElementById("techScore").textContent = details.score;
+  }
+  if (details.threshold !== undefined) {
+    document.getElementById("techThreshold").textContent = details.threshold;
+  }
+
+  // Threat Analysis - Use multiple data sources
+  let phishingIndicators = [];
+  let indicatorCount = 0;
+
+  // Try to get indicators from multiple sources
+  if (details.threats && Array.isArray(details.threats)) {
+    console.log("Processing threats array for indicators");
+    const specificThreats = details.threats.filter((threat) => {
+      if (threat.id) return true;
+      if (threat.type && !threat.type.includes("threat") && threat.description)
+        return true;
+      if (threat.description && threat.description.includes("legitimacy score"))
+        return false;
+      return threat.description && threat.description.length > 10;
+    });
+    console.log("Filtered specific threats:", specificThreats);
+    phishingIndicators = specificThreats;
+    indicatorCount = specificThreats.length;
+  }
+
+  // Fallback: use phishingIndicators array if available
+  if (
+    indicatorCount === 0 &&
+    details.phishingIndicators &&
+    Array.isArray(details.phishingIndicators)
+  ) {
+    console.log(
+      "Using phishingIndicators array as fallback:",
+      details.phishingIndicators
+    );
+    phishingIndicators = details.phishingIndicators;
+    indicatorCount = details.phishingIndicators.length;
+  }
+
+  // Fallback: use foundIndicators array if available
+  if (
+    indicatorCount === 0 &&
+    details.foundIndicators &&
+    Array.isArray(details.foundIndicators)
+  ) {
+    console.log(
+      "Using foundIndicators array as fallback:",
+      details.foundIndicators
+    );
+    phishingIndicators = details.foundIndicators;
+    indicatorCount = details.foundIndicators.length;
+  }
+
+  // If we still have no indicators, try to count from the email section
+  if (
+    indicatorCount === 0 &&
+    details.reason &&
+    details.reason.includes("phishing indicators:")
+  ) {
+    const match = details.reason.match(/phishing indicators: (\d+)/);
+    if (match) {
+      indicatorCount = parseInt(match[1]);
+      console.log(
+        "Extracted indicator count from reason string:",
+        indicatorCount
+      );
+    }
+  }
+
+  document.getElementById("techIndicatorCount").textContent =
+    indicatorCount || "--";
+
+  // Find highest severity
+  if (phishingIndicators.length > 0) {
+    const severities = phishingIndicators
+      .map((t) => t.severity)
+      .filter((s) => s);
+    console.log("Severities found:", severities);
+    if (severities.length > 0) {
+      const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
+      const highestSeverity = severities.reduce((a, b) =>
+        (severityOrder[a] || 0) > (severityOrder[b] || 0) ? a : b
+      );
+      const severityElement = document.getElementById("techSeverity");
+      severityElement.innerHTML = `<span class="tech-badge ${highestSeverity}">${highestSeverity.toUpperCase()}</span>`;
+      console.log("Highest severity set to:", highestSeverity);
+    } else {
+      // Fallback: if we have threats but no severity, assume "high" based on the fact it was blocked
+      if (indicatorCount > 0) {
+        const severityElement = document.getElementById("techSeverity");
+        severityElement.innerHTML = `<span class="tech-badge high">HIGH</span>`;
+        console.log("Set fallback severity to HIGH");
+      }
+    }
+  }
+
+  // Populate phishing indicators list
+  populatePhishingIndicatorsList(phishingIndicators, details);
+
+  // Detection method
+  if (details.detectionMethod) {
+    document.getElementById("techDetectionMethod").textContent =
+      details.detectionMethod;
+  } else {
+    document.getElementById("techDetectionMethod").textContent =
+      "Phishing Indicators";
+  }
+
+  // Page Information
+  if (details.pageTitle) {
+    document.getElementById("techPageTitle").textContent = details.pageTitle;
+  }
+  if (details.userAgent) {
+    document.getElementById("techUserAgent").textContent = details.userAgent;
+  }
+  if (details.timestamp) {
+    document.getElementById("techTimestamp").textContent = new Date(
+      details.timestamp
+    ).toLocaleString();
+  } else {
+    document.getElementById("techTimestamp").textContent =
+      new Date().toLocaleString();
+  }
+}
+
+// Populate the phishing indicators list
+function populatePhishingIndicatorsList(indicators, details) {
+  console.log("=== POPULATING PHISHING INDICATORS LIST ===");
+  console.log("Indicators to display:", indicators);
+
+  const container = document.getElementById("techPhishingIndicators");
+
+  if (!indicators || indicators.length === 0) {
+    console.log("No specific indicators found, trying to extract from details");
+
+    // Try to extract from the email-style phishing indicators that were already processed
+    let indicatorText = "No specific indicators available";
+
+    // Check if we have processed phishing indicators from the email function
+    if (details.threats && Array.isArray(details.threats)) {
+      const nonSummaryThreats = details.threats.filter(
+        (t) => t.description && !t.description.includes("legitimacy score")
+      );
+      if (nonSummaryThreats.length > 0) {
+        indicatorText = nonSummaryThreats
+          .map(
+            (threat) =>
+              `• ${threat.id || threat.type || "Indicator"}: ${
+                threat.description
+              }`
+          )
+          .join("<br>");
+      }
+    }
+
+    container.innerHTML = indicatorText;
+    return;
+  }
+
+  // Create formatted list of indicators
+  const indicatorHTML = indicators
+    .map((indicator) => {
+      const id = indicator.id || indicator.type || "Unknown";
+      const description =
+        indicator.description || indicator.reason || "Detected";
+      const severity = indicator.severity
+        ? ` <span class="tech-badge ${
+            indicator.severity
+          }" style="margin-left: 8px;">${indicator.severity.toUpperCase()}</span>`
+        : "";
+
+      return `<div style="margin-bottom: 8px; padding: 6px; background: #f9fafb; border-radius: 4px; border-left: 3px solid #f77f00;">
+      <strong>${id}</strong>${severity}<br>
+      <span style="color: #6b7280; font-size: 11px;">${description}</span>
+    </div>`;
+    })
+    .join("");
+
+  container.innerHTML = indicatorHTML;
+  console.log(
+    "Populated phishing indicators list with",
+    indicators.length,
+    "indicators"
+  );
+}

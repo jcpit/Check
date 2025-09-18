@@ -93,7 +93,6 @@ export class ConfigManager {
           customBranding: {
             companyName: "CyberDrain",
             productName: "Check Enterprise",
-            supportEmail: "support@cyberdrain.com",
             primaryColor: "#F77F00",
             logoUrl:
               "https://cyberdrain.com/images/favicon_hu_20e77b0e20e363e.png",
@@ -131,7 +130,26 @@ export class ConfigManager {
 
   async loadBrandingConfig() {
     try {
-      // Load branding configuration from config file with timeout
+      // Safe wrapper for chrome.* operations
+      const safe = async (promise) => {
+        try {
+          return await promise;
+        } catch (_) {
+          return null;
+        }
+      };
+
+      // First, try to load user-configured branding from storage
+      const userBranding = await safe(
+        chrome.storage.local.get(["brandingConfig"])
+      );
+
+      if (userBranding && userBranding.brandingConfig) {
+        logger.log("Check: Using user-configured branding from storage");
+        return userBranding.brandingConfig;
+      }
+
+      // Fallback: Load branding configuration from config file with timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
@@ -144,6 +162,7 @@ export class ConfigManager {
 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const brandingConfig = await response.json();
+        logger.log("Check: Using branding from config file");
         return brandingConfig;
       } finally {
         clearTimeout(timeoutId);

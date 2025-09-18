@@ -728,6 +728,26 @@ class CheckOptions {
 
         this.brandingConfig = newBranding;
         console.log("Branding config saved:", newBranding);
+
+        // Notify background script to update branding
+        try {
+          const brandingResponse = await this.sendMessage({
+            type: "UPDATE_BRANDING",
+          });
+
+          if (brandingResponse && brandingResponse.success) {
+            console.log("Background script updated with new branding");
+          } else {
+            console.warn(
+              "Failed to notify background script of branding update"
+            );
+          }
+        } catch (brandingNotifyError) {
+          console.error(
+            "Failed to notify background script:",
+            brandingNotifyError
+          );
+        }
       } catch (brandingError) {
         console.error("Failed to save branding config:", brandingError);
         this.showToast("Failed to save branding settings", "warning");
@@ -1930,7 +1950,6 @@ class CheckOptions {
           customBranding: {
             companyName: "CyberDrain",
             productName: "Check Enterprise",
-            supportEmail: "support@cyberdrain.com",
             primaryColor: "#F77F00",
             logoUrl:
               "https://cyberdrain.com/images/favicon_hu_20e77b0e20e363e.png",

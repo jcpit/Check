@@ -2481,9 +2481,11 @@ if (window.checkExtensionLoaded) {
               isSuspicious: true,
               isBlocked: protectionEnabled,
               threats: criticalThreats.map((t) => ({
-                type: t.category,
+                type: t.category || t.id,
+                id: t.id,
                 description: t.description,
                 confidence: t.confidence,
+                severity: t.severity,
               })),
               reason: reason,
               score: 0, // Critical threats get lowest score
@@ -2562,9 +2564,11 @@ if (window.checkExtensionLoaded) {
               isSuspicious: true,
               isBlocked: false,
               threats: warningThreats.map((t) => ({
-                type: t.category,
+                type: t.category || t.id,
+                id: t.id,
                 description: t.description,
                 confidence: t.confidence,
+                severity: t.severity,
               })),
               reason: reason,
               score: 50, // Medium suspicion score
@@ -3006,9 +3010,11 @@ if (window.checkExtensionLoaded) {
           isSuspicious: true,
           isBlocked: protectionEnabled,
           threats: criticalThreats.map((t) => ({
-            type: t.category,
+            type: t.category || t.id,
+            id: t.id,
             description: t.description,
             confidence: t.confidence,
+            severity: t.severity,
           })),
           reason: reason,
           score: 0, // Critical threats get lowest score
@@ -3171,17 +3177,13 @@ if (window.checkExtensionLoaded) {
           verdict: severity === "high" ? "blocked" : "suspicious",
           isSuspicious: true,
           isBlocked: protectionEnabled && severity === "high",
-          threats: [
-            {
-              type: severity === "high" ? "high-threat" : "medium-threat",
-              description: reason,
-            },
-            ...allThreats.map((t) => ({
-              type: t.category,
-              description: t.description,
-              confidence: t.confidence,
-            })),
-          ],
+          threats: allThreats.map((t) => ({
+            type: t.category || t.id,
+            id: t.id,
+            description: t.description,
+            confidence: t.confidence,
+            severity: t.severity,
+          })),
           reason: reason,
           score: combinedScore,
           threshold: detectionResult.threshold,
@@ -3195,7 +3197,7 @@ if (window.checkExtensionLoaded) {
             logger.error(
               "🛡️ PROTECTION ACTIVE: Blocking page due to high threat"
             );
-            showBlockingOverlay(reason, detectionResult);
+            showBlockingOverlay(reason, lastDetectionResult);
             disableFormSubmissions();
             disableCredentialInputs();
             stopDOMMonitoring(); // Stop monitoring once blocked
@@ -3524,7 +3526,7 @@ if (window.checkExtensionLoaded) {
         "Redirecting to Chrome blocking page for security - no user override allowed"
       );
 
-      // Create blocking URL with details
+      // Create enriched blocking URL with detailed detection data
       const blockingDetails = {
         reason: reason,
         url: location.href,
@@ -3536,7 +3538,36 @@ if (window.checkExtensionLoaded) {
         ruleDescription: analysisData?.rule?.description || reason,
         score: analysisData?.score || 0,
         threshold: analysisData?.threshold || 85,
+
+        // Add rich phishing indicator data
+        phishingIndicators: analysisData?.threats || [],
+        foundIndicators:
+          analysisData?.threats?.map((threat) => ({
+            id: threat.id,
+            description: threat.description,
+            severity: threat.severity,
+            category: threat.category,
+            confidence: threat.confidence,
+            matchDetails: threat.matchDetails,
+          })) || [],
+
+        // Add additional analysis data if available
+        detectionMethod: analysisData?.detectionMethod || "content-analysis",
+        triggeredRules: analysisData?.triggeredRules || [],
+        legitimacyScore: analysisData?.legitimacyScore,
+
+        // Add page context information
+        pageTitle: document.title || "Unknown",
+        pageHost: location.hostname,
+        referrer: document.referrer || "direct",
+        userAgent: navigator.userAgent,
+
+        // Add timing information
+        detectionTime: analysisData?.detectionTime || Date.now(),
       };
+
+      // Log the enriched details for debugging
+      logger.log("Enriched blocking details:", blockingDetails);
 
       // Encode the details for the blocking page
       const encodedDetails = encodeURIComponent(

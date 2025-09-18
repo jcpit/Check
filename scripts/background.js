@@ -1433,6 +1433,9 @@ class CheckBackground {
 
         case "UPDATE_BRANDING":
           try {
+            // Refresh config manager cache to pick up new branding from storage
+            await this.configManager.refreshConfig();
+
             // Apply branding changes immediately
             await this.applyBrandingToAction();
             sendResponse({ success: true });
