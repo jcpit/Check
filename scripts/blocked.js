@@ -432,14 +432,18 @@ async function loadBranding() {
         ).textContent = `Access Blocked by ${storageResult.productName}`;
       }
 
-      // Handle custom logo - replace shield with logo
-      if (storageResult.logoUrl) {
-        console.log("Setting custom logo as main icon:", storageResult.logoUrl);
-        const customLogo = document.getElementById("customLogo");
-        const defaultIcon = document.getElementById("defaultIcon");
+      // Handle logo display - use custom logo or default branding
+      const customLogo = document.getElementById("customLogo");
+      const defaultIcon = document.getElementById("defaultIcon");
 
-        if (customLogo && defaultIcon) {
-          // Try to load the logo
+      if (customLogo && defaultIcon) {
+        if (storageResult.logoUrl) {
+          console.log(
+            "Setting custom logo as main icon:",
+            storageResult.logoUrl
+          );
+
+          // Try to load the custom logo
           const logoSrc = storageResult.logoUrl.startsWith("http")
             ? storageResult.logoUrl
             : chrome.runtime.getURL(storageResult.logoUrl);
@@ -451,31 +455,39 @@ async function loadBranding() {
           customLogo.style.height = "80px";
           customLogo.style.borderRadius = "50%";
           customLogo.style.objectFit = "contain";
-          customLogo.style.background = storageResult.primaryColor || "#f77f00";
-          customLogo.style.padding = "10px";
+          customLogo.style.background = "white";
+          customLogo.style.padding = "4px";
+          customLogo.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
+          customLogo.style.border = "1px solid #e5e7eb";
 
           customLogo.onload = () => {
-            console.log("Custom logo loaded successfully - replacing shield");
+            console.log("Custom logo loaded successfully");
             customLogo.style.display = "block";
             defaultIcon.style.display = "none";
           };
           customLogo.onerror = () => {
             console.warn(
-              "Failed to load custom logo, using default shield icon"
+              "Failed to load custom logo, using default Check logo"
             );
-            customLogo.style.display = "none";
-            defaultIcon.style.display = "flex";
+            // Fall back to default Check logo
+            customLogo.src = chrome.runtime.getURL("images/icon128.png");
+            customLogo.style.display = "block";
+            defaultIcon.style.display = "none";
           };
-        }
-      } else {
-        console.log(
-          "No custom logo in background config, using default shield icon"
-        );
-        const customLogo = document.getElementById("customLogo");
-        const defaultIcon = document.getElementById("defaultIcon");
-        if (customLogo && defaultIcon) {
-          customLogo.style.display = "none";
-          defaultIcon.style.display = "flex";
+        } else {
+          console.log("No custom logo configured, using default Check logo");
+          // Use default Check logo instead of Unicode icon
+          customLogo.src = chrome.runtime.getURL("images/icon48.png");
+          customLogo.style.width = "80px";
+          customLogo.style.height = "80px";
+          customLogo.style.borderRadius = "50%";
+          customLogo.style.objectFit = "contain";
+          customLogo.style.background = "white";
+          customLogo.style.padding = "4px";
+          customLogo.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
+          customLogo.style.border = "1px solid #e5e7eb";
+          customLogo.style.display = "block";
+          defaultIcon.style.display = "none";
         }
       }
 
