@@ -7,11 +7,16 @@ set -euo pipefail
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROFILE_FILE="$SCRIPT_DIR/check-extension-config.mobileconfig"
+CHROME_PROFILE_FILE="$SCRIPT_DIR/chrome-extension-config.mobileconfig"
+EDGE_PROFILE_FILE="$SCRIPT_DIR/edge-extension-config.mobileconfig"
 CHROME_POLICY_FILE="$SCRIPT_DIR/chrome-managed-policy.json"
-PROFILE_IDENTIFIER="com.cyberdrain.check.configuration"
+EDGE_POLICY_FILE="$SCRIPT_DIR/edge-managed-policy.json"
+CHROME_PROFILE_IDENTIFIER="com.cyberdrain.check.chrome.configuration"
+EDGE_PROFILE_IDENTIFIER="com.cyberdrain.check.edge.configuration"
 CHROME_POLICY_DIR="/Library/Managed Preferences"
+EDGE_POLICY_DIR="/Library/Managed Preferences"
 CHROME_POLICY_PATH="$CHROME_POLICY_DIR/com.google.Chrome.plist"
+EDGE_POLICY_PATH="$EDGE_POLICY_DIR/com.microsoft.Edge.plist"
 
 # Colors for output
 RED='\033[0;31m'
@@ -54,45 +59,80 @@ check_root() {
 
 # Function to validate files exist
 validate_files() {
-    if [[ ! -f "$PROFILE_FILE" ]]; then
-        print_error "Configuration profile not found: $PROFILE_FILE"
-        exit 1
+    local files_missing=false
+
+    if [[ ! -f "$CHROME_PROFILE_FILE" ]]; then
+        print_error "Chrome configuration profile not found: $CHROME_PROFILE_FILE"
+        files_missing=true
+    fi
+
+    if [[ ! -f "$EDGE_PROFILE_FILE" ]]; then
+        print_error "Edge configuration profile not found: $EDGE_PROFILE_FILE"
+        files_missing=true
     fi
 
     if [[ ! -f "$CHROME_POLICY_FILE" ]]; then
         print_error "Chrome policy file not found: $CHROME_POLICY_FILE"
+        files_missing=true
+    fi
+
+    if [[ ! -f "$EDGE_POLICY_FILE" ]]; then
+        print_error "Edge policy file not found: $EDGE_POLICY_FILE"
+        files_missing=true
+    fi
+
+    if [[ "$files_missing" == "true" ]]; then
         exit 1
     fi
 }
 
 # Function to install configuration profile
 install_profile() {
-    print_info "Installing Check extension configuration profile..."
+    print_info "Installing Check extension configuration profiles..."
 
-    # Install the configuration profile
-    if profiles -I -F "$PROFILE_FILE" >/dev/null 2>&1; then
-        print_success "Configuration profile installed successfully"
+    # Install Chrome configuration profile
+    print_info "Installing Chrome configuration profile..."
+    if profiles -I -F "$CHROME_PROFILE_FILE" >/dev/null 2>&1; then
+        print_success "Chrome configuration profile installed successfully"
     else
-        print_error "Failed to install configuration profile"
+        print_error "Failed to install Chrome configuration profile"
+        return 1
+    fi
+
+    # Install Edge configuration profile
+    print_info "Installing Edge configuration profile..."
+    if profiles -I -F "$EDGE_PROFILE_FILE" >/dev/null 2>&1; then
+        print_success "Edge configuration profile installed successfully"
+    else
+        print_error "Failed to install Edge configuration profile"
         return 1
     fi
 
     # Install Chrome managed policy
     print_info "Installing Chrome managed policy..."
-
-    # Create managed preferences directory if it doesn't exist
     mkdir -p "$CHROME_POLICY_DIR"
 
-    # Convert JSON to plist and install
     if plutil -convert binary1 "$CHROME_POLICY_FILE" -o "$CHROME_POLICY_PATH"; then
         print_success "Chrome managed policy installed: $CHROME_POLICY_PATH"
-
-        # Set proper permissions
         chown root:wheel "$CHROME_POLICY_PATH"
         chmod 644 "$CHROME_POLICY_PATH"
-        print_success "Policy file permissions set correctly"
+        print_success "Chrome policy file permissions set correctly"
     else
         print_error "Failed to install Chrome managed policy"
+        return 1
+    fi
+
+    # Install Edge managed policy
+    print_info "Installing Edge managed policy..."
+    mkdir -p "$EDGE_POLICY_DIR"
+
+    if plutil -convert binary1 "$EDGE_POLICY_FILE" -o "$EDGE_POLICY_PATH"; then
+        print_success "Edge managed policy installed: $EDGE_POLICY_PATH"
+        chown root:wheel "$EDGE_POLICY_PATH"
+        chmod 644 "$EDGE_POLICY_PATH"
+        print_success "Edge policy file permissions set correctly"
+    else
+        print_error "Failed to install Edge managed policy"
         return 1
     fi
 }
@@ -101,11 +141,18 @@ install_profile() {
 uninstall_profile() {
     print_info "Removing Check extension configuration..."
 
-    # Remove configuration profile
-    if profiles -R -p "$PROFILE_IDENTIFIER" >/dev/null 2>&1; then
-        print_success "Configuration profile removed successfully"
+    # Remove Chrome configuration profile
+    if profiles -R -p "$CHROME_PROFILE_IDENTIFIER" >/dev/null 2>&1; then
+        print_success "Chrome configuration profile removed successfully"
     else
-        print_warning "Configuration profile not found or already removed"
+        print_warning "Chrome configuration profile not found or already removed"
+    fi
+
+    # Remove Edge configuration profile
+    if profiles -R -p "$EDGE_PROFILE_IDENTIFIER" >/dev/null 2>&1; then
+        print_success "Edge configuration profile removed successfully"
+    else
+        print_warning "Edge configuration profile not found or already removed"
     fi
 
     # Remove Chrome managed policy
@@ -115,6 +162,14 @@ uninstall_profile() {
     else
         print_warning "Chrome managed policy not found or already removed"
     fi
+
+    # Remove Edge managed policy
+    if [[ -f "$EDGE_POLICY_PATH" ]]; then
+        rm -f "$EDGE_POLICY_PATH"
+        print_success "Edge managed policy removed"
+    else
+        print_warning "Edge managed policy not found or already removed"
+    fi
 }
 
 # Function to show status
@@ -122,12 +177,22 @@ show_status() {
     print_info "Check extension configuration status:"
     echo
 
-    # Check configuration profile
-    if profiles -P | grep -q "$PROFILE_IDENTIFIER"; then
-        print_success "Configuration profile is installed"
-        echo "Profile identifier: $PROFILE_IDENTIFIER"
+    # Check Chrome configuration profile
+    if profiles -P | grep -q "$CHROME_PROFILE_IDENTIFIER"; then
+        print_success "Chrome configuration profile is installed"
+        echo "Profile identifier: $CHROME_PROFILE_IDENTIFIER"
     else
-        print_warning "Configuration profile is not installed"
+        print_warning "Chrome configuration profile is not installed"
+    fi
+
+    echo
+
+    # Check Edge configuration profile
+    if profiles -P | grep -q "$EDGE_PROFILE_IDENTIFIER"; then
+        print_success "Edge configuration profile is installed"
+        echo "Profile identifier: $EDGE_PROFILE_IDENTIFIER"
+    else
+        print_warning "Edge configuration profile is not installed"
     fi
 
     echo
@@ -137,14 +202,29 @@ show_status() {
         print_success "Chrome managed policy is installed"
         echo "Policy file: $CHROME_POLICY_PATH"
 
-        # Show policy contents if plutil is available
         if command -v plutil >/dev/null 2>&1; then
             echo
-            print_info "Current policy settings:"
-            plutil -p "$CHROME_POLICY_PATH" 2>/dev/null || print_warning "Could not read policy file"
+            print_info "Current Chrome policy settings:"
+            plutil -p "$CHROME_POLICY_PATH" 2>/dev/null || print_warning "Could not read Chrome policy file"
         fi
     else
         print_warning "Chrome managed policy is not installed"
+    fi
+
+    echo
+
+    # Check Edge managed policy
+    if [[ -f "$EDGE_POLICY_PATH" ]]; then
+        print_success "Edge managed policy is installed"
+        echo "Policy file: $EDGE_POLICY_PATH"
+
+        if command -v plutil >/dev/null 2>&1; then
+            echo
+            print_info "Current Edge policy settings:"
+            plutil -p "$EDGE_POLICY_PATH" 2>/dev/null || print_warning "Could not read Edge policy file"
+        fi
+    else
+        print_warning "Edge managed policy is not installed"
     fi
 
     echo
@@ -165,14 +245,16 @@ show_help() {
     echo "  help        Show this help message"
     echo
     echo "Files managed by this script:"
-    echo "  - Configuration Profile: $PROFILE_FILE"
+    echo "  - Chrome Configuration Profile: $CHROME_PROFILE_FILE"
+    echo "  - Edge Configuration Profile: $EDGE_PROFILE_FILE"
     echo "  - Chrome Policy: $CHROME_POLICY_PATH"
+    echo "  - Edge Policy: $EDGE_POLICY_PATH"
     echo
     echo "Notes:"
     echo "  - This script must be run with sudo (administrator privileges)"
     echo "  - The configuration will apply to all users on this Mac"
-    echo "  - Users may need to restart Chrome for policies to take effect"
-    echo "  - Replace EXTENSION_ID_HERE in chrome-managed-policy.json with actual extension ID"
+    echo "  - Users may need to restart Chrome and Edge for policies to take effect"
+    echo "  - Extension IDs are built-in: Chrome (benimdeioplgkhanklclahllklceahbe), Edge (knepjpocdagponkonnbggpcnhnaikajg)"
 }
 
 # Main execution
@@ -187,7 +269,7 @@ main() {
             install_profile
             echo
             print_success "Installation complete!"
-            print_info "Users may need to restart Chrome for changes to take effect"
+            print_info "Users may need to restart Chrome and Edge for changes to take effect"
             ;;
         uninstall)
             check_root

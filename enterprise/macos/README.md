@@ -1,204 +1,168 @@
 # Check Extension - macOS Enterprise Deployment
 
-This directory contains the necessary files and scripts for deploying the Check extension in macOS enterprise environments using Configuration Profiles and Chrome managed policies.
+This directory contains the necessary files for deploying the Check Microsoft 365 phishing protection extension in macOS enterprise environments using Configuration Profiles and Managed Preferences.
 
 ## Files Overview
 
-- **`check-extension-config.mobileconfig`** - Apple Configuration Profile containing all extension settings
-- **`chrome-managed-policy.json`** - Chrome-specific managed policies for extension installation and configuration
-- **`deploy-macos.sh`** - Deployment script for installing/uninstalling the configuration
-- **`README.md`** - This documentation file
+### Configuration Profiles (.mobileconfig)
+- **`chrome-extension-config.mobileconfig`** - Chrome extension configuration profile
+- **`edge-extension-config.mobileconfig`** - Microsoft Edge extension configuration profile
 
-## Prerequisites
+### Managed Policies (.json)
+- **`chrome-managed-policy.json`** - Chrome browser policies (managed preferences)
+- **`edge-managed-policy.json`** - Microsoft Edge browser policies (managed preferences)
 
-- macOS 10.13 or later
-- Administrator/root privileges
-- Google Chrome installed on target machines
-- Valid Chrome extension ID (replace `EXTENSION_ID_HERE` in files)
+### Deployment Script
+- **`deploy-macos.sh`** - Automated deployment script for installing/removing configurations
 
 ## Quick Start
 
-1. **Update Extension ID**: Replace `EXTENSION_ID_HERE` in both configuration files with your actual Chrome extension ID
-2. **Run deployment script**: `sudo ./deploy-macos.sh install`
-3. **Verify installation**: `sudo ./deploy-macos.sh status`
-
-## Detailed Setup
-
-### 1. Prepare Configuration Files
-
-Before deployment, you must update the extension ID in both configuration files:
-
-#### Update Configuration Profile
-Edit `check-extension-config.mobileconfig` and replace `EXTENSION_ID_HERE` with your actual extension ID in these locations:
-- PayloadContent → ExtensionSettings → (your-extension-id)
-- PayloadContent → ExtensionInstallAllowlist
-
-#### Update Chrome Policy
-Edit `chrome-managed-policy.json` and replace `EXTENSION_ID_HERE` with your actual extension ID.
-
-### 2. Deployment Methods
-
-#### Method 1: Automated Script (Recommended)
+### Automated Deployment
 ```bash
-# Make script executable
+# Make the script executable
 chmod +x deploy-macos.sh
 
-# Install configuration
+# Install configuration for both browsers
 sudo ./deploy-macos.sh install
 
-# Check status
+# Check installation status
 sudo ./deploy-macos.sh status
 
-# Uninstall if needed
+# Remove configuration
 sudo ./deploy-macos.sh uninstall
 ```
 
-#### Method 2: Manual Installation
+### Manual Deployment
 
-**Install Configuration Profile:**
+#### Configuration Profiles
 ```bash
-sudo profiles -I -F check-extension-config.mobileconfig
+# Install Chrome profile
+sudo profiles -I -F chrome-extension-config.mobileconfig
+
+# Install Edge profile  
+sudo profiles -I -F edge-extension-config.mobileconfig
+
+# List installed profiles
+sudo profiles -P
 ```
 
-**Install Chrome Managed Policy:**
+#### Managed Preferences
 ```bash
-# Create managed preferences directory
+# Create directories
 sudo mkdir -p "/Library/Managed Preferences"
 
-# Convert and install policy
+# Install Chrome policy
 sudo plutil -convert binary1 chrome-managed-policy.json -o "/Library/Managed Preferences/com.google.Chrome.plist"
+
+# Install Edge policy
+sudo plutil -convert binary1 edge-managed-policy.json -o "/Library/Managed Preferences/com.microsoft.Edge.plist"
 
 # Set permissions
 sudo chown root:wheel "/Library/Managed Preferences/com.google.Chrome.plist"
+sudo chown root:wheel "/Library/Managed Preferences/com.microsoft.Edge.plist"
 sudo chmod 644 "/Library/Managed Preferences/com.google.Chrome.plist"
+sudo chmod 644 "/Library/Managed Preferences/com.microsoft.Edge.plist"
 ```
 
-### 3. Enterprise Distribution
+## Configuration Settings
 
-#### Option A: Profile Manager (macOS Server)
-1. Upload `check-extension-config.mobileconfig` to Profile Manager
-2. Assign to appropriate device groups or users
-3. Deploy Chrome managed policy separately via script
-
-#### Option B: MDM Solution (Jamf, Intune, etc.)
-1. Import configuration profile into your MDM
-2. Create policy for Chrome managed preferences
-3. Deploy to target devices/groups
-
-#### Option C: Manual Distribution
-1. Copy files to target machines
-2. Run deployment script on each machine
-3. Verify installation with status command
-
-## Configuration Options
-
-The Configuration Profile manages these extension settings:
+All settings are based on the managed schema and include:
 
 ### Security Settings
-- **Show Notifications** (`showNotifications`): Display security alerts to users
-- **Enable Valid Page Badge** (`enableValidPageBadge`): Show verification badge on safe pages
-- **Enable Page Blocking** (`enablePageBlocking`): Block access to malicious pages
-- **Enable CIPP Reporting** (`enableCippReporting`): Send security data to CIPP dashboard
+- **`showNotifications`** - Display security notifications (default: true)
+- **`enableValidPageBadge`** - Show validation badge on legitimate pages (default: true)  
+- **`enablePageBlocking`** - Enable blocking of malicious pages (default: true)
+- **`enableCippReporting`** - Enable CIPP server reporting (default: false)
+- **`enableDebugLogging`** - Enable debug logging (default: false)
 
-### Server Configuration
-- **CIPP Server URL** (`cippServerUrl`): Custom CIPP server endpoint
-- **Custom Rules URL** (`customRulesUrl`): Alternative rule source
-- **Update Interval** (`updateInterval`): Rule update frequency (minutes)
+### CIPP Integration
+- **`cippServerUrl`** - CIPP server URL for reporting
+- **`cippTenantId`** - Tenant identifier for multi-tenant environments
 
-### Logging & Debugging
-- **Enable Debug Logging** (`enableDebugLogging`): Detailed logging for troubleshooting
+### Rule Management
+- **`customRulesUrl`** - URL for custom detection rules
+- **`updateInterval`** - Rule update interval in hours (default: 24)
 
-### Branding Options
-- **Custom Branding** (`customBranding`): Organization-specific branding
-  - Company Name
-  - Logo URL
-  - Primary/Secondary Colors
-  - Contact Information
+### Custom Branding
+- **`companyName`** - Company name for white labeling
+- **`productName`** - Custom extension name
+- **`supportEmail`** - Support contact email
+- **`primaryColor`** - Primary theme color (hex format)
+- **`logoUrl`** - Company logo URL
 
-## Verification
+## Extension IDs
 
-### Check Profile Installation
-```bash
-# List all profiles
-sudo profiles -P
+- **Chrome**: `benimdeioplgkhanklclahllklceahbe`
+- **Microsoft Edge**: `knepjpocdagponkonnbggpcnhnaikajg`
 
-# Check specific profile
-sudo profiles -P | grep "com.cyberdrain.check"
-```
+## Enterprise Features
 
-### Verify Chrome Policy
-```bash
-# Check policy file exists
-ls -la "/Library/Managed Preferences/com.google.Chrome.plist"
+### Force Installation
+Both configurations include force installation settings that:
+- Automatically install the extension
+- Prevent users from disabling it
+- Enable operation in incognito/private browsing mode
+- Allow all permissions and hosts
 
-# View policy contents
-sudo plutil -p "/Library/Managed Preferences/com.google.Chrome.plist"
-```
+### Policy Management
+The managed preferences approach allows:
+- Centralized configuration management
+- Real-time policy updates
+- Integration with existing MDM solutions
+- Granular permission control
 
-### Test in Chrome
-1. Open Chrome and navigate to `chrome://policy`
-2. Verify "ExtensionSettings" and "ExtensionInstallAllowlist" policies are present
-3. Check extension is automatically installed and configured
+## MDM Integration
+
+These configuration files are compatible with:
+- **Jamf Pro** - Import .mobileconfig files directly
+- **Microsoft Intune** - Convert to .intunemac format
+- **VMware Workspace ONE** - Upload as custom settings
+- **Kandji** - Use as custom profiles
+- **SimpleMDM** - Import configuration profiles
 
 ## Troubleshooting
 
-### Common Issues
-
-**Profile Installation Fails**
-- Ensure running with `sudo`
-- Check Configuration Profile syntax with `plutil -lint`
-- Verify file permissions are readable
-
-**Chrome Policies Not Applied**
-- Restart Chrome completely
-- Check file exists at correct path: `/Library/Managed Preferences/com.google.Chrome.plist`
-- Verify JSON syntax in source file
-
-**Extension Not Installing**
-- Confirm extension ID is correct in both files
-- Check Chrome version compatibility
-- Verify network access to Chrome Web Store
-
-### Debug Commands
-
+### Verify Installation
 ```bash
-# Validate Configuration Profile
-plutil -lint check-extension-config.mobileconfig
+# Check profiles
+sudo profiles -P | grep cyberdrain
 
-# Validate JSON policy
-plutil -lint chrome-managed-policy.json
-
-# Check Chrome policy loading
-sudo log stream --predicate 'subsystem == "com.google.Chrome"' --info
-
-# List all installed profiles
-sudo profiles -P
-
-# Remove specific profile
-sudo profiles -R -p "com.cyberdrain.check.configuration"
+# Check managed preferences
+ls -la "/Library/Managed Preferences/"
+plutil -p "/Library/Managed Preferences/com.google.Chrome.plist"
+plutil -p "/Library/Managed Preferences/com.microsoft.Edge.plist"
 ```
+
+### Common Issues
+1. **Permission denied** - Ensure running with sudo
+2. **Profile installation failed** - Check .mobileconfig syntax
+3. **Policy not applied** - Restart browser after installation
+4. **Extension not loading** - Verify extension IDs are correct
+
+### Logs
+- System logs: `sudo log show --predicate 'process == "profiles"' --last 1h`
+- Browser console: Check extension developer tools
+
+## Customization
+
+Before deployment, edit the JSON files to customize:
+1. **CIPP Integration** - Set `cippServerUrl` and `cippTenantId`
+2. **Custom Rules** - Set `customRulesUrl` to your rules endpoint
+3. **Branding** - Configure company name, colors, and logo
+4. **Security Settings** - Adjust notification and blocking preferences
 
 ## Security Considerations
 
-- Configuration profiles are signed and tamper-evident
-- Chrome managed policies require administrator privileges
-- All settings can be centrally managed and audited
-- Users cannot override enterprise policies
-- Extension installation is forced and cannot be disabled by users
+- Configuration files contain extension policies only
+- No sensitive data is stored in profiles
+- All settings can be overridden by managed preferences
+- Private browsing mode is enabled by default
+- Extension has full permissions for threat detection
 
 ## Support
 
-For deployment issues:
-1. Run `sudo ./deploy-macos.sh status` to check current state
-2. Check system logs for profile installation errors
-3. Verify Chrome policy syntax and file permissions
-4. Test with a single user before organization-wide deployment
-
-## File Structure
-```
-enterprise/macos/
-├── check-extension-config.mobileconfig  # Apple Configuration Profile
-├── chrome-managed-policy.json           # Chrome managed policies
-├── deploy-macos.sh                      # Deployment script
-└── README.md                            # This documentation
-```
+For enterprise deployment assistance:
+- Review the deployment script logs
+- Check browser extension management pages
+- Verify network connectivity for rule updates
+- Contact CyberDrain support for configuration help

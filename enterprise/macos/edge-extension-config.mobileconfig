@@ -6,13 +6,13 @@
         <array>
             <dict>
                 <key>PayloadDisplayName</key>
-                <string>Check - Microsoft 365 Phishing Protection (Chrome)</string>
+                <string>Check - Microsoft 365 Phishing Protection (Edge)</string>
                 <key>PayloadIdentifier</key>
-                <string>com.cyberdrain.check.chrome.settings</string>
+                <string>com.cyberdrain.check.edge.settings</string>
                 <key>PayloadType</key>
-                <string>com.google.Chrome.extensions.benimdeioplgkhanklclahllklceahbe</string>
+                <string>com.microsoft.Edge.extensions.knepjpocdagponkonnbggpcnhnaikajg</string>
                 <key>PayloadUUID</key>
-                <string>B8A4F2F1-2F2A-4B3C-8D4E-F5A6B7C8D9E0</string>
+                <string>C2D3E4F5-6789-ABCD-EF01-234567890ABC</string>
                 <key>PayloadVersion</key>
                 <integer>1</integer>
                 <!-- Security Settings -->
@@ -49,7 +49,7 @@
                 <key>customRulesUrl</key>
                 <dict>
                     <key>Value</key>
-                    <string>https://raw.githubusercontent.com/CyberDrain/ProjectX/refs/heads/main/rules/detection-rules.json</string>
+                    <string />
                 </dict>
                 <key>updateInterval</key>
                 <dict>
@@ -82,11 +82,11 @@
             </dict>
         </array>
         <key>PayloadDescription</key>
-        <string>Configuration profile for Check - Microsoft 365 Phishing Protection extension. This profile manages security settings, branding options, and logging preferences for enterprise deployment.</string>
+        <string>Configuration profile for Check - Microsoft 365 Phishing Protection extension for Microsoft Edge. This profile manages security settings, branding options, and logging preferences for enterprise deployment.</string>
         <key>PayloadDisplayName</key>
-        <string>Check Extension Configuration</string>
+        <string>Check Extension Configuration (Edge)</string>
         <key>PayloadIdentifier</key>
-        <string>com.cyberdrain.check.configuration</string>
+        <string>com.cyberdrain.check.edge.configuration</string>
         <key>PayloadOrganization</key>
         <string>CyberDrain</string>
         <key>PayloadRemovalDisallowed</key>
@@ -96,7 +96,7 @@
         <key>PayloadType</key>
         <string>Configuration</string>
         <key>PayloadUUID</key>
-        <string>A1B2C3D4-E5F6-7890-ABCD-EF1234567890</string>
+        <string>D4E5F6A7-B8C9-DEF0-1234-56789ABCDEF0</string>
         <key>PayloadVersion</key>
         <integer>1</integer>
         <key>TargetDeviceType</key>

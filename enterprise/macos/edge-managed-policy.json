@@ -1,8 +1,8 @@
 {
     "ExtensionSettings": {
-        "benimdeioplgkhanklclahllklceahbe": {
+        "knepjpocdagponkonnbggpcnhnaikajg": {
             "installation_mode": "force_installed",
-            "update_url": "https://clients2.google.com/service/update2/crx",
+            "update_url": "https://edge.microsoft.com/extensionwebstorebase/v1/crx",
             "incognito": "allowed",
             "blocked_permissions": [],
             "allowed_permissions": [
@@ -16,7 +16,7 @@
     },
     "3rdparty": {
         "extensions": {
-            "benimdeioplgkhanklclahllklceahbe": {
+            "knepjpocdagponkonnbggpcnhnaikajg": {
                 "showNotifications": true,
                 "enableValidPageBadge": true,
                 "enablePageBlocking": true,
