@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>PayloadContent</key>
+        <array>
+            <dict>
+                <key>PayloadDisplayName</key>
+                <string>Check - Microsoft 365 Phishing Protection (Chrome)</string>
+                <key>PayloadIdentifier</key>
+                <string>com.cyberdrain.check.chrome.settings</string>
+                <key>PayloadType</key>
+                <string>com.google.Chrome.extensions.benimdeioplgkhanklclahllklceahbe</string>
+                <key>PayloadUUID</key>
+                <string>B8A4F2F1-2F2A-4B3C-8D4E-F5A6B7C8D9E0</string>
+                <key>PayloadVersion</key>
+                <integer>1</integer>
+                <!-- Security Settings -->
+                <key>showNotifications</key>
+                <dict>
+                    <key>Value</key>
+                    <true />
+                </dict>
+                <key>enableValidPageBadge</key>
+                <dict>
+                    <key>Value</key>
+                    <true />
+                </dict>
+                <key>enablePageBlocking</key>
+                <dict>
+                    <key>Value</key>
+                    <true />
+                </dict>
+                <key>enableCippReporting</key>
+                <dict>
+                    <key>Value</key>
+                    <false />
+                </dict>
+                <key>cippServerUrl</key>
+                <dict>
+                    <key>Value</key>
+                    <string />
+                </dict>
+                <key>cippTenantId</key>
+                <dict>
+                    <key>Value</key>
+                    <string />
+                </dict>
+                <key>customRulesUrl</key>
+                <dict>
+                    <key>Value</key>
+                    <string>https://raw.githubusercontent.com/CyberDrain/ProjectX/refs/heads/main/rules/detection-rules.json</string>
+                </dict>
+                <key>updateInterval</key>
+                <dict>
+                    <key>Value</key>
+                    <integer>24</integer>
+                </dict>
+                <!-- Logging Settings -->
+                <key>enableDebugLogging</key>
+                <dict>
+                    <key>Value</key>
+                    <false />
+                </dict>
+                <!-- Custom Branding Settings -->
+                <key>customBranding</key>
+                <dict>
+                    <key>Value</key>
+                    <dict>
+                        <key>companyName</key>
+                        <string />
+                        <key>productName</key>
+                        <string />
+                        <key>supportEmail</key>
+                        <string />
+                        <key>primaryColor</key>
+                        <string>#F77F00</string>
+                        <key>logoUrl</key>
+                        <string />
+                    </dict>
+                </dict>
+            </dict>
+        </array>
+        <key>PayloadDescription</key>
+        <string>Configuration profile for Check - Microsoft 365 Phishing Protection extension. This profile manages security settings, branding options, and logging preferences for enterprise deployment.</string>
+        <key>PayloadDisplayName</key>
+        <string>Check Extension Configuration</string>
+        <key>PayloadIdentifier</key>
+        <string>com.cyberdrain.check.configuration</string>
+        <key>PayloadOrganization</key>
+        <string>CyberDrain</string>
+        <key>PayloadRemovalDisallowed</key>
+        <false />
+        <key>PayloadScope</key>
+        <string>System</string>
+        <key>PayloadType</key>
+        <string>Configuration</string>
+        <key>PayloadUUID</key>
+        <string>A1B2C3D4-E5F6-7890-ABCD-EF1234567890</string>
+        <key>PayloadVersion</key>
+        <integer>1</integer>
+        <key>TargetDeviceType</key>
+        <integer>5</integer>
+    </dict>
+</plist>

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Check Extension - macOS Configuration Profile Deployment Script
-# This script installs or removes the Check extension configuration profile
+# This script installs or removes the Check extension configuration profiles on macOS
 
 set -euo pipefail
 
