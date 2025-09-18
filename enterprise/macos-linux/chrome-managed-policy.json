@@ -2,16 +2,7 @@
     "ExtensionSettings": {
         "benimdeioplgkhanklclahllklceahbe": {
             "installation_mode": "force_installed",
-            "update_url": "https://clients2.google.com/service/update2/crx",
-            "incognito": "allowed",
-            "blocked_permissions": [],
-            "allowed_permissions": [
-                "*"
-            ],
-            "runtime_blocked_hosts": [],
-            "runtime_allowed_hosts": [
-                "*"
-            ]
+            "update_url": "https://clients2.google.com/service/update2/crx"
         }
     },
     "3rdparty": {
@@ -23,7 +14,7 @@
                 "enableCippReporting": false,
                 "cippServerUrl": "",
                 "cippTenantId": "",
-                "customRulesUrl": "",
+                "customRulesUrl": "https://raw.githubusercontent.com/CyberDrain/ProjectX/refs/heads/main/rules/detection-rules.json",
                 "updateInterval": 24,
                 "enableDebugLogging": false,
                 "customBranding": {

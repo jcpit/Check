@@ -34,10 +34,6 @@ Windows Registry Editor Version 5.00
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge\ExtensionSettings\knepjpocdagponkonnbggpcnhnaikajg]
 "installation_mode"="force_installed"
 "update_url"="https://edge.microsoft.com/extensionwebstorebase/v1/crx"
-"blocked_permissions"="-"
-"allowed_permissions"="*"
-"runtime_blocked_hosts"="-"
-"runtime_allowed_hosts"="*"
 
 ; =============================================================================
 ; Google Chrome Enterprise Policy for Check Extension by CyberDrain
@@ -70,7 +66,3 @@ Windows Registry Editor Version 5.00
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\ExtensionSettings\benimdeioplgkhanklclahllklceahbe]
 "installation_mode"="force_installed"
 "update_url"="https://clients2.google.com/service/update2/crx"
-"blocked_permissions"="-"
-"allowed_permissions"="*"
-"runtime_blocked_hosts"="-"
-"runtime_allowed_hosts"="*"

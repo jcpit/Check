@@ -10,73 +10,57 @@
                 <key>PayloadIdentifier</key>
                 <string>com.cyberdrain.check.chrome.settings</string>
                 <key>PayloadType</key>
-                <string>com.google.Chrome.extensions.benimdeioplgkhanklclahllklceahbe</string>
+                <string>com.google.Chrome</string>
                 <key>PayloadUUID</key>
                 <string>B8A4F2F1-2F2A-4B3C-8D4E-F5A6B7C8D9E0</string>
                 <key>PayloadVersion</key>
                 <integer>1</integer>
-                <!-- Security Settings -->
-                <key>showNotifications</key>
+                <key>ExtensionInstallForcelist</key>
+                <array>
+                    <string>benimdeioplgkhanklclahllklceahbe;https://clients2.google.com/service/update2/crx</string>
+                </array>
+                <key>ExtensionSettings</key>
                 <dict>
-                    <key>Value</key>
-                    <true />
-                </dict>
-                <key>enableValidPageBadge</key>
-                <dict>
-                    <key>Value</key>
-                    <true />
-                </dict>
-                <key>enablePageBlocking</key>
-                <dict>
-                    <key>Value</key>
-                    <true />
-                </dict>
-                <key>enableCippReporting</key>
-                <dict>
-                    <key>Value</key>
-                    <false />
-                </dict>
-                <key>cippServerUrl</key>
-                <dict>
-                    <key>Value</key>
-                    <string />
-                </dict>
-                <key>cippTenantId</key>
-                <dict>
-                    <key>Value</key>
-                    <string />
-                </dict>
-                <key>customRulesUrl</key>
-                <dict>
-                    <key>Value</key>
-                    <string>https://raw.githubusercontent.com/CyberDrain/ProjectX/refs/heads/main/rules/detection-rules.json</string>
-                </dict>
-                <key>updateInterval</key>
-                <dict>
-                    <key>Value</key>
-                    <integer>24</integer>
-                </dict>
-                <!-- Logging Settings -->
-                <key>enableDebugLogging</key>
-                <dict>
-                    <key>Value</key>
-                    <false />
-                </dict>
-                <!-- Custom Branding Settings -->
-                <key>customBranding</key>
-                <dict>
-                    <key>Value</key>
+                    <key>benimdeioplgkhanklclahllklceahbe</key>
                     <dict>
-                        <key>companyName</key>
-                        <string />
-                        <key>productName</key>
-                        <string />
-                        <key>supportEmail</key>
-                        <string />
-                        <key>primaryColor</key>
-                        <string>#F77F00</string>
-                        <key>logoUrl</key>
-                        <string />
+                        <key>installation_mode</key>
+                        <string>force_installed</string>
+                        <key>update_url</key>
+                        <string>https://clients2.google.com/service/update2/crx</string>
+                        <key>policy</key>
+                        <dict>
+                            <key>showNotifications</key>
+                            <true />
+                            <key>enableValidPageBadge</key>
+                            <true />
+                            <key>enablePageBlocking</key>
+                            <true />
+                            <key>enableCippReporting</key>
+                            <false />
+                            <key>cippServerUrl</key>
+                            <string />
+                            <key>cippTenantId</key>
+                            <string />
+                            <key>customRulesUrl</key>
+                            <string>https://raw.githubusercontent.com/CyberDrain/ProjectX/refs/heads/main/rules/detection-rules.json</string>
+                            <key>updateInterval</key>
+                            <integer>24</integer>
+                            <key>enableDebugLogging</key>
+                            <false />
+                            <key>customBranding</key>
+                            <dict>
+                                <key>companyName</key>
+                                <string />
+                                <key>productName</key>
+                                <string />
+                                <key>supportEmail</key>
+                                <string />
+                                <key>primaryColor</key>
+                                <string>#F77F00</string>
+                                <key>logoUrl</key>
+                                <string />
+                            </dict>
+                        </dict>
                     </dict>
                 </dict>
             </dict>

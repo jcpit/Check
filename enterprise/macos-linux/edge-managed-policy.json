@@ -2,16 +2,7 @@
     "ExtensionSettings": {
         "knepjpocdagponkonnbggpcnhnaikajg": {
             "installation_mode": "force_installed",
-            "update_url": "https://edge.microsoft.com/extensionwebstorebase/v1/crx",
-            "incognito": "allowed",
-            "blocked_permissions": [],
-            "allowed_permissions": [
-                "*"
-            ],
-            "runtime_blocked_hosts": [],
-            "runtime_allowed_hosts": [
-                "*"
-            ]
+            "update_url": "https://edge.microsoft.com/extensionwebstorebase/v1/crx"
         }
     },
     "3rdparty": {
