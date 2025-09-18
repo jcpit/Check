@@ -27,40 +27,6 @@
                         <string>force_installed</string>
                         <key>update_url</key>
                         <string>https://clients2.google.com/service/update2/crx</string>
-                        <key>policy</key>
-                        <dict>
-                            <key>showNotifications</key>
-                            <true />
-                            <key>enableValidPageBadge</key>
-                            <true />
-                            <key>enablePageBlocking</key>
-                            <true />
-                            <key>enableCippReporting</key>
-                            <false />
-                            <key>cippServerUrl</key>
-                            <string />
-                            <key>cippTenantId</key>
-                            <string />
-                            <key>customRulesUrl</key>
-                            <string>https://raw.githubusercontent.com/CyberDrain/ProjectX/refs/heads/main/rules/detection-rules.json</string>
-                            <key>updateInterval</key>
-                            <integer>24</integer>
-                            <key>enableDebugLogging</key>
-                            <false />
-                            <key>customBranding</key>
-                            <dict>
-                                <key>companyName</key>
-                                <string />
-                                <key>productName</key>
-                                <string />
-                                <key>supportEmail</key>
-                                <string />
-                                <key>primaryColor</key>
-                                <string>#F77F00</string>
-                                <key>logoUrl</key>
-                                <string />
-                            </dict>
-                        </dict>
                     </dict>
                 </dict>
             </dict>

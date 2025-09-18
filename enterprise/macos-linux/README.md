@@ -12,8 +12,9 @@ This directory contains the necessary files for deploying the Check Microsoft 36
 - **`chrome-extension-config.mobileconfig`** - Chrome extension configuration profile for MDM
 - **`edge-extension-config.mobileconfig`** - Microsoft Edge extension configuration profile for MDM
 
-#### Deployment Script
-- **`deploy-macos.sh`** - macOS-specific deployment script for Configuration Profiles
+#### Deployment Scripts
+- **`deploy-macos.sh`** - macOS-specific deployment script for Configuration Profiles and Managed Preferences
+- **`verify-policies.sh`** - Script to verify policy installation and troubleshoot issues
 
 ### Linux-Specific Files
 #### Deployment Script
@@ -44,10 +45,21 @@ sudo ./deploy.sh uninstall
 
 #### macOS (Configuration Profiles + Managed Preferences)
 ```bash
-# macOS - Configuration Profiles and Managed Preferences
+# Full deployment
 sudo ./deploy-macos.sh install
 sudo ./deploy-macos.sh status
 sudo ./deploy-macos.sh uninstall
+
+# Manual approach (if automated deployment fails)
+# 1. Install configuration profiles manually via System Settings
+# 2. Use manual commands for managed preferences:
+sudo plutil -convert binary1 chrome-managed-policy.json -o "/Library/Managed Preferences/com.google.Chrome.plist"
+sudo plutil -convert binary1 edge-managed-policy.json -o "/Library/Managed Preferences/com.microsoft.Edge.plist"
+sudo chown root:wheel "/Library/Managed Preferences/com.google.Chrome.plist"
+sudo chown root:wheel "/Library/Managed Preferences/com.microsoft.Edge.plist"
+
+# Verify policies are working
+sudo ./verify-policies.sh
 ```
 
 #### Linux (Browser Policy Files)
