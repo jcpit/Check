@@ -545,11 +545,11 @@
       "id": "phi_014_devtools_blocking",
       "pattern": "(?:debugger|developer.*tools?|devtools?|F12|inspect.*element|right.*click.*disabled|console.*clear|setInterval.*debugger|while.*true.*debugger|keydown.*F12|contextmenu.*prevent|selectstart.*prevent|dragstart.*prevent|syntaxerror019/HTML-STO|ld\\.min\\.js|lockdown\\.js|_0x[a-f0-9]+.*keyCode|function\\s*_0x[a-f0-9]+.*preventDefault|ctrlKey.*shiftKey.*keyCode.*0x[a-f0-9]+|addEventListener.*keydown.*0x[a-f0-9]+|contextmenu.*preventDefault.*mitigated)",
       "flags": "i",
-      "severity": "high",
+      "severity": "critical",
       "description": "Page attempts to block or detect developer tools usage",
-      "action": "warn",
+      "action": "block",
       "category": "anti_analysis",
-      "confidence": 0.85,
+      "confidence": 0.95,
       "additional_checks": [
         "document.addEventListener('keydown'",
         "event.keyCode === 123",
@@ -570,7 +570,10 @@
         "attempt mitigated",
         "Inspect element attempt mitigated",
         "Console attempt mitigated",
-        "Right-click attempt mitigated"
+        "Right-click attempt mitigated",
+        "antiDebug",
+        "enableSecurityFeatures",
+        "setInterval.*redirect"
       ]
     },
     {
