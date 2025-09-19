@@ -8,7 +8,7 @@ The extension uses a rule-driven architecture where all detection logic is defin
 * **Detection requirements** - Elements that identify Microsoft 365 login pages
 * **Blocking rules** - Conditions that immediately block pages
 
-Each of these rules has their own schema. You can create a custom rules file and host it anywhere publicly, by default Check will always load the CyberDrain rule set from our repository. Sometimes you have custom pages, or specific logon pages that have a pattern that must be added, you can add these exclusions in your own configuration file, or contribute to the primary repository.
+Each of these rules has their own schema. You can create a custom rules file and host it anywhere publicly (e.g. your own fork of Check's GitHub repo, as an Azure Blob file, etc.), by default Check will always load the CyberDrain rule set from our repository. Sometimes you have custom pages, or specific logon pages that have a pattern that must be added, you can add these exclusions in your own configuration file, or contribute to the primary repository.
 
 Contributions to our pages can be done via [https://github.com/CyberDrain/Check/blob/main/rules/detection-rules.json](../../rules/detection-rules.json)
 

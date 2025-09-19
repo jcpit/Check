@@ -23,6 +23,7 @@ If some settings appear grayed out with a little lock icon, it means your organi
 {% endhint %}
 
 1. Enter your organization's custom rules URL (provided by IT)
+   1. Custom rules, including allow lists, can be done via [creating-detection-rules.md](../advanced/creating-detection-rules.md "mention").
 2. Set update interval based on your security requirements:
    * High security environments: 6-12 hours
    * Standard environments: 24 hours
