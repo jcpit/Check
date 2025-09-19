@@ -14,7 +14,7 @@
                 "enableCippReporting": false,
                 "cippServerUrl": "",
                 "cippTenantId": "",
-                "customRulesUrl": "https://raw.githubusercontent.com/CyberDrain/ProjectX/refs/heads/main/rules/detection-rules.json",
+                "customRulesUrl": "",
                 "updateInterval": 24,
                 "enableDebugLogging": false,
                 "customBranding": {
