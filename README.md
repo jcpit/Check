@@ -5,7 +5,6 @@ impersonate Microsoft 365 sign-in pages.
 
 ## Features 
 
-
 - **Detection engine** – loads rules from `rules/detection-rules.json` and
   analyses URLs and page content to block or warn about suspicious sites
   targeting Microsoft 365 credentials
@@ -46,15 +45,6 @@ mechanism. Managed settings follow the schema in `config/managed_schema.json`.
   colors.
 - **Detection rules** – edit `rules/detection-rules.json` or enable remote
   rules using the `detectionRules` section in the policy schema.
-
-## Testing
-
-For step-by-step testing instructions, see [TESTING_GUIDE.md](TESTING_GUIDE.md).
-
-Test pages included in the repository:
-
-- `test-extension-loading.html` – confirms the extension, background script, and detection engine are active.
-- `test-detection-rules.html` and `test-detection-rules-standalone.html` – evaluate detection rules with or without loading the extension.
 
 ## Contributing
 
