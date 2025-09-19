@@ -286,9 +286,9 @@ For Acronis RMM, you can use the script in [#generic-powershell](chrome-edge-dep
 
 <summary>Immy.bot</summary>
 
-ImmyBot includes a pre-built Global Computer Task for Check browser extension deployment.  
+Immy.bot includes a pre-built Global Computer Task for Check browser extension deployment.  
 Due to how flexible Immy is, this may look intimidating at first, but it is quite easy and nearly purely UI-driven!  
-Follow these steps to deploy Check using ImmyBot:
+Follow these steps to deploy Check using Immy.bot:
 
 #### Step 1: Create a Deployment
 
@@ -324,14 +324,14 @@ Follow these steps to deploy Check using ImmyBot:
 3. **Monitor Results** through ImmyBot's maintenance session logs
 4. Review deployment status and address any failures
 
-#### Best Practices for ImmyBot Deployment
+#### Best Practices for Immy.bot Deployment
 
 * **Test First**: Create a test deployment targeting a small group before rolling out globally
-* **Use Targeting**: Leverage ImmyBot's advanced targeting to deploy based on computer properties, user assignments, or custom criteria
+* **Use Targeting**: Leverage Immy's advanced targeting to deploy based on computer properties, user assignments, or custom criteria
 * **Monitor Compliance**: Set up recurring maintenance sessions to ensure Check remains installed and properly configured
 * **Handle Exceptions**: Create separate deployments for customers requiring different configurations
 
-For detailed information about ImmyBot deployments, tasks, and maintenance sessions, refer to the [ImmyBot Documentation](https://docs.immy.bot).
+For detailed information about Immy deployments, tasks, and maintenance sessions, refer to the [Immy.bot Documentation](https://docs.immy.bot).
 
 </details>
 
