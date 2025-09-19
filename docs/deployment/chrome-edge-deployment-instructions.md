@@ -7,7 +7,7 @@ icon: bolt
 
 # Chrome/Edge Deployment Instructions
 
-eview the below options for how to deploy Check to your clients' environments. If you use a RMM not featured, please see the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention") option to script the install.
+Review the below options for how to deploy Check to your clients' environments. If you use a RMM not featured, please see the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention") option to script the install.
 
 <details>
 
