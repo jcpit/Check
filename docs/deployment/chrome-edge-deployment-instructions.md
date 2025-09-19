@@ -261,7 +261,7 @@ For Acronis RMM, you can use the script in [#generic-powershell](chrome-edge-dep
 1. Go to **Automation** > **Scripts** > **Script Manager**
 2. Create a new script
 3. Add a PowerShell Execute Script step
-4. Copy in the [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention") script.
+4. Copy in the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention") script.
 5. Save and assign the script to your targetted devices.
 
 </details>
@@ -272,7 +272,7 @@ For Acronis RMM, you can use the script in [#generic-powershell](chrome-edge-dep
 
 1. Go to **Automation** > **Components**
 2. Create a new Custom Component
-3. Copy in the [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention") script
+3. Copy in the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention") script
 4. Save and publish the component
 5. Navigate to **Automation** > **Jobs** > **Create Job**
 6. Name the job Check Browser Extension Deployment
@@ -287,7 +287,7 @@ For Acronis RMM, you can use the script in [#generic-powershell](chrome-edge-dep
 <summary>Kaseya VSA</summary>
 
 1. Go to **Agent Procedures** > **Installer Wizards** > **Application Deploy**
-2. Upload a .ps1 of the [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention") script
+2. Upload a .ps1 of the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention")  script
 3. Choose Private or Shared Files
 4. Select installer type
 5. Add command-line options
@@ -326,7 +326,7 @@ For Acronis RMM, you can use the script in [#generic-powershell](chrome-edge-dep
 3. Choose:
    1. Script Type: **PowerShell**
    2. Operating System: **Windows**
-4. Upload a .ps1 of the [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention") script or paste the script directly
+4. Upload a .ps1 of the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention")  script or paste the script directly
 5. Name the script `Check Browser Extension Deployment`
 6. Save the script
 7. Go to **Configuration** > **Scheduled Task** > **Add Task**
@@ -349,7 +349,7 @@ For Acronis RMM, you can use the script in [#generic-powershell](chrome-edge-dep
 2. Click **New**
 3. Enter `Check Browser Extension Deployment` for the name and a brief description
 4. Set a timeout period for the script of 600 seconds
-5. Upload a .ps1 file of the [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention") script leaving `Script check and automated task` selected
+5. Upload a .ps1 file of the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention")  script leaving `Script check and automated task` selected
 6. Click **Save**
 7. On the **All Devices** view, right-click your targeted Client or Site
 8. Select **Task** > **Add**
@@ -372,7 +372,7 @@ For Acronis RMM, you can use the script in [#generic-powershell](chrome-edge-dep
 2. Click **New**
 3. Enter `Check Browser Extension Deployment` for the name and a brief description
 4. Set a timeout period for the script of 600 seconds
-5. Upload a .ps1 file of the [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention") script leaving `Script check and automated task` selected
+5. Upload a .ps1 file of the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention")  script leaving `Script check and automated task` selected
 6. Click **Save**
 7. On the **All Devices** view, right-click your targeted Client or Site
 8. Select **Task** > **Add**
@@ -397,7 +397,7 @@ For Acronis RMM, you can use the script in [#generic-powershell](chrome-edge-dep
 4. Name the Script `Check Browser Extension Deployment`
 5. Toggle **Enabled** under the Windows tab
 6. Select **PowerShell** as the script type
-7. Paste the [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention") script into the editor
+7. Paste the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention")  script into the editor
 8. Click **Save Script**
 9. Navigate to **Automation** > **Tasks**
 10. Click **Create Task**
@@ -417,7 +417,7 @@ For Acronis RMM, you can use the script in [#generic-powershell](chrome-edge-dep
 2. Click **+ Scrip**t
 3. Name the script `Check Browser Extension Depoloyment`
 4. Choose **PowerShell** as the language
-5. Paste the [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention") script
+5. Paste the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention")  script
 6. Set a timeout of 600 seconds
 7. Choose to run as **System/Root User**
 8. Save the script
@@ -434,7 +434,7 @@ For Acronis RMM, you can use the script in [#generic-powershell](chrome-edge-dep
 3. Name the script `Check Browser Extension Deployment`
 4. Choose **PowerShell** as the file type
 5. Set **Run As** to **System**
-6. Copy the [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention") script into the editor
+6. Copy the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention")  script into the editor
 7. Click **Create Script**
 8. Navigate to **Policies**
 9. Click **+New Policy**
