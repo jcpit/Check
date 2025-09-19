@@ -561,7 +561,10 @@
         "addEventListener('contextmenu'",
         "oncontextmenu=\"return false\"",
         "onselectstart=\"return false\"",
-        "ondragstart=\"return false\""
+        "ondragstart=\"return false\"",
+        "syntaxerror019/HTML-STO",
+        "ld.min.js",
+        "lockdown.js"
       ]
     },
     {
