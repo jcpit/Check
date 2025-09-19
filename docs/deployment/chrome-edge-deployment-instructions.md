@@ -214,7 +214,7 @@ function Configure-ExtensionSettings {
 
 # Configure settings for Chrome and Edge
 Configure-ExtensionSettings -ExtensionId $chromeExtensionId -UpdateUrl $chromeUpdateUrl -ManagedStorageKey $chromeManagedStorageKey -ExtensionSettingsKey $chromeExtensionSettingsKey
-
+Check-ExtensionInstalled -RegKey $edgeRegKey -ExtensionId $edgeExtensionId -UpdateUrl $edgeUpdateUrl -ManagedStorageKey $edgeManagedStorageKey -ExtensionSettingsKey $edgeExtensionSettingsKey
 ```
 {% endcode %}
 
