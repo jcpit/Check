@@ -549,7 +549,7 @@
       "description": "Page attempts to block or detect developer tools usage",
       "action": "block",
       "category": "anti_analysis",
-      "confidence": 0.95,
+      "confidence": 0.90,
       "additional_checks": [
         "document.addEventListener('keydown'",
         "event.keyCode === 123",
