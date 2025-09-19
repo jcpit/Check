@@ -107,6 +107,14 @@
         "description": "Microsoft login input element must be in source",
         "weight": 2,
         "category": "primary"
+      },
+      {
+        "id": "aadcdn_background_image",
+        "type": "source_content",
+        "pattern": "aadcdn\\.msauth\\.net/shared/1\\.0/content/images/backgrounds/",
+        "description": "Microsoft login page background image from CDN",
+        "weight": 3,
+        "category": "primary"
       }
     ],
     "secondary_elements": [
@@ -172,8 +180,8 @@
       {
         "id": "login_form_element",
         "type": "source_content",
-        "pattern": "(?:<form[^>]*method=[\"']post[\"'][^>]*>|<input[^>]*type=[\"'](?:email|text)[\"'][^>]*name=[\"'][^\"']+[\"'])",
-        "description": "Login form with POST method or email/text input field (supporting evidence only)",
+        "pattern": "(?:<form[^>]*method=[\"']post[\"'][^>]*>|<input[^>]*type=[\"'](?:email|text|tel)[\"'][^>]*placeholder=[\"'][^\"']+[\"'][^>]*>)",
+        "description": "Login form with POST method or a text/email/tel input with a placeholder",
         "weight": 1,
         "category": "secondary"
       }
