@@ -368,22 +368,26 @@ For Acronis RMM, you can use the script in [#generic-powershell](chrome-edge-dep
 
 <summary>NinjaOne</summary>
 
-1. Go to **Settings** > **Script Manager**
-2. Click **New**
-3. Enter `Check Browser Extension Deployment` for the name and a brief description
-4. Set a timeout period for the script of 600 seconds
-5. Upload a .ps1 file of the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention")  script leaving `Script check and automated task` selected
-6. Click **Save**
-7. On the **All Devices** view, right-click your targeted Client or Site
-8. Select **Task** > **Add**
-9. Select the script you just uploaded
-10. Enter a name for the task, e.g. `<Client/Site> Check Browser Extension Deployment`
-11. Select `Once per day` for the frequency method
-12. Set a **Start Date**, **Start Time**, **End Date**, and **End Time** as desired
-13. Set a maximum permitted execution time e.g. 600 seconds
-14. Set `Run task as soon as possible if schedule is missed`
-15. Select **Next**
-16. Select the targeted devices and click **Add Task**
+1. Go to **Administration** > **Library > Automation > Add > New Script**
+
+1) Enter:&#x20;
+   1. Name `Check Browser Extension Deployment`&#x20;
+   2. Description: To deploy Check by CyberDrain for Edge and Chrome
+   3. Categories: Select as approriate for your environment
+   4. Language: PowerShell
+   5. Operating System: Windows
+   6. Architechture: All
+   7. Run As: System
+   8. Script Variables: Add as desired to customize
+2) Copy the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention")  script into the editor
+3) Click **Save**
+4) Go to **Administration** > **Policies**
+5) Options are to create a new policy or add the automation to an existing policy targeting Windows devices
+6) Select **Scheduled Automation** on the left
+7) Click **Add a Scheduled automation** button
+8) Select the script and set the options for frequency, add variables, etc.
+9) Click **Add**
+10) Click **Save**
 
 </details>
 
