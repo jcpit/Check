@@ -66,6 +66,7 @@ class CheckPopup {
     this.elements.aboutLink = document.getElementById("aboutLink");
     this.elements.companyBranding = document.getElementById("companyBranding");
     this.elements.companyName = document.getElementById("companyName");
+    this.elements.companyLink = document.getElementById("companyLink");
 
     // Overlay elements
     this.elements.loadingOverlay = document.getElementById("loadingOverlay");
@@ -273,6 +274,7 @@ class CheckPopup {
       console.warn("Popup: Using fallback branding configuration");
       this.brandingConfig = {
         companyName: "CyberDrain",
+        companyURL: "https://cyberdrain.com/",
         productName: "Check",
         logoUrl: "images/icon32.png",
         supportUrl: "https://support.cyberdrain.com",
@@ -283,6 +285,7 @@ class CheckPopup {
       console.error("Error loading branding configuration:", error);
       this.brandingConfig = {
         companyName: "CyberDrain",
+        companyURL: "https://cyberdrain.com/",
         productName: "Check",
         logoUrl: "images/icon32.png",
         supportUrl: "https://support.cyberdrain.com",
