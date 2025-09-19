@@ -284,6 +284,59 @@ For Acronis RMM, you can use the script in [#generic-powershell](chrome-edge-dep
 
 <details>
 
+<summary>Immy.bot</summary>
+
+ImmyBot includes a pre-built Global Computer Task for Check browser extension deployment.  
+Due to how flexible Immy is, this may look intimidating at first, but it is quite easy and nearly purely UI-driven!  
+Follow these steps to deploy Check using ImmyBot:
+
+#### Step 1: Create a Deployment
+
+1. **Navigate to Deployments** in the left menu
+2. Click **New** to create a deployment
+3. **Select the Global Task**: Choose "Check by Cyberdrain" from the available global tasks
+4. **Configure Enforcement Type**:
+   * **Required**: Automatically applies during maintenance sessions
+   * **Onboarding**: Applied only during computer onboarding
+   * **Ad Hoc**: Run only when explicitly triggered
+5. **Select Targets**:
+   * **Cross Tenant**: Apply to all computers across all tenants
+   * **Single Tenant**: Apply to computers in a specific tenant
+   * **Individual**: Target specific computers or users
+   * Use filters, tags, or integration-specific targeting as needed
+
+#### Step 2: Customize Parameters
+
+1. **Configure Task Parameters** to customize the deployment for your environment:
+   * Set company branding options (company name, logo URL, primary color)
+   * Configure CIPP reporting settings (server URL, tenant ID)
+   * Adjust notification and blocking preferences
+   * Set custom detection rules URL if needed
+2. **Set Dependencies** if required (e.g., ensure Windows updates are applied first)
+3. **Configure Scheduling** if using time-based deployment
+
+#### Step 3: Deploy and Monitor
+
+1. Click **Create** to save the deployment
+2. **Run a Maintenance Session** to apply the deployment:
+   * Navigate to the target computers
+   * Initiate maintenance session to execute deployments
+3. **Monitor Results** through ImmyBot's maintenance session logs
+4. Review deployment status and address any failures
+
+#### Best Practices for ImmyBot Deployment
+
+* **Test First**: Create a test deployment targeting a small group before rolling out globally
+* **Use Targeting**: Leverage ImmyBot's advanced targeting to deploy based on computer properties, user assignments, or custom criteria
+* **Monitor Compliance**: Set up recurring maintenance sessions to ensure Check remains installed and properly configured
+* **Handle Exceptions**: Create separate deployments for customers requiring different configurations
+
+For detailed information about ImmyBot deployments, tasks, and maintenance sessions, refer to the [ImmyBot Documentation](https://docs.immy.bot).
+
+</details>
+
+<details>
+
 <summary>Kaseya VSA</summary>
 
 1. Go to **Agent Procedures** > **Installer Wizards** > **Application Deploy**
