@@ -233,7 +233,7 @@ Configure-ExtensionSettings -ExtensionId $chromeExtensionId -UpdateUrl $chromeUp
 2. Run Deploy-ADMX.ps1. As long as you keep the other two files in the same folder, it will correctly add the available objects to Group Policy.
 3. Open Group Policy and create a policy using the imported settings that can be found:
 
-![](../.gitbook/assets/image.png)\
+![](<../.gitbook/assets/image (2).png>)\
 
 
 </details>
