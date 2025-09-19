@@ -995,10 +995,6 @@ if (window.checkExtensionLoaded) {
         logger.log(
           "📋 Next step: Analyzing if this is legitimate or phishing attempt..."
         );
-      } else {
-        logger.log(
-          "📋 Next step: No further analysis needed - not Microsoft-related"
-        );
       }
 
       return isM365Page;
@@ -2443,12 +2439,8 @@ if (window.checkExtensionLoaded) {
             "✅ Page analysis result: Site appears legitimate (not Microsoft-related, no phishing indicators checked)"
           );
 
-          // Set up monitoring for dynamic content but don't run expensive checks
-          if (!isRerun) {
-            setupDOMMonitoring();
-            setupDynamicScriptMonitoring();
-          }
-
+          // Don't set up DOM monitoring for pages with no Microsoft indicators to prevent performance issues
+          logger.log("📄 Skipping DOM monitoring - page has insufficient Microsoft elements");
           return; // EXIT - No Microsoft elements detected, no need for phishing checks
         }
 
