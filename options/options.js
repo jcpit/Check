@@ -82,6 +82,7 @@ class CheckOptions {
 
     // Branding
     this.elements.companyName = document.getElementById("companyName");
+	this.elements.companyURL = document.getElementById("companyURL");
     this.elements.productName = document.getElementById("productName");
     this.elements.supportEmail = document.getElementById("supportEmail");
     this.elements.primaryColor = document.getElementById("primaryColor");
@@ -163,6 +164,7 @@ class CheckOptions {
     // Branding preview updates
     const brandingInputs = [
       this.elements.companyName,
+	  this.elements.companyURL,
       this.elements.productName,
       this.elements.primaryColor,
       this.elements.logoUrl,
@@ -411,6 +413,7 @@ class CheckOptions {
       console.warn("Options: Using fallback branding configuration");
       this.brandingConfig = {
         companyName: "CyberDrain",
+		companyURL: "https://cyberdrain.com/",
         productName: "Check",
         primaryColor: "#F77F00",
         logoUrl: "images/icon48.png",
@@ -419,6 +422,7 @@ class CheckOptions {
       console.error("Error loading branding configuration:", error);
       this.brandingConfig = {
         companyName: "CyberDrain",
+		companyURL: "https://cyberdrain.com/",
         productName: "Check",
         primaryColor: "#F77F00",
         logoUrl: "images/icon48.png",
@@ -607,6 +611,7 @@ class CheckOptions {
 
     // Branding settings
     this.elements.companyName.value = this.brandingConfig?.companyName || "";
+	this.elements.companyURL.value = this.brandingConfig?.companyURL || "";
     this.elements.productName.value = this.brandingConfig?.productName || "";
     this.elements.supportEmail.value = this.brandingConfig?.supportEmail || "";
     this.elements.primaryColor.value =
@@ -852,6 +857,7 @@ class CheckOptions {
   gatherBrandingData() {
     return {
       companyName: this.elements.companyName.value,
+	  companyURL: this.elements.companyURL.value,
       productName: this.elements.productName.value,
       supportEmail: this.elements.supportEmail.value,
       primaryColor: this.elements.primaryColor.value,
@@ -1949,6 +1955,7 @@ class CheckOptions {
           // Custom branding (matches managed_schema.json structure)
           customBranding: {
             companyName: "CyberDrain",
+			CompanyURL: "https://cyberdrain.com/",
             productName: "Check Enterprise",
             primaryColor: "#F77F00",
             logoUrl:
@@ -2088,6 +2095,7 @@ class CheckOptions {
       // Note: enableDeveloperConsoleLogging is excluded - should remain available for debugging
       // Branding fields (if customBranding policy is present)
       companyName: this.elements.companyName,
+	  companyURL: this.elements.companyURL,
       productName: this.elements.productName,
       supportEmail: this.elements.supportEmail,
       primaryColor: this.elements.primaryColor,
@@ -2740,6 +2748,8 @@ class CheckOptions {
   updateBrandingPreview() {
     const companyName =
       this.elements.companyName.value || this.brandingConfig.companyName;
+    const companyURL =
+      this.elements.companyURL.value || this.brandingConfig.companyURL;
     const productName =
       this.elements.productName.value || this.brandingConfig.productName;
     const primaryColor =
