@@ -7,7 +7,7 @@ icon: bolt
 
 # Chrome/Edge Deployment Instructions
 
-Review the below options for how to deploy Check to your clients' environments. If you use a RMM not featured, please see the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention") option to script the install.
+eview the below options for how to deploy Check to your clients' environments. If you use a RMM not featured, please see the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention") option to script the install.
 
 <details>
 
@@ -224,40 +224,17 @@ Configure-ExtensionSettings -ExtensionId $chromeExtensionId -UpdateUrl $chromeUp
 
 <summary>Group Policy</summary>
 
-1.
-   1.
-   2.
-   3.
-2.
-3.
-
-![](https://www.gitbook.com/cdn-cgi/image/dpr=2,width=1168,onerror=redirect,format=auto/https%3A%2F%2Ffiles.gitbook.com%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%2FFtDhotz26LyzVUTgqw4L%2Fuploads%2FuWyy3TSDF2HmNzC0Vcms%2Fimage.png%3Falt%3Dmedia%26token%3Da958206c-22a4-4927-8dae-7403661d3c1b)
 
 
+1. Download the following from the Check repo on GitHub
+   1. ​[Deploy-ADMX.ps1](../../enterprise/Deploy-ADMX.ps1)
+   2. ​[Check-Extension.admx](../../enterprise/admx/Check-Extension.admx)​
+   3. ​[Check-Extension.adml](../../enterprise/admx/en-US/Check-Extension.adml)​
+2. Run Deploy-ADMX.ps1. As long as you keep the other two files in the same folder, it will correctly add the available objects to Group Policy.
+3. Open Group Policy and create a policy using the imported settings that can be found:
 
+![](../.gitbook/assets/image.png)\
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-[PreviousAbout](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/)[Next - SettingsGeneral](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/settings/general)JO![Brian Simpson](https://www.gitbook.com/cdn-cgi/image/dpr=2,width=256,onerror=redirect,format=auto/https%3A%2F%2Ffiles.gitbook.com%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fusers%2FyXUC8uC4peNqeazDGMwuEPUBG2R2%2Favatars%2FctOqd5c9ZVApNh9d8u90%2Fprofile%20photo.jpg%3Falt%3Dmedia%26token%3D65b2de3d-14f1-4d0c-8171-10266bfc1a02)Last modified 36m ago
 
 </details>
 
@@ -265,7 +242,7 @@ Configure-ExtensionSettings -ExtensionId $chromeExtensionId -UpdateUrl $chromeUp
 
 <summary>Action1</summary>
 
-[https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention")
+For Action1, you can use the script in [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention") to create a ps1 file and deploy it via a [custom package in the software repository](https://www.action1.com/documentation/add-custom-packages-to-app-store/) or via the [script library](https://www.action1.com/documentation/script-library/).&#x20;
 
 </details>
 
@@ -273,7 +250,7 @@ Configure-ExtensionSettings -ExtensionId $chromeExtensionId -UpdateUrl $chromeUp
 
 <summary>Acronis RMM</summary>
 
-[https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention")
+For Acronis RMM, you can use the script in [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention")to [create a script in the Script repository](https://www.acronis.com/en-us/support/documentation/CyberProtectionService/#cyber-scripting-creating-script.html) and then running the script via a [Script Plan](https://www.acronis.com/en-us/support/documentation/CyberProtectionService/#cyber-scripting-scripting-plans.html).
 
 </details>
 
@@ -281,11 +258,11 @@ Configure-ExtensionSettings -ExtensionId $chromeExtensionId -UpdateUrl $chromeUp
 
 <summary>ConnectWise Automate</summary>
 
-1.
-2.
-3.
-4. [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention")
-5.
+1. Go to **Automation** > **Scripts** > **Script Manager**
+2. Create a new script
+3. Add a PowerShell Execute Script step
+4. Copy in the [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention") script.
+5. Save and assign the script to your targetted devices.
 
 </details>
 
@@ -293,15 +270,15 @@ Configure-ExtensionSettings -ExtensionId $chromeExtensionId -UpdateUrl $chromeUp
 
 <summary>Datto RMM</summary>
 
-1.
-2.
-3. [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention")
-4.
-5.
-6.
-7.
-8.
-9.
+1. Go to **Automation** > **Components**
+2. Create a new Custom Component
+3. Copy in the [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention") script
+4. Save and publish the component
+5. Navigate to **Automation** > **Jobs** > **Create Job**
+6. Name the job Check Browser Extension Deployment
+7. Add the custom component you just created
+8. Target your selected device(s)
+9. Schedule the job
 
 </details>
 
@@ -309,13 +286,13 @@ Configure-ExtensionSettings -ExtensionId $chromeExtensionId -UpdateUrl $chromeUp
 
 <summary>Kaseya VSA</summary>
 
-1.
-2. [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention")
-3.
-4.
-5.
-6.
-7.
+1. Go to **Agent Procedures** > **Installer Wizards** > **Application Deploy**
+2. Upload a .ps1 of the [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention") script
+3. Choose Private or Shared Files
+4. Select installer type
+5. Add command-line options
+6. Name the procedure Check Browser Extension Deployment
+7. Save and schedule the script for deployment
 
 </details>
 
@@ -323,18 +300,18 @@ Configure-ExtensionSettings -ExtensionId $chromeExtensionId -UpdateUrl $chromeUp
 
 <summary>ManageEngine Endpoint Central</summary>
 
-1.
-2.
-3.
-4.
-   1.
-   2.
-5.
-6.
-7.
-8.
-9.
-10.
+1. Navigate to **Manage** > **Extension Repository**
+2. Click **Add Extensions** and click the desired browser
+3. Select the Web Store Extension Type
+4. Enter the extension ID:
+   1. Chrome: benimdeioplgkhanklclahllklceahbe
+   2. Edge: knepjpocdagponkonnbggpcnhnaikajg
+5. Click **Add** after each
+6. Navigate to **Browsers** > **Manage** > **Groups & Computers**
+7. Select the custom groups or computers you wish to distribute the extension to
+8. Click **Distribute Extensions**
+9. Select the extensions you just added to the repository
+10. Click **Distribute**
 
 </details>
 
@@ -342,23 +319,25 @@ Configure-ExtensionSettings -ExtensionId $chromeExtensionId -UpdateUrl $chromeUp
 
 <summary>N-able N-Central</summary>
 
-1.
-2.
-3.
-   1.
-   2.
-4. [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention")
-5.
-6.
-7.
-8.
-9.
-10.
-    1.
-    2.
-    3.
-    4.
-11.
+
+
+1. Go to **Configuration** > **Scheduled Tasks** > **Script/Software Repository**
+2. Click **Add** > **Script**
+3. Choose:
+   1. Script Type: **PowerShell**
+   2. Operating System: **Windows**
+4. Upload a .ps1 of the [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention") script or paste the script directly
+5. Name the script `Check Browser Extension Deployment`
+6. Save the script
+7. Go to **Configuration** > **Scheduled Task** > **Add Task**
+8. Choose **Run a Script**
+9. Select the script you just uploaded
+10. Configure the task
+    1. Name: **Check Browser Extension Deployment**
+    2. Target Devices: Choose specific devices, groups, or filters
+    3. Schedule: Set to your desired interval. We recommend on login/startup for best results but a lower frequency can also ensure deployment to all macines
+    4. Execution Context: **System Account**
+11. Click **Save and Activate**
 
 </details>
 
@@ -366,22 +345,22 @@ Configure-ExtensionSettings -ExtensionId $chromeExtensionId -UpdateUrl $chromeUp
 
 <summary>N-able N-Sight</summary>
 
-1.
-2.
-3.
-4.
-5. [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention")
-6.
-7.
-8.
-9.
-10.
-11.
-12.
-13.
-14.
-15.
-16.
+1. Go to **Settings** > **Script Manager**
+2. Click **New**
+3. Enter `Check Browser Extension Deployment` for the name and a brief description
+4. Set a timeout period for the script of 600 seconds
+5. Upload a .ps1 file of the [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention") script leaving `Script check and automated task` selected
+6. Click **Save**
+7. On the **All Devices** view, right-click your targeted Client or Site
+8. Select **Task** > **Add**
+9. Select the script you just uploaded
+10. Enter a name for the task, e.g. `<Client/Site> Check Browser Extension Deployment`
+11. Select `Once per day` for the frequency method
+12. Set a **Start Date**, **Start Time**, **End Date**, and **End Time** as desired
+13. Set a maximum permitted execution time e.g. 600 seconds
+14. Set `Run task as soon as possible if schedule is missed`
+15. Select **Next**
+16. Select the targeted devices and click **Add Task**
 
 </details>
 
@@ -389,24 +368,22 @@ Configure-ExtensionSettings -ExtensionId $chromeExtensionId -UpdateUrl $chromeUp
 
 <summary>NinjaOne</summary>
 
-1.
-2.
-3. [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention")
-4.
-   1.
-   2.
-   3.
-   4.
-   5.
-   6.
-5.
-6.
-7.
-8.
-9.
-10.
-11.
-12.
+1. Go to **Settings** > **Script Manager**
+2. Click **New**
+3. Enter `Check Browser Extension Deployment` for the name and a brief description
+4. Set a timeout period for the script of 600 seconds
+5. Upload a .ps1 file of the [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention") script leaving `Script check and automated task` selected
+6. Click **Save**
+7. On the **All Devices** view, right-click your targeted Client or Site
+8. Select **Task** > **Add**
+9. Select the script you just uploaded
+10. Enter a name for the task, e.g. `<Client/Site> Check Browser Extension Deployment`
+11. Select `Once per day` for the frequency method
+12. Set a **Start Date**, **Start Time**, **End Date**, and **End Time** as desired
+13. Set a maximum permitted execution time e.g. 600 seconds
+14. Set `Run task as soon as possible if schedule is missed`
+15. Select **Next**
+16. Select the targeted devices and click **Add Task**
 
 </details>
 
@@ -414,21 +391,21 @@ Configure-ExtensionSettings -ExtensionId $chromeExtensionId -UpdateUrl $chromeUp
 
 <summary>Pulseway</summary>
 
-1.
-2.
-3.
-4.
-5.
-6.
-7. [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention")
-8.
-9.
-10.
-11.
-12.
-13.
-14.
-15.
+1. Go to **Automation** > **Scripts**
+2. (Optional) Create a new **Script Category** called Browser Extensions
+3. Click **Create Script**
+4. Name the Script `Check Browser Extension Deployment`
+5. Toggle **Enabled** under the Windows tab
+6. Select **PowerShell** as the script type
+7. Paste the [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention") script into the editor
+8. Click **Save Script**
+9. Navigate to **Automation** > **Tasks**
+10. Click **Create Task**
+11. Name the task `Check Browser Extension Deployment`
+12. Choose the PowerShell script you just added
+13. Set the **Scope** to **All Systems** or create a custom scope
+14. Set **Daily** for **Schedule**
+15. Save the task
 
 </details>
 
@@ -436,15 +413,15 @@ Configure-ExtensionSettings -ExtensionId $chromeExtensionId -UpdateUrl $chromeUp
 
 <summary>SuperOps.ai</summary>
 
-1.
-2.
-3.
-4.
-5. [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention")
-6.
-7.
-8.
-9.
+1. Navigate to **Modules** > **Scripts**
+2. Click **+ Scrip**t
+3. Name the script `Check Browser Extension Depoloyment`
+4. Choose **PowerShell** as the language
+5. Paste the [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention") script
+6. Set a timeout of 600 seconds
+7. Choose to run as **System/Root User**
+8. Save the script
+9. SuperOps has multiple ways to deploy a scheduled action. Please review their documentation for your preferred method
 
 </details>
 
@@ -452,20 +429,20 @@ Configure-ExtensionSettings -ExtensionId $chromeExtensionId -UpdateUrl $chromeUp
 
 <summary>Syncro</summary>
 
-1.
-2.
-3.
-4.
-5.
-6. [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention")
-7.
-8.
-9.
-10.
-11.
-12.
-13.
-14.
-15.
+1. Navigate to the **Scripts** tab
+2. Click **+Script**
+3. Name the script `Check Browser Extension Deployment`
+4. Choose **PowerShell** as the file type
+5. Set **Run As** to **System**
+6. Copy the [https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/\~/changes/30/deployment/quickstart#generic-powershell](https://app.gitbook.com/o/zaMrayG0X0xKqQLa8i9S/s/FtDhotz26LyzVUTgqw4L/~/changes/30/deployment/quickstart#generic-powershell "mention") script into the editor
+7. Click **Create Script**
+8. Navigate to **Policies**
+9. Click **+New Policy**
+10. Name the policy `Check Browser Extension Deployment`
+11. Choose **Scripting** policy category
+12. Click **+Add Entry**
+13. Select the script you just created from the drop down
+14. Select your desired frequency. We recommend at least daily
+15. Click **Save Policy**
 
 </details>
