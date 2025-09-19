@@ -1609,14 +1609,12 @@ class CheckBackground {
 
   async logUrlAccess(url, tabId) {
     const config = (await safe(this.configManager.getConfig())) || {};
-
-    // Only log if debug logging is enabled or if this is a significant event
+    // ONLY log normal page access if debug logging is explicitly enabled
+    // Otherwise, only security events (blocked/warnings/threats) should be logged
     if (!config.enableDebugLogging) {
-      // Skip logging routine page scans to avoid log bloat
-      return;
+      return; // Skip all routine URL access logging in normal operation
     }
-
-    // Get current profile information for logging context
+    // If debug logging is enabled, log all page access for debugging purposes
     const profileInfo = await this.getCurrentProfile();
 
     const logEntry = {
@@ -1638,6 +1636,15 @@ class CheckBackground {
   }
 
   async logEvent(event, tabId) {
+    // Get configuration first to check debug logging
+    const config = await safe(this.configManager.getConfig());
+
+    // Only log legitimate_access events if debug logging is enabled
+    // All other security events (threats, blocks, warnings) should always be logged
+    if (event.type === "legitimate_access" && !config?.enableDebugLogging) {
+      return; // Skip logging legitimate access in normal operation
+    }
+
     // Get current profile information for logging context
     const profileInfo = await this.getCurrentProfile();
 
@@ -1650,7 +1657,6 @@ class CheckBackground {
     };
 
     // Gate noisy logs behind debug config
-    const config = await safe(this.configManager.getConfig());
     if (config?.enableDebugLogging) {
       logger.log("Check: Security Event:", logEntry);
     }
