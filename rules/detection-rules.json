@@ -651,6 +651,39 @@
       "confidence": 0.85
     },
     {
+      "id": "phi_020_grammar_typos",
+      "pattern": "(?:verify\\s+your\\s+informations|click\\s+hear|recieve|loose\\s+access|acount|secuirty|authentification|guarentee|occured|seperate)",
+      "flags": "i",
+      "severity": "medium",
+      "description": "Common grammar/spelling errors in phishing content",
+      "action": "warn",
+      "category": "content_quality",
+      "confidence": 0.7
+    },
+    {
+      "id": "phi_021_suspicious_url_structure",
+      "pattern": "(?:/[a-zA-Z0-9]{20,}(?:/[a-zA-Z0-9]{8,})*(?:\\?|$)|/[a-zA-Z0-9_-]{40,}(?:\\?|$))",
+      "flags": "i",
+      "severity": "medium",
+      "description": "Suspicious URL structure with long random strings in path segments (before query parameters)",
+      "action": "warn",
+      "category": "url_structure",
+      "confidence": 0.5
+    },
+    {
+      "id": "phi_022_obfuscated_script_names",
+      "pattern": "(?:src=[\"'][^\"']*[a-zA-Z0-9]{12,20}\\.js[\"']|[a-zA-Z0-9]{12,20}\\.js)",
+      "flags": "i",
+      "severity": "medium",
+      "description": "Scripts with obfuscated/randomized filenames to avoid detection",
+      "action": "warn",
+      "category": "script_obfuscation",
+      "confidence": 0.8,
+      "context_required": [
+        "(?:microsoft|office|365|login|password|email|verify)"
+      ]
+    },
+    {
       "id": "phi_017_microsoft_brand_abuse",
       "pattern": "(?!.*(?:sign\\s+in\\s+with\\s+microsoft|continue\\s+with\\s+microsoft|login\\s+with\\s+microsoft|authenticate\\s+with\\s+microsoft|sso|oauth|third.?party\\s+auth|\\.auth/login/|azure\\s+static\\s+web\\s+apps|easy\\s+auth|discussion|forum|community|tutorial|guide|documentation|support|help|wiki|blog|article|how\\s+to|step\\s+by\\s+step|configure|setup|administration|management))(?:(?:microsoft|office|365).*(?:login|sign.*in|authentication)|(?:login|sign.*in|authentication).*(?:microsoft|office|365))",
       "flags": "i",
