@@ -2,6 +2,10 @@
 
 * [About](README.md)
 
+## Deployment
+
+* [Chrome/Edge Deployment Instructions](deployment/chrome-edge-deployment-instructions.md)
+
 ## Settings
 
 * [General](settings/general.md)
