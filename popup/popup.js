@@ -93,6 +93,9 @@ class CheckPopup {
     this.elements.aboutLink.addEventListener("click", (e) =>
       this.handleFooterLink(e, "about")
     );
+    this.elements.companyLink.addEventListener("click", (e) =>
+      this.handleFooterLink(e, "company")
+    );
 
     // Notification close listener
     this.elements.notificationClose.addEventListener("click", () =>
@@ -955,6 +958,9 @@ class CheckPopup {
         break;
       case "about":
         url = chrome.runtime.getURL("options/options.html#about");
+        break;
+	  case "company":
+        url = this.brandingConfig.companyURL;
         break;
     }
 
