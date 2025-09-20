@@ -20,13 +20,17 @@ layout:
 
 ## What is Check?
 
-**Check** is an advanced browser extension that provides real-time protection against Microsoft 365 phishing attacks. Designed for enterprises and managed service providers, Check uses sophisticated detection algorithms to identify and block malicious login pages before credentials can be compromised.
+**Check** is an browser extension that provides real-time protection against Microsoft 365 phishing attacks.&#x20;
 
-The extension integrates seamlessly with existing security workflows, offering centralized management, comprehensive logging, and CIPP integration for MSPs managing multiple Microsoft 365 tenants.&#x20;
+Specifically designed for enterprises and managed service providers, Check uses sophisticated detection algorithms to identify and block malicious login pages before credentials can be stolen by bad actors.
 
-Check is completely free, open source, and can be delivered to users completely white-label.
+The extension integrates seamlessly with existing security workflows, offering centralized management, comprehensive logging, and offers an optional CIPP integration for MSPs managing multiple Microsoft 365 tenants.&#x20;
 
-Check is an open source project licensed under AGPL-3. You can contribute to check at [https://github.com/cyberdrain/Check](https://github.com/cyberdrain/Check).&#x20;
+Check is completely free, open source, and can be delivered to users completely white-label, it is an open source project licensed under AGPL-3. You can contribute to check at [https://github.com/cyberdrain/Check](https://github.com/cyberdrain/Check).&#x20;
+
+Installing the plugin immediately gives you protection against AITM attacks, and takes seconds. Click the install button and you're good to go.
+
+<a href="https://microsoftedge.microsoft.com/addons/detail/check-by-cyberdrain/knepjpocdagponkonnbggpcnhnaikajg" class="button primary">Install for Edge</a> **OR**  <a href="https://chromewebstore.google.com/detail/benimdeioplgkhanklclahllklceahbe" class="button primary">Install for Chrome</a>
 
 ## Why was Check created?
 
