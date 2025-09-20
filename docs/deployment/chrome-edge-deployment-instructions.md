@@ -13,102 +13,190 @@ Review the below options for how to deploy Check to your clients' environments. 
 
 <summary>Intune</summary>
 
-**Prepare Your Extension Configuration JSON**
+You need to create **two custom profiles** in Intune (one for Chrome, one for Edge).\
+Each profile contains **two OMA-URI settings**:
 
-You need to generate two JSON strings:
+* **Installation policy** → tells the browser to force-install the extension.
+* **Configuration policy** → applies your custom extension settings.
 
-* One for **Chrome**
-* One for **Edge**
+***
 
-Each JSON should include the following settings. Please review all settings. Any that you do not set will use the defaults. For more detailed descriptions of what each option is, please see the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention") script.
+### Step 1 – Open Intune and Start a New Profile
 
-Chrome:
+1. Go to Intune Admin Center.
+2. Navigate to: **Devices → Configuration profiles → Create profile**.
+3. Select:
+   * **Platform**: Windows 10 and later
+   * **Profile type**: **Custom**
+   * Click **Create**.
 
-```json
+***
 
-{
-  "benimdeioplgkhanklclahllklceahbe": {
-    "installation_mode": "force_installed",
-    "update_url": "https://clients2.google.com/service/update2/crx",
-    "settings": {
-      "showNotifications": true,
-      "enableValidPageBadge": false,
-      "enablePageBlocking": false,
-      "enableCippReporting": true,
-      "cippServerUrl": "https://yourserver.com",
-      "cippTenantId": "your-tenant-id",
-      "customRulesUrl": "https://yourrules.com",
-      "updateInterval": 24,
-      "enableDebugLogging": false,
-      "customBranding": {
-        "companyName": "Your Company",
-        "productName": "Check",
-        "supportEmail": "support@yourcompany.com",
-        "primaryColor": "#FF0000",
-        "logoUrl": "https://yourcompany.com/logo.png"
+### Step 2 – Create the Chrome Profile
+
+1. **Name**: `Chrome Extension – Check`
+2. **Description**: `Deploy and configure Check extension in Chrome`
+3. Under **Configuration settings**, click **Add**.
+4. Add the following **two OMA-URI entries**:
+
+***
+
+#### Chrome – Force Install
+
+* **Name**: Chrome Extension – Install
+*   **OMA-URI**:
+
+    ```
+    ./Device/Vendor/MSFT/Policy/Config/Chrome~Policy~googlechrome/ExtensionSettings
+    ```
+* **Data type**: String
+*   **Value**:
+
+    ```json
+    {
+      "benimdeioplgkhanklclahllklceahbe": {
+        "installation_mode": "force_installed",
+        "update_url": "https://clients2.google.com/service/update2/crx"
       }
     }
-  }
-}
+    ```
 
-```
+***
 
-Edge:
+#### Chrome – Extension Settings
 
-```json
+* **Name**: Chrome Extension – Settings
+*   **OMA-URI**:
 
-{
-  "knepjpocdagponkonnbggpcnhnaikajg": {
-    "installation_mode": "force_installed",
-    "update_url": "https://clients2.google.com/service/update2/crx",
-    "settings": {
-      "showNotifications": true,
-      "enableValidPageBadge": false,
-      "enablePageBlocking": false,
-      "enableCippReporting": true,
-      "cippServerUrl": "https://yourserver.com",
-      "cippTenantId": "your-tenant-id",
-      "customRulesUrl": "https://yourrules.com",
-      "updateInterval": 60,
-      "enableDebugLogging": false,
-      "customBranding": {
-        "companyName": "Your Company",
-        "productName": "Check",
-        "supportEmail": "support@yourcompany.com",
-        "primaryColor": "#FF0000",
-        "logoUrl": "https://yourcompany.com/logo.png"
+    ```
+    ./Device/Vendor/MSFT/Policy/Config/Chrome~Policy~googlechrome/3rdparty_extensions
+    ```
+* **Data type**: String
+*   **Value**:
+
+    ```json
+    {
+      "benimdeioplgkhanklclahllklceahbe": {
+        "showNotifications": true,
+        "enableValidPageBadge": false,
+        "enablePageBlocking": true,
+        "enableCippReporting": true,
+        "cippServerUrl": "https://yourserver.com",
+        "cippTenantId": "your-tenant-id",
+        "customRulesUrl": "https://yourrules.com",
+        "updateInterval": 24,
+        "enableDebugLogging": false,
+        "customBranding": {
+          "companyName": "Your Company",
+          "productName": "Check - Phishing Protection",
+          "supportEmail": "support@yourcompany.com",
+          "primaryColor": "#FF0000",
+          "logoUrl": "https://yourcompany.com/logo.png"
+        }
       }
     }
-  }
-}
+    ```
 
-```
+***
 
-**Create a Custom Configuration Profile in Intune for Chrome**
+### Step 3 – Create the Edge Profile
 
-1. **Sign in** to Microsoft Intune Admin Center
-2. Go to **Devices** > Configuration profiles > Create Profile
-3. Choose:
-   1. Platform: Windows 10 and later
-   2. Profile type: Custom
-4. Click Create and fill in:
-   1. Name: Chrome Extension - Check
-   2. Description: Deploys and configures the Check Chrome extension
-5. Under Configuration settings, click Add and enter:
-   1. Name: Chrome Extension Settings
-   2. Description: Configure Check Chrome extension settings
-   3. OMA-URI: ./Device/Vendor/MSFT/Policy/Config/Chrome~~Policy~~googlechrome/ExtensionSettings
-   4. Data Type: String
-   5. Value: Paste the Chrome JSON created above.
-6. Click Next, assign the profile to the appropriate groups, and **Create** the profile
+1. Repeat the steps above to create a **second Custom profile**.
+2. **Name**: `Edge Extension – Check`
+3. **Description**: `Deploy and configure Check extension in Edge`
+4. Add the following **two OMA-URI entries**:
 
-**Create a Custom Configuration Profile in Intune for Edge**
+***
 
-1. Repeat the steps above with the following changes:
-   1. Name: Edge Extension - Check
-   2. Description: Deploys and configures the Check Edge Extension
-   3. OMA-URI: ./Device/Vendor/MSFT/Policy/Config/Edge/ExtensionSettings
-   4. Value: Paste the Edge JSON created above
+#### Edge – Force Install
+
+* **Name**: Edge Extension – Install
+*   **OMA-URI**:
+
+    ```
+    ./Device/Vendor/MSFT/Policy/Config/Edge~Policy~microsoftedge/ExtensionSettings
+    ```
+* **Data type**: String
+*   **Value**:
+
+    ```json
+    {
+      "knepjpocdagponkonnbggpcnhnaikajg": {
+        "installation_mode": "force_installed",
+        "update_url": "https://edge.microsoft.com/extensionwebstorebase/v1/crx"
+      }
+    }
+    ```
+
+***
+
+#### Edge – Extension Settings
+
+* **Name**: Edge Extension – Settings
+*   **OMA-URI**:
+
+    ```
+    ./Device/Vendor/MSFT/Policy/Config/Edge~Policy~microsoftedge/3rdparty_extensions
+    ```
+* **Data type**: String
+*   **Value**:
+
+    ```json
+    {
+      "knepjpocdagponkonnbggpcnhnaikajg": {
+        "showNotifications": true,
+        "enableValidPageBadge": false,
+        "enablePageBlocking": true,
+        "enableCippReporting": true,
+        "cippServerUrl": "https://yourserver.com",
+        "cippTenantId": "your-tenant-id",
+        "customRulesUrl": "https://yourrules.com",
+        "updateInterval": 24,
+        "enableDebugLogging": false,
+        "customBranding": {
+          "companyName": "Your Company",
+          "productName": "Check - Phishing Protection",
+          "supportEmail": "support@yourcompany.com",
+          "primaryColor": "#FF0000",
+          "logoUrl": "https://yourcompany.com/logo.png"
+        }
+      }
+    }
+    ```
+
+***
+
+### Step 4 – Assign and Deploy
+
+1. In each profile, click **Next** until you reach **Assignments**.
+2. Assign the profile to the groups you want (devices or users).
+   * Device assignment is usually more reliable for browser extensions.
+3. Click **Create**.
+
+***
+
+### Step 5 – Verify
+
+* On a test machine, sync Intune (`Settings → Accounts → Access work or school → Sync`).
+* Restart Chrome and Edge.
+* Both browsers should:
+  * Auto-install the extension.
+  * Enforce the settings you defined.
+
+You can double-check via registry:
+
+*   **Chrome**:
+
+    ```
+    HKLM\SOFTWARE\Policies\Google\Chrome\ExtensionSettings
+    HKLM\SOFTWARE\Policies\Google\Chrome\3rdparty\extensions
+    ```
+*   **Edge**:
+
+    ```
+    HKLM\SOFTWARE\Policies\Microsoft\Edge\ExtensionSettings
+    HKLM\SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions
+    ```
 
 </details>
 
