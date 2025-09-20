@@ -111,6 +111,40 @@ Range: 1-168 hours (1 hour to 1 week)
 
 More frequent updates provide better protection but may increase network usage.</string>
 
+      <!-- URL Whitelist -->
+      <string id="CheckUrlWhitelist">URL whitelist (URLs with wildcards or regex patterns)</string>
+      <string id="CheckUrlWhitelist_Explain">This policy specifies a list of URL patterns or regex patterns to whitelist URLs from detection.
+
+These patterns will be added to the exclusion rules without replacing the entire ruleset. You can use simple URLs with wildcards or advanced regex patterns.
+
+Simple URL examples with wildcards:
+- https://google.com/*
+- https://*.microsoft.com/*
+- https://login.microsoftonline.com/*
+
+Advanced regex examples:
+- ^https://trusted\.example\.com/.*
+- ^https://.*\.microsoft\.com/.*
+
+URLs matching any of these patterns will bypass phishing detection.</string>
+
+      <!-- URL Whitelist - Chrome -->
+      <string id="CheckUrlWhitelistChrome">URL whitelist (URLs with wildcards or regex patterns) (Chrome)</string>
+      <string id="CheckUrlWhitelistChrome_Explain">This policy specifies a list of URL patterns or regex patterns to whitelist URLs from detection in Google Chrome.
+
+These patterns will be added to the exclusion rules without replacing the entire ruleset. You can use simple URLs with wildcards or advanced regex patterns.
+
+Simple URL examples with wildcards:
+- https://google.com/*
+- https://*.microsoft.com/*
+- https://login.microsoftonline.com/*
+
+Advanced regex examples:
+- ^https://trusted\.example\.com/.*
+- ^https://.*\.microsoft\.com/.*
+
+URLs matching any of these patterns will bypass phishing detection.</string>
+
       <!-- Company Name -->
       <string id="CheckCompanyName">Company name</string>
       <string id="CheckCompanyName_Explain">This policy specifies the company name to display in the extension's user interface for branding purposes.
@@ -353,6 +387,12 @@ The logo should be a square image (recommended size: 48x48 to 128x128 pixels) in
         <textBox refId="LogoUrlChrome">
           <label>Logo URL:</label>
         </textBox>
+      </presentation>
+      <presentation id="CheckUrlWhitelist">
+        <listBox refId="UrlWhitelistList">URL Whitelist (URLs with wildcards or regex patterns):</listBox>
+      </presentation>
+      <presentation id="CheckUrlWhitelistChrome">
+        <listBox refId="UrlWhitelistListChrome">URL Whitelist (URLs with wildcards or regex patterns):</listBox>
       </presentation>
     </presentationTable>
   </resources>

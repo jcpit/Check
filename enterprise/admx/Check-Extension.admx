@@ -131,6 +131,15 @@
       </elements>
     </policy>
 
+    <!-- URL Whitelist -->
+    <policy name="CheckUrlWhitelist" class="Machine" displayName="$(string.CheckUrlWhitelist)" explainText="$(string.CheckUrlWhitelist_Explain)" key="SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\knepjpocdagponkonnbggpcnhnaikajg\policy" presentation="$(presentation.CheckUrlWhitelist)">
+      <parentCategory ref="CheckExtensionEdge" />
+      <supportedOn ref="SUPPORTED_WIN7" />
+      <elements>
+        <list id="UrlWhitelistList" valueName="urlWhitelist" />
+      </elements>
+    </policy>
+
     <!-- Company Name -->
     <policy name="CheckCompanyName" class="Machine" displayName="$(string.CheckCompanyName)" explainText="$(string.CheckCompanyName_Explain)" key="SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\knepjpocdagponkonnbggpcnhnaikajg\policy\customBranding" presentation="$(presentation.CheckCompanyName)">
       <parentCategory ref="CheckExtensionEdge" />
@@ -294,6 +303,15 @@
       <supportedOn ref="SUPPORTED_WIN7" />
       <elements>
         <decimal id="UpdateIntervalChrome" valueName="updateInterval" minValue="1" maxValue="168" />
+      </elements>
+    </policy>
+
+    <!-- URL Whitelist - Chrome -->
+    <policy name="CheckUrlWhitelistChrome" class="Machine" displayName="$(string.CheckUrlWhitelistChrome)" explainText="$(string.CheckUrlWhitelistChrome_Explain)" key="SOFTWARE\Policies\Google\Chrome\3rdparty\extensions\benimdeioplgkhanklclahllklceahbe\policy" presentation="$(presentation.CheckUrlWhitelistChrome)">
+      <parentCategory ref="CheckExtensionChrome" />
+      <supportedOn ref="SUPPORTED_WIN7" />
+      <elements>
+        <list id="UrlWhitelistListChrome" valueName="urlWhitelist" />
       </elements>
     </policy>
 
