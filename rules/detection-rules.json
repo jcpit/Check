@@ -700,22 +700,6 @@
       "action": "block",
       "category": "brand_abuse",
       "confidence": 0.95
-    },
-    {
-      "id": "phi_023_aadcdn_on_non_microsoft",
-      "pattern": "(?=.*aadcdn\\.msauth\\.net)(?!.*(?:login\\.microsoftonline\\.(?:com|us)|login\\.microsoft\\.com|login\\.microsoft\\.net|login\\.windows\\.net|login\\.partner\\.microsoftonline\\.cn|login\\.live\\.com))",
-      "flags": "i",
-      "severity": "critical",
-      "description": "Microsoft AAD CDN resources (aadcdn.msauth.net) referenced on non-Microsoft domain - strong phishing indicator",
-      "action": "block",
-      "category": "resource_hijacking",
-      "confidence": 0.98,
-      "additional_checks": [
-        "background-image.*aadcdn\\.msauth\\.net",
-        "src=[\"'][^\"']*aadcdn\\.msauth\\.net",
-        "href=[\"'][^\"']*aadcdn\\.msauth\\.net",
-        "url\\([\"']?[^)]*aadcdn\\.msauth\\.net"
-      ]
     }
   ],
   "legitimate_patterns": [
