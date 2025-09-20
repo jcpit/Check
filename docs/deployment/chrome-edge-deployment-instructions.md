@@ -13,7 +13,7 @@ Review the below options for how to deploy Check to your clients' environments. 
 
 <summary>Intune</summary>
 
-#### Prepare Your Extension Configuration JSON
+**Prepare Your Extension Configuration JSON**
 
 You need to generate two JSON strings:
 
@@ -84,7 +84,7 @@ Edge:
 
 ```
 
-#### Create a Custom Configuration Profile in Intune for Chrome
+**Create a Custom Configuration Profile in Intune for Chrome**
 
 1. **Sign in** to Microsoft Intune Admin Center
 2. Go to **Devices** > Configuration profiles > Create Profile
@@ -102,7 +102,7 @@ Edge:
    5. Value: Paste the Chrome JSON created above.
 6. Click Next, assign the profile to the appropriate groups, and **Create** the profile
 
-#### Create a Custom Configuration Profile in Intune for Edge
+**Create a Custom Configuration Profile in Intune for Edge**
 
 1. Repeat the steps above with the following changes:
    1. Name: Edge Extension - Check
@@ -116,13 +116,13 @@ Edge:
 
 <summary>Generic PowerShell</summary>
 
-#### Modify the following script and copy it to your RMM's scripting engine to deploy Check:
+**Modify the following script and copy it to your RMM's scripting engine to deploy Check:**
 
 {% hint style="info" %}
 This script is designed to deploy the extension to both Chrome and Edge. It is recommended to deploy both even if you standardize on one. This will provide you with better protection in the case someone uses the non-favored browser.
 {% endhint %}
 
-1. Review the Extension Configuration Settings and Custom Branding Settings variables and update those to your desired values. The current values in the script are the default values. Leaving any unchanged will set the defaults.&#x20;
+1. Review the Extension Configuration Settings and Custom Branding Settings variables and update those to your desired values. The current values in the script are the default values. Leaving any unchanged will set the defaults.
 2. If you are leveraging a RMM that has the ability to define the variables in the deployment section of scripting, then you may be able to remove this section and enter the variable definitions into the RMM scripting pages.
 
 {% code overflow="wrap" lineNumbers="true" fullWidth="true" %}
@@ -153,8 +153,9 @@ $enableDebugLogging = 0 # 0 = Unchecked, 1 = Checked (Enabled); default is 0; Th
 
 # Custom Branding Settings
 $companyName = "CyberDrain" # This will set the "Company Name" option in the Custom Branding settings; default is "CyberDrain".
+$companyURL = "https://cyberdrain.com" # This will set the Company URL option in the Custom Branding settings; default is "https://cyberdrain.com"
 $productName = "Check - Phishing Protection" # This will set the "Product Name" option in the Custom Branding settings; default is "Check - Phishing Protection".
-$supportEmail = "donotreply@cyberdrain.com" # This will set the "Support Email" option in the Custom Branding settings; default is blank.
+$supportEmail = "" # This will set the "Support Email" option in the Custom Branding settings; default is blank.
 $primaryColor = "#F77F00" # This will set the "Primary Color" option in the Custom Branding settings; default is "#F77F00"; must be a valid hex color code (e.g., #FFFFFF).
 $logoUrl = "" # This will set the "Logo URL" option in the Custom Branding settings; default is blank.
 
@@ -195,6 +196,7 @@ function Configure-ExtensionSettings {
 
     # Set custom branding settings
     New-ItemProperty -Path $customBrandingKey -Name "companyName" -PropertyType String -Value $companyName -Force | Out-Null
+    New-ItemProperty -Path $cusomtBrandingKey -Name "companyURL" -PropertyType String -Value $companyURL -Force | Out-Null
     New-ItemProperty -Path $customBrandingKey -Name "productName" -PropertyType String -Value $productName -Force | Out-Null
     New-ItemProperty -Path $customBrandingKey -Name "supportEmail" -PropertyType String -Value $supportEmail -Force | Out-Null
     New-ItemProperty -Path $customBrandingKey -Name "primaryColor" -PropertyType String -Value $primaryColor -Force | Out-Null
@@ -224,8 +226,6 @@ Configure-ExtensionSettings -ExtensionId $edgeExtensionId -UpdateUrl $edgeUpdate
 
 <summary>Group Policy</summary>
 
-
-
 1. Download the following from the Check repo on GitHub
    1. ​[Deploy-ADMX.ps1](../../enterprise/Deploy-ADMX.ps1)
    2. ​[Check-Extension.admx](../../enterprise/admx/Check-Extension.admx)​
@@ -233,8 +233,7 @@ Configure-ExtensionSettings -ExtensionId $edgeExtensionId -UpdateUrl $edgeUpdate
 2. Run Deploy-ADMX.ps1. As long as you keep the other two files in the same folder, it will correctly add the available objects to Group Policy.
 3. Open Group Policy and create a policy using the imported settings that can be found:
 
-![](<../.gitbook/assets/image (2).png>)\
-
+![](<../.gitbook/assets/image (2).png>)\\
 
 </details>
 
@@ -242,7 +241,7 @@ Configure-ExtensionSettings -ExtensionId $edgeExtensionId -UpdateUrl $edgeUpdate
 
 <summary>Action1</summary>
 
-For Action1, you can use the script in [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention") to create a ps1 file and deploy it via a [custom package in the software repository](https://www.action1.com/documentation/add-custom-packages-to-app-store/) or via the [script library](https://www.action1.com/documentation/script-library/).&#x20;
+For Action1, you can use the script in [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention") to create a ps1 file and deploy it via a [custom package in the software repository](https://www.action1.com/documentation/add-custom-packages-to-app-store/) or via the [script library](https://www.action1.com/documentation/script-library/).
 
 </details>
 
@@ -286,11 +285,11 @@ For Acronis RMM, you can use the script in [#generic-powershell](chrome-edge-dep
 
 <summary>Immy.bot</summary>
 
-Immy.bot includes a pre-built Global Computer Task for Check browser extension deployment.  
-Due to how flexible Immy is, this may look intimidating at first, but it is quite easy and nearly purely UI-driven!  
+Immy.bot includes a pre-built Global Computer Task for Check browser extension deployment.\
+Due to how flexible Immy is, this may look intimidating at first, but it is quite easy and nearly purely UI-driven!\
 Follow these steps to deploy Check using Immy.bot:
 
-#### Step 1: Create a Deployment
+**Step 1: Create a Deployment**
 
 1. **Navigate to Deployments** in the left menu
 2. Click **New** to create a deployment
@@ -305,7 +304,7 @@ Follow these steps to deploy Check using Immy.bot:
    * **Individual**: Target specific computers or users
    * Use filters, tags, or integration-specific targeting as needed
 
-#### Step 2: Customize Parameters
+**Step 2: Customize Parameters**
 
 1. **Configure Task Parameters** to customize the deployment for your environment:
    * Set company branding options (company name, logo URL, primary color)
@@ -315,7 +314,7 @@ Follow these steps to deploy Check using Immy.bot:
 2. **Set Dependencies** if required (e.g., ensure Windows updates are applied first)
 3. **Configure Scheduling** if using time-based deployment
 
-#### Step 3: Deploy and Monitor
+**Step 3: Deploy and Monitor**
 
 1. Click **Create** to save the deployment
 2. **Run a Maintenance Session** to apply the deployment:
@@ -324,7 +323,7 @@ Follow these steps to deploy Check using Immy.bot:
 3. **Monitor Results** through ImmyBot's maintenance session logs
 4. Review deployment status and address any failures
 
-#### Best Practices for Immy.bot Deployment
+**Best Practices for Immy.bot Deployment**
 
 * **Test First**: Create a test deployment targeting a small group before rolling out globally
 * **Use Targeting**: Leverage Immy's advanced targeting to deploy based on computer properties, user assignments, or custom criteria
@@ -340,7 +339,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 <summary>Kaseya VSA</summary>
 
 1. Go to **Agent Procedures** > **Installer Wizards** > **Application Deploy**
-2. Upload a .ps1 of the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention")  script
+2. Upload a .ps1 of the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention") script
 3. Choose Private or Shared Files
 4. Select installer type
 5. Add command-line options
@@ -372,14 +371,12 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 
 <summary>N-able N-Central</summary>
 
-
-
 1. Go to **Configuration** > **Scheduled Tasks** > **Script/Software Repository**
 2. Click **Add** > **Script**
 3. Choose:
    1. Script Type: **PowerShell**
    2. Operating System: **Windows**
-4. Upload a .ps1 of the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention")  script or paste the script directly
+4. Upload a .ps1 of the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention") script or paste the script directly
 5. Name the script `Check Browser Extension Deployment`
 6. Save the script
 7. Go to **Configuration** > **Scheduled Task** > **Add Task**
@@ -402,7 +399,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 2. Click **New**
 3. Enter `Check Browser Extension Deployment` for the name and a brief description
 4. Set a timeout period for the script of 600 seconds
-5. Upload a .ps1 file of the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention")  script leaving `Script check and automated task` selected
+5. Upload a .ps1 file of the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention") script leaving `Script check and automated task` selected
 6. Click **Save**
 7. On the **All Devices** view, right-click your targeted Client or Site
 8. Select **Task** > **Add**
@@ -423,8 +420,8 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 
 1. Go to **Administration** > **Library > Automation > Add > New Script**
 
-1) Enter:&#x20;
-   1. Name `Check Browser Extension Deployment`&#x20;
+1) Enter:
+   1. Name `Check Browser Extension Deployment`
    2. Description: To deploy Check by CyberDrain for Edge and Chrome
    3. Categories: Select as approriate for your environment
    4. Language: PowerShell
@@ -432,7 +429,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
    6. Architechture: All
    7. Run As: System
    8. Script Variables: Add as desired to customize
-2) Copy the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention")  script into the editor
+2) Copy the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention") script into the editor
 3) Click **Save**
 4) Go to **Administration** > **Policies**
 5) Options are to create a new policy or add the automation to an existing policy targeting Windows devices
@@ -454,7 +451,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 4. Name the Script `Check Browser Extension Deployment`
 5. Toggle **Enabled** under the Windows tab
 6. Select **PowerShell** as the script type
-7. Paste the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention")  script into the editor
+7. Paste the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention") script into the editor
 8. Click **Save Script**
 9. Navigate to **Automation** > **Tasks**
 10. Click **Create Task**
@@ -474,7 +471,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 2. Click **+ Scrip**t
 3. Name the script `Check Browser Extension Depoloyment`
 4. Choose **PowerShell** as the language
-5. Paste the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention")  script
+5. Paste the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention") script
 6. Set a timeout of 600 seconds
 7. Choose to run as **System/Root User**
 8. Save the script
@@ -491,7 +488,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 3. Name the script `Check Browser Extension Deployment`
 4. Choose **PowerShell** as the file type
 5. Set **Run As** to **System**
-6. Copy the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention")  script into the editor
+6. Copy the [#generic-powershell](chrome-edge-deployment-instructions.md#generic-powershell "mention") script into the editor
 7. Click **Create Script**
 8. Navigate to **Policies**
 9. Click **+New Policy**
