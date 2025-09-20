@@ -21,18 +21,18 @@ Each profile contains **two OMA-URI settings**:
 
 ***
 
-### Step 1 – Open Intune and Start a New Profile
+#### Step 1 – Open Intune and Start a New Profile
 
 1. Go to Intune Admin Center.
-2. Navigate to: **Devices → Configuration profiles → Create profile**.
-3. Select:
-   * **Platform**: Windows 10 and later
-   * **Profile type**: **Custom**
-   * Click **Create**.
+2. Navigate to: **Devices → Configuration profiles**
+3. Click on **Create → Import Policy**
+4. Import the following file to deploy the extensions. This will deploy the configuration
+
+[https://files.gitbook.com/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FFtDhotz26LyzVUTgqw4L%2Fuploads%2F6fMj1y1N1ZnaJ7SVuKfM%2FCheck%20Extension\_%20Install%20for%20Chrome%20and%20Edge\_2025-09-20T22\_08\_38.615Z.json?alt=media\&token=662f7f39-c937-4fb3-a159-a55c196e282e](https://files.gitbook.com/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FFtDhotz26LyzVUTgqw4L%2Fuploads%2F6fMj1y1N1ZnaJ7SVuKfM%2FCheck%20Extension_%20Install%20for%20Chrome%20and%20Edge_2025-09-20T22_08_38.615Z.json?alt=media\&token=662f7f39-c937-4fb3-a159-a55c196e282e)
 
 ***
 
-### Step 2 – Create the Chrome Profile
+#### Step 2 – Create the Chrome Profile
 
 1. **Name**: `Chrome Extension – Check`
 2. **Description**: `Deploy and configure Check extension in Chrome`
@@ -41,7 +41,7 @@ Each profile contains **two OMA-URI settings**:
 
 ***
 
-#### Chrome – Force Install
+**Chrome – Force Install**
 
 * **Name**: Chrome Extension – Install
 *   **OMA-URI**:
@@ -63,7 +63,7 @@ Each profile contains **two OMA-URI settings**:
 
 ***
 
-#### Chrome – Extension Settings
+**Chrome – Extension Settings**
 
 * **Name**: Chrome Extension – Settings
 *   **OMA-URI**:
@@ -99,7 +99,7 @@ Each profile contains **two OMA-URI settings**:
 
 ***
 
-### Step 3 – Create the Edge Profile
+#### Step 3 – Create the Edge Profile
 
 1. Repeat the steps above to create a **second Custom profile**.
 2. **Name**: `Edge Extension – Check`
@@ -108,7 +108,7 @@ Each profile contains **two OMA-URI settings**:
 
 ***
 
-#### Edge – Force Install
+**Edge – Force Install**
 
 * **Name**: Edge Extension – Install
 *   **OMA-URI**:
@@ -130,7 +130,7 @@ Each profile contains **two OMA-URI settings**:
 
 ***
 
-#### Edge – Extension Settings
+**Edge – Extension Settings**
 
 * **Name**: Edge Extension – Settings
 *   **OMA-URI**:
@@ -166,7 +166,7 @@ Each profile contains **two OMA-URI settings**:
 
 ***
 
-### Step 4 – Assign and Deploy
+#### Step 4 – Assign and Deploy
 
 1. In each profile, click **Next** until you reach **Assignments**.
 2. Assign the profile to the groups you want (devices or users).
@@ -175,7 +175,7 @@ Each profile contains **two OMA-URI settings**:
 
 ***
 
-### Step 5 – Verify
+#### Step 5 – Verify
 
 * On a test machine, sync Intune (`Settings → Accounts → Access work or school → Sync`).
 * Restart Chrome and Edge.
