@@ -28,7 +28,7 @@ Each profile contains **two OMA-URI settings**:
 3. Click on **Create → Import Policy**
 4. Import the following file to deploy the extensions. This will deploy the configuration
 
-<a href="https://files.gitbook.com/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FFtDhotz26LyzVUTgqw4L%2Fuploads%2F6fMj1y1N1ZnaJ7SVuKfM%2FCheck%20Extension_%20Install%20for%20Chrome%20and%20Edge_2025-09-20T22_08_38.615Z.json?alt=media&#x26;token=662f7f39-c937-4fb3-a159-a55c196e282e" class="button primary">Import File</a>
+<a href="https://raw.githubusercontent.com/CyberDrain/Check/refs/heads/main/docs/.gitbook/assets/Check%20Extension_%20Install%20for%20Chrome%20and%20Edge_2025-09-20T22_08_38.615Z.json" class="button primary">Import File</a>
 
 ***
 
