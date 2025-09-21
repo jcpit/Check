@@ -25,7 +25,7 @@ When Check blocks a dangerous website or finds something suspicious, it can show
 This adds a small green checkmark to real Microsoft login pages. This feature is optional.
 
 {% hint style="warning" %}
-#### What if Settings are Grayed Out?
+#### What if Settings Are Not Visible?
 
-If some settings appear grayed out with a little lock icon, it means your organization's IT department has set these for you. This is normal in business environments - your IT team wants to make sure everyone has the same security settings.
+If some settings do not appear on my version, it means your organization's IT department has set these for you. This is normal in business environments - your IT team wants to make sure everyone has the same security settings. You will also see text indicating that the extension is being managed by policy.
 {% endhint %}
