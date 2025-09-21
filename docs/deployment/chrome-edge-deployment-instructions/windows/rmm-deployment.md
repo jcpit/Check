@@ -109,7 +109,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 
 <summary>Kaseya VSA</summary>
 
-1. Go to **Agent Procedures** > **Installer Wizards** > **Application Deploy**
+1. Go to **Agent Procedures** → **Installer Wizards** → **Application Deploy**
 2. Upload a .ps1 of the [#powershell](manual-deployment.md#powershell "mention") script
 3. Choose Private or Shared Files
 4. Select installer type
@@ -123,14 +123,14 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 
 <summary>ManageEngine Endpoint Central</summary>
 
-1. Navigate to **Manage** > **Extension Repository**
+1. Navigate to **Manage** → **Extension Repository**
 2. Click **Add Extensions** and click the desired browser
 3. Select the Web Store Extension Type
 4. Enter the extension ID:
    1. Chrome: benimdeioplgkhanklclahllklceahbe
    2. Edge: knepjpocdagponkonnbggpcnhnaikajg
 5. Click **Add** after each
-6. Navigate to **Browsers** > **Manage** > **Groups & Computers**
+6. Navigate to **Browsers** → **Manage** → **Groups & Computers**
 7. Select the custom groups or computers you wish to distribute the extension to
 8. Click **Distribute Extensions**
 9. Select the extensions you just added to the repository
@@ -142,15 +142,15 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 
 <summary>N-able N-Central</summary>
 
-1. Go to **Configuration** > **Scheduled Tasks** > **Script/Software Repository**
-2. Click **Add** > **Script**
+1. Go to **Configuration** → **Scheduled Tasks** → **Script/Software Repository**
+2. Click **Add** → **Script**
 3. Choose:
    1. Script Type: **PowerShell**
    2. Operating System: **Windows**
 4. Upload a .ps1 of the [#powershell](manual-deployment.md#powershell "mention") script or paste the script directly
 5. Name the script `Check Browser Extension Deployment`
 6. Save the script
-7. Go to **Configuration** > **Scheduled Task** > **Add Task**
+7. Go to **Configuration** → **Scheduled Task** → **Add Task**
 8. Choose **Run a Script**
 9. Select the script you just uploaded
 10. Configure the task
@@ -166,14 +166,14 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 
 <summary>N-able N-Sight</summary>
 
-1. Go to **Settings** > **Script Manager**
+1. Go to **Settings** → **Script Manager**
 2. Click **New**
 3. Enter `Check Browser Extension Deployment` for the name and a brief description
 4. Set a timeout period for the script of 600 seconds
 5. Upload a .ps1 file of the [#powershell](manual-deployment.md#powershell "mention") script leaving `Script check and automated task` selected
 6. Click **Save**
 7. On the **All Devices** view, right-click your targeted Client or Site
-8. Select **Task** > **Add**
+8. Select **Task** → **Add**
 9. Select the script you just uploaded
 10. Enter a name for the task, e.g. `<Client/Site> Check Browser Extension Deployment`
 11. Select `Once per day` for the frequency method
@@ -189,7 +189,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 
 <summary>NinjaOne</summary>
 
-1. Go to **Administration** > **Library > Automation > Add > New Script**
+1. Go to **Administration** → **Library** → **Automation** → **Add** → **New Script**
 
 1) Enter:
    1. Name `Check Browser Extension Deployment`
@@ -202,7 +202,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
    8. Script Variables: Add as desired to customize
 2) Copy the [#powershell](manual-deployment.md#powershell "mention") script into the editor
 3) Click **Save**
-4) Go to **Administration** > **Policies**
+4) Go to **Administration** → **Policies**
 5) Options are to create a new policy or add the automation to an existing policy targeting Windows devices
 6) Select **Scheduled Automation** on the left
 7) Click **Add a Scheduled automation** button
@@ -216,7 +216,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 
 <summary>Pulseway</summary>
 
-1. Go to **Automation** > **Scripts**
+1. Go to **Automation** → **Scripts**
 2. (Optional) Create a new **Script Category** called Browser Extensions
 3. Click **Create Script**
 4. Name the Script `Check Browser Extension Deployment`
@@ -224,7 +224,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 6. Select **PowerShell** as the script type
 7. Paste the [#powershell](manual-deployment.md#powershell "mention") script into the editor
 8. Click **Save Script**
-9. Navigate to **Automation** > **Tasks**
+9. Navigate to **Automation** → **Tasks**
 10. Click **Create Task**
 11. Name the task `Check Browser Extension Deployment`
 12. Choose the PowerShell script you just added
@@ -238,7 +238,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 
 <summary>SuperOps.ai</summary>
 
-1. Navigate to **Modules** > **Scripts**
+1. Navigate to **Modules** → **Scripts**
 2. Click **+ Scrip**t
 3. Name the script `Check Browser Extension Depoloyment`
 4. Choose **PowerShell** as the language
