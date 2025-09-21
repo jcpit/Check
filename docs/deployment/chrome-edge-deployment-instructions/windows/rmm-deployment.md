@@ -6,13 +6,13 @@ description: >-
 
 # RMM Deployment
 
-Review the below options for how to deploy Check to Windows devices via RMM. If you use a RMM not featured, please see the [#powershell](manual-deployment.md#powershell "mention") option to script the install.
+Review the below options for how to deploy Check to Windows devices via RMM. If you use a RMM not featured, please see the script in [#powershell](manual-deployment.md#powershell "mention") to script the install.
 
 <details>
 
 <summary>Action1</summary>
 
-For Action1, you can use the script in [#generic-powershell](rmm-deployment.md#generic-powershell "mention") to create a ps1 file and deploy it via a [custom package in the software repository](https://www.action1.com/documentation/add-custom-packages-to-app-store/) or via the [script library](https://www.action1.com/documentation/script-library/).
+For Action1, you can use the script in [#powershell](manual-deployment.md#powershell "mention") to create a ps1 file and deploy it via a [custom package in the software repository](https://www.action1.com/documentation/add-custom-packages-to-app-store/) or via the [script library](https://www.action1.com/documentation/script-library/).
 
 </details>
 
@@ -20,7 +20,7 @@ For Action1, you can use the script in [#generic-powershell](rmm-deployment.md#g
 
 <summary>Acronis RMM</summary>
 
-For Acronis RMM, you can use the script in [#generic-powershell](rmm-deployment.md#generic-powershell "mention")to [create a script in the Script repository](https://www.acronis.com/en-us/support/documentation/CyberProtectionService/#cyber-scripting-creating-script.html) and then running the script via a [Script Plan](https://www.acronis.com/en-us/support/documentation/CyberProtectionService/#cyber-scripting-scripting-plans.html).
+For Acronis RMM, you can use the script in [#powershell](manual-deployment.md#powershell "mention") to [create a script in the Script repository](https://www.acronis.com/en-us/support/documentation/CyberProtectionService/#cyber-scripting-creating-script.html) and then running the script via a [Script Plan](https://www.acronis.com/en-us/support/documentation/CyberProtectionService/#cyber-scripting-scripting-plans.html).
 
 </details>
 
@@ -28,10 +28,10 @@ For Acronis RMM, you can use the script in [#generic-powershell](rmm-deployment.
 
 <summary>ConnectWise Automate</summary>
 
-1. Go to **Automation** > **Scripts** > **Script Manager**
+1. Go to **Automation** → **Scripts** → **Script Manager**
 2. Create a new script
 3. Add a PowerShell Execute Script step
-4. Copy in the [#generic-powershell](rmm-deployment.md#generic-powershell "mention") script.
+4. Copy in the [#powershell](manual-deployment.md#powershell "mention") script.
 5. Save and assign the script to your targetted devices.
 
 </details>
@@ -40,11 +40,11 @@ For Acronis RMM, you can use the script in [#generic-powershell](rmm-deployment.
 
 <summary>Datto RMM</summary>
 
-1. Go to **Automation** > **Components**
+1. Go to **Automation** → **Components**
 2. Create a new Custom Component
-3. Copy in the [#generic-powershell](rmm-deployment.md#generic-powershell "mention") script
+3. Copy in the [#powershell](manual-deployment.md#powershell "mention") script
 4. Save and publish the component
-5. Navigate to **Automation** > **Jobs** > **Create Job**
+5. Navigate to **Automation** → **Jobs** → **Create Job**
 6. Name the job Check Browser Extension Deployment
 7. Add the custom component you just created
 8. Target your selected device(s)
@@ -110,7 +110,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 <summary>Kaseya VSA</summary>
 
 1. Go to **Agent Procedures** > **Installer Wizards** > **Application Deploy**
-2. Upload a .ps1 of the [#generic-powershell](rmm-deployment.md#generic-powershell "mention") script
+2. Upload a .ps1 of the [#powershell](manual-deployment.md#powershell "mention") script
 3. Choose Private or Shared Files
 4. Select installer type
 5. Add command-line options
@@ -147,7 +147,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 3. Choose:
    1. Script Type: **PowerShell**
    2. Operating System: **Windows**
-4. Upload a .ps1 of the [#generic-powershell](rmm-deployment.md#generic-powershell "mention") script or paste the script directly
+4. Upload a .ps1 of the [#powershell](manual-deployment.md#powershell "mention") script or paste the script directly
 5. Name the script `Check Browser Extension Deployment`
 6. Save the script
 7. Go to **Configuration** > **Scheduled Task** > **Add Task**
@@ -170,7 +170,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 2. Click **New**
 3. Enter `Check Browser Extension Deployment` for the name and a brief description
 4. Set a timeout period for the script of 600 seconds
-5. Upload a .ps1 file of the [#generic-powershell](rmm-deployment.md#generic-powershell "mention") script leaving `Script check and automated task` selected
+5. Upload a .ps1 file of the [#powershell](manual-deployment.md#powershell "mention") script leaving `Script check and automated task` selected
 6. Click **Save**
 7. On the **All Devices** view, right-click your targeted Client or Site
 8. Select **Task** > **Add**
@@ -200,7 +200,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
    6. Architechture: All
    7. Run As: System
    8. Script Variables: Add as desired to customize
-2) Copy the [#generic-powershell](rmm-deployment.md#generic-powershell "mention") script into the editor
+2) Copy the [#powershell](manual-deployment.md#powershell "mention") script into the editor
 3) Click **Save**
 4) Go to **Administration** > **Policies**
 5) Options are to create a new policy or add the automation to an existing policy targeting Windows devices
@@ -222,7 +222,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 4. Name the Script `Check Browser Extension Deployment`
 5. Toggle **Enabled** under the Windows tab
 6. Select **PowerShell** as the script type
-7. Paste the [#generic-powershell](rmm-deployment.md#generic-powershell "mention") script into the editor
+7. Paste the [#powershell](manual-deployment.md#powershell "mention") script into the editor
 8. Click **Save Script**
 9. Navigate to **Automation** > **Tasks**
 10. Click **Create Task**
@@ -242,7 +242,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 2. Click **+ Scrip**t
 3. Name the script `Check Browser Extension Depoloyment`
 4. Choose **PowerShell** as the language
-5. Paste the [#generic-powershell](rmm-deployment.md#generic-powershell "mention") script
+5. Paste the [#powershell](manual-deployment.md#powershell "mention") script
 6. Set a timeout of 600 seconds
 7. Choose to run as **System/Root User**
 8. Save the script
@@ -259,7 +259,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 3. Name the script `Check Browser Extension Deployment`
 4. Choose **PowerShell** as the file type
 5. Set **Run As** to **System**
-6. Copy the [#generic-powershell](rmm-deployment.md#generic-powershell "mention") script into the editor
+6. Copy the [#powershell](manual-deployment.md#powershell "mention") script into the editor
 7. Click **Create Script**
 8. Navigate to **Policies**
 9. Click **+New Policy**
