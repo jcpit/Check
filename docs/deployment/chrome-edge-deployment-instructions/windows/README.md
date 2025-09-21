@@ -7,7 +7,7 @@ icon: windows
 
 # Windows
 
-Review the below options for how to deploy Check to Windows devices. If you use a RMM not featured, please see the [#generic-powershell](windows.md#generic-powershell "mention") option to script the install.
+Review the below options for how to deploy Check to Windows devices. If you use a RMM not featured, please see the [#generic-powershell](./#generic-powershell "mention") option to script the install.
 
 <details>
 
@@ -40,33 +40,16 @@ Documentation to follow
 
 <details>
 
-<summary>Generic PowerShell</summary>
-
-**Modify the following script and copy it to your RMM's scripting engine to deploy Check:**
-
-{% hint style="info" %}
-This script is designed to deploy the extension to both Chrome and Edge. It is recommended to deploy both even if you standardize on one. This will provide you with better protection in the case someone uses the non-favored browser.
-{% endhint %}
-
-1. Review the Extension Configuration Settings and Custom Branding Settings variables and update those to your desired values. The current values in the script are the default values. Leaving any unchanged will set the defaults.
-2. If you are leveraging a RMM that has the ability to define the variables in the deployment section of scripting, then you may be able to remove this section and enter the variable definitions into the RMM scripting pages.
-
-<a href="https://raw.githubusercontent.com/CyberDrain/Check/refs/heads/main/enterprise/Deploy-Windows-Chrome-and-Edge.ps1" class="button primary">Download the Script from GitHub</a>
-
-</details>
-
-<details>
-
 <summary>Group Policy</summary>
 
 1. Download the following from the Check repo on GitHub
-   1. ​[Deploy-ADMX.ps1](../../../enterprise/Deploy-ADMX.ps1)
-   2. ​[Check-Extension.admx](../../../enterprise/admx/Check-Extension.admx)​
-   3. ​[Check-Extension.adml](../../../enterprise/admx/en-US/Check-Extension.adml)​
+   1. ​[Deploy-ADMX.ps1](../../../../enterprise/Deploy-ADMX.ps1)
+   2. ​[Check-Extension.admx](../../../../enterprise/admx/Check-Extension.admx)​
+   3. ​[Check-Extension.adml](../../../../enterprise/admx/en-US/Check-Extension.adml)​
 2. Run Deploy-ADMX.ps1. As long as you keep the other two files in the same folder, it will correctly add the available objects to Group Policy.
 3. Open Group Policy and create a policy using the imported settings that can be found:
 
-![](<../../.gitbook/assets/image (2).png>)\\
+![](<../../../.gitbook/assets/image (2).png>)\\
 
 </details>
 
@@ -74,7 +57,7 @@ This script is designed to deploy the extension to both Chrome and Edge. It is r
 
 <summary>Action1</summary>
 
-For Action1, you can use the script in [#generic-powershell](windows.md#generic-powershell "mention") to create a ps1 file and deploy it via a [custom package in the software repository](https://www.action1.com/documentation/add-custom-packages-to-app-store/) or via the [script library](https://www.action1.com/documentation/script-library/).
+For Action1, you can use the script in [#generic-powershell](./#generic-powershell "mention") to create a ps1 file and deploy it via a [custom package in the software repository](https://www.action1.com/documentation/add-custom-packages-to-app-store/) or via the [script library](https://www.action1.com/documentation/script-library/).
 
 </details>
 
@@ -82,7 +65,7 @@ For Action1, you can use the script in [#generic-powershell](windows.md#generic-
 
 <summary>Acronis RMM</summary>
 
-For Acronis RMM, you can use the script in [#generic-powershell](windows.md#generic-powershell "mention")to [create a script in the Script repository](https://www.acronis.com/en-us/support/documentation/CyberProtectionService/#cyber-scripting-creating-script.html) and then running the script via a [Script Plan](https://www.acronis.com/en-us/support/documentation/CyberProtectionService/#cyber-scripting-scripting-plans.html).
+For Acronis RMM, you can use the script in [#generic-powershell](./#generic-powershell "mention")to [create a script in the Script repository](https://www.acronis.com/en-us/support/documentation/CyberProtectionService/#cyber-scripting-creating-script.html) and then running the script via a [Script Plan](https://www.acronis.com/en-us/support/documentation/CyberProtectionService/#cyber-scripting-scripting-plans.html).
 
 </details>
 
@@ -93,7 +76,7 @@ For Acronis RMM, you can use the script in [#generic-powershell](windows.md#gene
 1. Go to **Automation** > **Scripts** > **Script Manager**
 2. Create a new script
 3. Add a PowerShell Execute Script step
-4. Copy in the [#generic-powershell](windows.md#generic-powershell "mention") script.
+4. Copy in the [#generic-powershell](./#generic-powershell "mention") script.
 5. Save and assign the script to your targetted devices.
 
 </details>
@@ -104,7 +87,7 @@ For Acronis RMM, you can use the script in [#generic-powershell](windows.md#gene
 
 1. Go to **Automation** > **Components**
 2. Create a new Custom Component
-3. Copy in the [#generic-powershell](windows.md#generic-powershell "mention") script
+3. Copy in the [#generic-powershell](./#generic-powershell "mention") script
 4. Save and publish the component
 5. Navigate to **Automation** > **Jobs** > **Create Job**
 6. Name the job Check Browser Extension Deployment
@@ -172,7 +155,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 <summary>Kaseya VSA</summary>
 
 1. Go to **Agent Procedures** > **Installer Wizards** > **Application Deploy**
-2. Upload a .ps1 of the [#generic-powershell](windows.md#generic-powershell "mention") script
+2. Upload a .ps1 of the [#generic-powershell](./#generic-powershell "mention") script
 3. Choose Private or Shared Files
 4. Select installer type
 5. Add command-line options
@@ -209,7 +192,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 3. Choose:
    1. Script Type: **PowerShell**
    2. Operating System: **Windows**
-4. Upload a .ps1 of the [#generic-powershell](windows.md#generic-powershell "mention") script or paste the script directly
+4. Upload a .ps1 of the [#generic-powershell](./#generic-powershell "mention") script or paste the script directly
 5. Name the script `Check Browser Extension Deployment`
 6. Save the script
 7. Go to **Configuration** > **Scheduled Task** > **Add Task**
@@ -232,7 +215,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 2. Click **New**
 3. Enter `Check Browser Extension Deployment` for the name and a brief description
 4. Set a timeout period for the script of 600 seconds
-5. Upload a .ps1 file of the [#generic-powershell](windows.md#generic-powershell "mention") script leaving `Script check and automated task` selected
+5. Upload a .ps1 file of the [#generic-powershell](./#generic-powershell "mention") script leaving `Script check and automated task` selected
 6. Click **Save**
 7. On the **All Devices** view, right-click your targeted Client or Site
 8. Select **Task** > **Add**
@@ -262,7 +245,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
    6. Architechture: All
    7. Run As: System
    8. Script Variables: Add as desired to customize
-2) Copy the [#generic-powershell](windows.md#generic-powershell "mention") script into the editor
+2) Copy the [#generic-powershell](./#generic-powershell "mention") script into the editor
 3) Click **Save**
 4) Go to **Administration** > **Policies**
 5) Options are to create a new policy or add the automation to an existing policy targeting Windows devices
@@ -284,7 +267,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 4. Name the Script `Check Browser Extension Deployment`
 5. Toggle **Enabled** under the Windows tab
 6. Select **PowerShell** as the script type
-7. Paste the [#generic-powershell](windows.md#generic-powershell "mention") script into the editor
+7. Paste the [#generic-powershell](./#generic-powershell "mention") script into the editor
 8. Click **Save Script**
 9. Navigate to **Automation** > **Tasks**
 10. Click **Create Task**
@@ -304,7 +287,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 2. Click **+ Scrip**t
 3. Name the script `Check Browser Extension Depoloyment`
 4. Choose **PowerShell** as the language
-5. Paste the [#generic-powershell](windows.md#generic-powershell "mention") script
+5. Paste the [#generic-powershell](./#generic-powershell "mention") script
 6. Set a timeout of 600 seconds
 7. Choose to run as **System/Root User**
 8. Save the script
@@ -321,7 +304,7 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 3. Name the script `Check Browser Extension Deployment`
 4. Choose **PowerShell** as the file type
 5. Set **Run As** to **System**
-6. Copy the [#generic-powershell](windows.md#generic-powershell "mention") script into the editor
+6. Copy the [#generic-powershell](./#generic-powershell "mention") script into the editor
 7. Click **Create Script**
 8. Navigate to **Policies**
 9. Click **+New Policy**
