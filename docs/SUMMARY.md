@@ -7,6 +7,8 @@
 * [Chrome/Edge Deployment Instructions](deployment/chrome-edge-deployment-instructions/README.md)
   * [Windows](deployment/chrome-edge-deployment-instructions/windows/README.md)
     * [Manual Deployment](deployment/chrome-edge-deployment-instructions/windows/manual-deployment.md)
+    * [Domain Deployment](deployment/chrome-edge-deployment-instructions/windows/domain-deployment.md)
+    * [RMM Deployment](deployment/chrome-edge-deployment-instructions/windows/rmm-deployment.md)
   * [MacOS](deployment/chrome-edge-deployment-instructions/macos.md)
 
 ## Settings

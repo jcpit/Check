@@ -2,7 +2,7 @@
 
 {% tabs %}
 {% tab title="PowerShell" %}
-**Modify the following script and copy it to your RMM's scripting engine to deploy Check:**
+**Modify the following script and copy it to your RMM's scripting engine or run the script directly on the endpoint to deploy Check:**
 
 {% hint style="info" %}
 This script is designed to deploy the extension to both Chrome and Edge. It is recommended to deploy both even if you standardize on one. This will provide you with better protection in the case someone uses the non-favored browser.
