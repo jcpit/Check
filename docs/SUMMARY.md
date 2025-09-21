@@ -4,7 +4,9 @@
 
 ## Deployment
 
-* [Chrome/Edge Deployment Instructions](deployment/chrome-edge-deployment-instructions.md)
+* [Chrome/Edge Deployment Instructions](deployment/chrome-edge-deployment-instructions/README.md)
+  * [Windows](deployment/chrome-edge-deployment-instructions/windows.md)
+  * [MacOS](deployment/chrome-edge-deployment-instructions/macos.md)
 
 ## Settings
 
