@@ -24,4 +24,4 @@ Email details to [security@check.com](mailto:security@check.com). Please include
 - Email: [security@check.com](mailto:security@check.com)
 - GitHub Security Advisories: use the repository's "Report a vulnerability" feature.
 
-Thank you for helping keep ProjectX secure.
+Thank you for helping keep Check by CyberDrain secure.
