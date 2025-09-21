@@ -136,6 +136,10 @@ For detailed information about Immy deployments, tasks, and maintenance sessions
 9. Select the extensions you just added to the repository
 10. Click **Distribute**
 
+{% hint style="warning" %}
+ManageEngine's documentation is not clear how to manage the settings for the extension via this method. It may be necessary to transition to scripted deployment.
+{% endhint %}
+
 </details>
 
 <details>
