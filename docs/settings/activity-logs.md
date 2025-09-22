@@ -96,7 +96,7 @@ You tried to log into Office 365 but got blocked. Looking at logs:​Timestamp: 
 
 - Leave "Enable Debug Logging" unchecked
 - Leave "Enable Developer Console Logging" unchecked
-- Leave "Simulate Enteprise Policy Mode (Dev Only)" unchecked
+- Leave "Simulate Enterprise Policy Mode (Dev Only)" unchecked
 
 **For troubleshooting or working with support:**
 
