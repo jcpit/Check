@@ -4034,8 +4034,8 @@ if (window.checkExtensionLoaded) {
         if (!bannerEl) return;
         try {
           const companyName = branding.companyName || branding.productName || "Your Security Team";
-          const supportEmail = branding.supportEmail || "";
-          const supportUrl = branding.supportUrl || "";
+          const supportEmail = branding.supportEmail || ""; // Only show report link when email provided
+          const supportUrl = branding.supportUrl || ""; // Still available for future use but not used for report link now
           const logoUrl = branding.logoUrl || branding.assets?.logoUrl || "";
 
           // Insert branding container if not existing
@@ -4058,13 +4058,6 @@ if (window.checkExtensionLoaded) {
                 img.src = logoUrl;
                 img.alt = companyName + ' logo';
                 img.style.cssText = 'width:28px;height:28px;object-fit:contain;border-radius:4px;background:rgba(255,255,255,0.25);padding:2px;';
-                img.addEventListener('error', () => {
-                  // Remove broken image and update text to include prefix
-                  img.remove();
-                  if (titleSpan && !titleSpan.textContent.startsWith('Protected by')) {
-                    titleSpan.textContent = 'Protected by ' + companyName;
-                  }
-                });
                 brandingSlot.appendChild(img);
                 hasLogo = true;
               }
@@ -4072,46 +4065,50 @@ if (window.checkExtensionLoaded) {
               textWrap.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;';
               const titleSpan = document.createElement('span');
               titleSpan.style.cssText = 'font-size:12px;font-weight:600;';
-              titleSpan.textContent = (hasLogo ? '' : 'Protected by ') + companyName;
+              titleSpan.textContent = 'Protected by ' + companyName;
               textWrap.appendChild(titleSpan);
-              // Contact line
-              let contactLine = '';
+              // Contact line - only if supportEmail configured (hide when absent)
               if (supportEmail) {
-                contactLine = `<a href="mailto:${supportEmail}?subject=${encodeURIComponent('False Positive Report')}" style="color:#fff;text-decoration:underline;font-size:11px;">Report false positive</a>`;
-              } else if (supportUrl) {
-                contactLine = `<a href="${supportUrl}" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline;font-size:11px;">Need help?</a>`;
-              }
-              if (contactLine) {
                 const contactDiv = document.createElement('div');
-                contactDiv.innerHTML = contactLine;
-                textWrap.appendChild(contactDiv);
-              }
-              brandingSlot.appendChild(textWrap);
+                const contactLink = document.createElement('a');
+                contactLink.style.cssText = 'color:#fff;text-decoration:underline;font-size:11px;cursor:pointer;';
+                contactLink.textContent = 'Report as clean/safe';
+                contactLink.title = 'Report this page as clean/safe to your administrator';
+                // Provide a basic mailto for fallback (so middle-click / copy link still works)
+                contactLink.href = `mailto:${supportEmail}?subject=${encodeURIComponent('Security Review: Possible Clean/Safe Page')}`;
 
-              // Add a false positive button (always) to trigger event logging & optional future flow
-              let fpBtn = bannerEl.querySelector('#check-banner-false-positive');
-              if (!fpBtn) {
-                fpBtn = document.createElement('button');
-                fpBtn.id = 'check-banner-false-positive';
-                fpBtn.textContent = 'False Positive?';
-                fpBtn.title = 'Report this as a false positive to your administrator';
-                fpBtn.style.cssText = 'margin-left:12px;background:rgba(0,0,0,0.25);color:#fff;border:1px solid rgba(255,255,255,0.4);padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;backdrop-filter:blur(2px);';
-                fpBtn.addEventListener('click', () => {
+                contactLink.addEventListener('click', (e) => {
                   try {
                     chrome.runtime.sendMessage({ type: 'REPORT_FALSE_POSITIVE', url: location.href, reason });
                   } catch(_) {}
-                  if (supportEmail) {
-                    // Pre-populate email
-                    const body = encodeURIComponent(`Hello,\n\nI believe this security warning is a false positive.\n\nURL: ${location.href}\nReason shown: ${reason}\nTimestamp: ${new Date().toISOString()}\n\nPlease review.\n`);
-                    window.location.href = `mailto:${supportEmail}?subject=${encodeURIComponent('False Positive - Security Banner')}&body=${body}`;
-                  } else if (supportUrl) {
-                    window.open(supportUrl, '_blank', 'noopener');
-                  } else {
-                    alert('False positive noted. Please contact your administrator.');
-                  }
+
+                  // Dynamically enrich body at click time while allowing default navigation
+                  // Build structured email body similar to blocked page format, adapted for clean/safe report
+                  let indicatorsText = 'Not available';
+                  try {
+                    if (analysisData && Array.isArray(analysisData.threats) && analysisData.threats.length) {
+                      const mapped = analysisData.threats
+                        .filter(t => (t.description || t.reason))
+                        .map(t => `- ${(t.id || t.type || 'Indicator')}: ${t.description || t.reason || ''}`);
+                      if (mapped.length) indicatorsText = mapped.join('\n');
+                    }
+                  } catch(_) {}
+
+                  const detectionScoreLine = analysisData?.score !== undefined
+                    ? `Detection Score: ${analysisData.score}/${analysisData.threshold}`
+                    : 'Detection Score: N/A';
+
+                  const subject = `Security Review: Mark Clean - ${location.hostname}`;
+                  const body = encodeURIComponent(`Security Review Request: Possible Clean/Safe Page\n\nThis message was generated when a user clicked 'Report as clean/safe' on a security warning banner. Please review to determine if the page should be allow‑listed.\n\nPage URL: ${location.href}\nHostname: ${location.hostname}\nTimestamp (UTC): ${new Date().toISOString()}\nBanner Title: ${bannerTitle}\nDisplayed Reason: ${reason}\n${detectionScoreLine}\n\nDetected Indicators (for context):\n${indicatorsText}\n\nUser Justification / Business Need:\n[Please explain why this page is believed to be safe]\n\n--\nAutomated Notice from Security Banner`);
+                  // Update href with subject & body just before navigation
+                  e.currentTarget.href = `mailto:${supportEmail}?subject=${encodeURIComponent(subject)}&body=${body}`;
+                  // Do NOT preventDefault so the browser handles the mailto normally
                 });
-                brandingSlot.appendChild(fpBtn);
+
+                contactDiv.appendChild(contactLink);
+                textWrap.appendChild(contactDiv);
               }
+              brandingSlot.appendChild(textWrap);
             }
         } catch(e) {
           // Non-fatal
@@ -4152,19 +4149,20 @@ if (window.checkExtensionLoaded) {
         bannerColor = "linear-gradient(135deg, #ff5722, #d84315)"; // Orange-red for high risk
       }
 
+      // Layout: left branding slot, absolutely centered message block, dismiss button on right.
       const bannerContent = `
-      <div style="display:flex;align-items:center;justify-content:flex-start;gap:16px;position:relative;padding-right:48px;flex-wrap:wrap;">
-        <span style="font-size:24px;">${bannerIcon}</span>
-        <div style="max-width:480px;">
+      <div style="position:relative;display:flex;align-items:center;gap:16px;min-height:56px;">
+        <div id="check-banner-left" style="display:flex;align-items:center;gap:12px;z-index:2;"></div>
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;max-width:60%;z-index:1;pointer-events:none;">
+          <span style="display:block;font-size:24px;margin-bottom:4px;">${bannerIcon}</span>
           <strong style="display:block;">${bannerTitle}</strong>
-          <small style="opacity:0.95;">${reason}${detailsText}</small>
+          <small style="opacity:0.95;display:block;margin-top:2px;">${reason}${detailsText}</small>
         </div>
-        <button onclick="this.parentElement.parentElement.remove(); document.body.style.marginTop = '0'; window.showingBanner = false;" title="Dismiss" style="
-          position:absolute;right:16px;top:50%;transform:translateY(-50%);
-          background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);
+        <button onclick="this.closest('#ms365-warning-banner').remove(); document.body.style.marginTop = '0'; window.showingBanner = false;" title="Dismiss" style="
+          margin-left:auto;position:relative;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);
           color:#fff;padding:0;border-radius:4px;cursor:pointer;
           width:24px;height:24px;min-width:24px;min-height:24px;display:flex;align-items:center;justify-content:center;
-          font-size:14px;font-weight:bold;line-height:1;box-sizing:border-box;font-family:monospace;">×</button>
+          font-size:14px;font-weight:bold;line-height:1;box-sizing:border-box;font-family:monospace;z-index:2;">×</button>
       </div>`;
 
       // Check if banner already exists
