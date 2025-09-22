@@ -88,6 +88,109 @@
           </div>
         </section>
 
+        <!-- Detection Debug Section -->
+        <section class="debug-section" id="debugSection" style="display: none;">
+          <h3 class="section-title">
+            Developer Debug
+            <button class="debug-toggle" id="debugToggle" title="Toggle debug info">
+              <span class="material-icons">bug_report</span>
+            </button>
+          </h3>
+          <div class="debug-content" id="debugContent">
+            <div class="debug-actions">
+              <button class="action-btn secondary small" id="retriggerAnalysis">
+                <span class="material-icons">refresh</span>
+                Re-run Analysis
+              </button>
+              <button class="action-btn secondary small" id="showDetectionDetails">
+                <span class="material-icons">visibility</span>
+                Show Details
+              </button>
+            </div>
+
+            <div class="detection-results" id="detectionResults" style="display: none;">
+              <div class="detection-section">
+                <h4>M365 Detection</h4>
+                <div class="detection-score" id="m365Score">Not analyzed</div>
+                <div class="detection-elements" id="m365Elements"></div>
+              </div>
+
+              <div class="detection-section">
+                <h4>Phishing Indicators</h4>
+                <div class="detection-score" id="phishingScore">Not analyzed</div>
+                <div class="detection-threats" id="phishingThreats"></div>
+              </div>
+
+              <div class="detection-section">
+                <h4>DOM Observer Status</h4>
+                <div class="observer-status" id="observerStatus">Unknown</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Page Source Analysis (moved out of debug section) -->
+        <section class="debug-section" id="pageSourceSection" style="display: none;">
+          <h3 class="section-title">
+            Page Source Analysis
+            <button class="debug-toggle" id="pageSourceToggle" title="Toggle page source info">
+              <span class="material-icons">code</span>
+            </button>
+          </h3>
+          <div class="debug-content" id="pageSourceContent">
+            <div class="source-info" id="sourceInfo">
+              <div class="source-stats" id="sourceStats">Not analyzed</div>
+              <button class="action-btn secondary small" id="showPageSource" style="margin-top: 8px;">
+                <span class="material-icons">code</span>
+                View Source
+              </button>
+            </div>
+            <div class="source-content" id="sourceContent" style="display: none;">
+              <div class="source-controls">
+                <input type="text" id="sourceSearch" placeholder="Search in source..." class="source-search">
+                <button class="action-btn secondary small" id="copySource">
+                  <span class="material-icons">content_copy</span>
+                  <span class="btn-text">Copy</span>
+                </button>
+              </div>
+              <pre id="sourceDisplay" class="source-display"></pre>
+            </div>
+          </div>
+        </section>
+
+        <!-- Console Logs (moved out of debug section) -->
+        <section class="debug-section" id="consoleLogsSection" style="display: none;">
+          <h3 class="section-title">
+            Console Logs
+            <button class="debug-toggle" id="consoleLogsToggle" title="Toggle console logs">
+              <span class="material-icons">terminal</span>
+            </button>
+          </h3>
+          <div class="debug-content" id="consoleLogsContent">
+            <div class="source-info" id="consoleInfo">
+              <div class="source-stats" id="consoleStats">No logs captured</div>
+              <button class="action-btn secondary small" id="showConsoleLogs" style="margin-top: 8px;">
+                <span class="material-icons">terminal</span>
+                View Logs
+              </button>
+            </div>
+            <div class="source-content" id="consoleContent" style="display: none;">
+              <div class="source-controls">
+                <input type="text" id="consoleSearch" placeholder="Search in logs..." class="source-search">
+                <button class="action-btn secondary small" id="copyConsoleLogs">
+                  <span class="material-icons">content_copy</span>
+                  <span class="btn-text">Copy</span>
+                </button>
+                <button class="action-btn secondary small" id="refreshConsoleLogs">
+                  <span class="material-icons">refresh</span>
+                  <span class="btn-text">Refresh</span>
+                </button>
+              </div>
+              <pre id="consoleDisplay" class="console-display"></pre>
+            </div>
+          </div>
+        </section>
+
         <!-- Enterprise Features -->
         <section
           class="enterprise-section"

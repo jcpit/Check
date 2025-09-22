@@ -1168,6 +1168,46 @@ class CheckBackground {
           }
           break;
 
+        case "GET_STORED_DEBUG_DATA":
+          try {
+            // Retrieve stored debug data from chrome.storage.local
+            if (message.key) {
+              console.log(
+                "Background: Retrieving debug data for key:",
+                message.key
+              );
+              const result = await chrome.storage.local.get([message.key]);
+              const debugData = result[message.key];
+
+              console.log("Background: Retrieved data:", debugData);
+
+              if (debugData) {
+                sendResponse({
+                  success: true,
+                  debugData: debugData,
+                });
+              } else {
+                console.log("Background: No data found for key:", message.key);
+                sendResponse({
+                  success: false,
+                  error: "No debug data found for key: " + message.key,
+                });
+              }
+            } else {
+              sendResponse({
+                success: false,
+                error: "No key provided for debug data retrieval",
+              });
+            }
+          } catch (error) {
+            logger.error("Failed to retrieve debug data:", error);
+            sendResponse({
+              success: false,
+              error: error.message,
+            });
+          }
+          break;
+
         case "testDetectionEngine":
           // DetectionEngine removed - return simple status
           sendResponse({

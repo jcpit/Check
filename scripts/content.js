@@ -25,10 +25,91 @@ if (window.checkExtensionLoaded) {
   let lastScanTime = 0;
   let scanCount = 0;
   let lastDetectionResult = null; // Store last detection analysis
+  let lastScannedPageSource = null; // Store the page source from the last scan
+  let lastPageSourceScanTime = 0; // When the page source was captured
   let developerConsoleLoggingEnabled = false; // Cache for developer console logging setting
   let showingBanner = false; // Flag to prevent DOM monitoring loops when showing banners
   const MAX_SCANS = 5; // Prevent infinite scanning - reduced for performance
   const SCAN_COOLDOWN = 1200; // 1200ms between scans - increased for performance
+  let initialBody; // Reference to the initial body element
+
+  // Console log capturing
+  let capturedLogs = [];
+  const MAX_LOGS = 100; // Limit the number of stored logs
+
+  // Override console methods to capture logs
+  function setupConsoleCapture() {
+    const originalConsole = {
+      log: console.log,
+      info: console.info,
+      warn: console.warn,
+      error: console.error,
+      debug: console.debug,
+    };
+
+    function createLogCapture(level, originalMethod) {
+      return function (...args) {
+        // Store the log entry
+        const logEntry = {
+          level: level,
+          message: args
+            .map((arg) =>
+              typeof arg === "object"
+                ? JSON.stringify(arg, null, 2)
+                : String(arg)
+            )
+            .join(" "),
+          timestamp: Date.now(),
+          url: window.location.href,
+        };
+
+        capturedLogs.push(logEntry);
+
+        // Keep only the most recent logs
+        if (capturedLogs.length > MAX_LOGS) {
+          capturedLogs = capturedLogs.slice(-MAX_LOGS);
+        }
+
+        // Call the original method
+        originalMethod.apply(console, args);
+      };
+    }
+
+    // Override console methods
+    console.log = createLogCapture("log", originalConsole.log);
+    console.info = createLogCapture("info", originalConsole.info);
+    console.warn = createLogCapture("warn", originalConsole.warn);
+    console.error = createLogCapture("error", originalConsole.error);
+    console.debug = createLogCapture("debug", originalConsole.debug);
+
+    // Also capture window.onerror events
+    window.addEventListener("error", (event) => {
+      const logEntry = {
+        level: "error",
+        message: `${event.message} at ${event.filename}:${event.lineno}:${event.colno}`,
+        timestamp: Date.now(),
+        url: window.location.href,
+      };
+      capturedLogs.push(logEntry);
+      if (capturedLogs.length > MAX_LOGS) {
+        capturedLogs = capturedLogs.slice(-MAX_LOGS);
+      }
+    });
+
+    // Capture unhandled promise rejections
+    window.addEventListener("unhandledrejection", (event) => {
+      const logEntry = {
+        level: "error",
+        message: `Unhandled Promise Rejection: ${event.reason}`,
+        timestamp: Date.now(),
+        url: window.location.href,
+      };
+      capturedLogs.push(logEntry);
+      if (capturedLogs.length > MAX_LOGS) {
+        capturedLogs = capturedLogs.slice(-MAX_LOGS);
+      }
+    });
+  }
 
   /**
    * Check if a URL matches any pattern in the given pattern array
@@ -108,7 +189,7 @@ if (window.checkExtensionLoaded) {
   };
 
   /**
-   * Load developer console logging setting from configuration
+   * Load developer mode setting from configuration (enables console logging and debug features)
    */
   async function loadDeveloperConsoleLoggingSetting() {
     try {
@@ -119,7 +200,7 @@ if (window.checkExtensionLoaded) {
       });
 
       developerConsoleLoggingEnabled =
-        config.enableDeveloperConsoleLogging === true;
+        config.enableDeveloperConsoleLogging === true; // "Developer Mode" in UI
     } catch (error) {
       // If there's an error loading settings, default to false
       developerConsoleLoggingEnabled = false;
@@ -128,6 +209,19 @@ if (window.checkExtensionLoaded) {
         error
       );
     }
+  }
+
+  /**
+   * Re-initialize the DOM observer. This is critical for pages that use
+   * document.write() to replace the entire DOM after initial load.
+   */
+  function reinitializeObserver() {
+    logger.warn("DOM appears to have been replaced. Re-initializing observer.");
+    if (domObserver) {
+      domObserver.disconnect();
+      domObserver = null;
+    }
+    setupDomObserver();
   }
 
   /**
@@ -529,6 +623,59 @@ if (window.checkExtensionLoaded) {
   };
 
   /**
+   * Store debug data before redirect to blocked page
+   */
+  async function storeDebugDataBeforeRedirect(originalUrl, analysisData) {
+    try {
+      const debugData = {
+        detectionDetails: {
+          m365Detection: lastDetectionResult?.m365Detection || null,
+          phishingIndicators: {
+            threats: analysisData?.threats || [],
+            score: analysisData?.score || 0,
+            totalChecked: analysisData?.totalChecked || 0,
+          },
+          observerStatus: {
+            isActive: domObserver !== null,
+            scanCount: scanCount,
+            lastScanTime: lastScanTime,
+          },
+          pageSource: {
+            content:
+              lastScannedPageSource || document.documentElement.outerHTML,
+            length: (
+              lastScannedPageSource || document.documentElement.outerHTML
+            ).length,
+            scanTime: lastPageSourceScanTime || Date.now(),
+          },
+        },
+        consoleLogs: capturedLogs.slice(), // Copy the captured logs
+        pageSource: lastScannedPageSource || document.documentElement.outerHTML,
+        timestamp: Date.now(),
+      };
+
+      console.log(
+        `Storing debug data with ${debugData.consoleLogs.length} console logs`
+      );
+
+      // Store in chrome storage with URL-based key
+      const storageKey = `debug_data_${btoa(originalUrl).substring(0, 50)}`;
+      await new Promise((resolve, reject) => {
+        chrome.storage.local.set({ [storageKey]: debugData }, () => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            console.log("Debug data stored before redirect:", storageKey);
+            resolve();
+          }
+        });
+      });
+    } catch (error) {
+      console.error("Failed to store debug data before redirect:", error);
+    }
+  }
+
+  /**
    * Function to check if detection rules are loaded and show their status
    */
   window.checkRulesStatus = function () {
@@ -582,7 +729,7 @@ if (window.checkExtensionLoaded) {
    */
 
   // Make it globally available for testing
-  window.testPhishingIndicators = testPhishingIndicators;
+  window.testPhishingIndicators = testDetectionPatterns;
 
   /**
    * Global function to analyze current page - call from browser console: analyzeCurrentPage()
@@ -825,6 +972,10 @@ if (window.checkExtensionLoaded) {
 
       const requirements = detectionRules.m365_detection_requirements;
       const pageSource = document.documentElement.outerHTML;
+
+      // Store the page source for debugging purposes
+      lastScannedPageSource = pageSource;
+      lastPageSourceScanTime = Date.now();
 
       let primaryFound = 0;
       let totalWeight = 0;
@@ -1768,21 +1919,102 @@ if (window.checkExtensionLoaded) {
 
   /**
    * Check if domain should be excluded from phishing detection
+   * Now includes both detection rules exclusions AND user-configured URL whitelist
    */
   function checkDomainExclusion(url) {
-    if (!detectionRules?.exclusion_system?.domain_patterns) {
-      return false;
-    }
+    if (detectionRules?.exclusion_system?.domain_patterns) {
+      const rulesExcluded =
+        detectionRules.exclusion_system.domain_patterns.some((pattern) => {
+          try {
+            const regex = new RegExp(pattern, "i");
+            return regex.test(url);
+          } catch (error) {
+            logger.warn(`Invalid exclusion pattern: ${pattern}`);
+            return false;
+          }
+        });
 
-    return detectionRules.exclusion_system.domain_patterns.some((pattern) => {
-      try {
-        const regex = new RegExp(pattern, "i");
-        return regex.test(url);
-      } catch (error) {
-        logger.warn(`Invalid exclusion pattern: ${pattern}`);
+      if (rulesExcluded) {
+        logger.log(`✅ URL excluded by detection rules: ${url}`);
+        return true;
+      }
+    }
+    return checkUserUrlWhitelist(url);
+  }
+
+  /**
+   * Check if URL matches user-configured whitelist patterns
+   */
+  function checkUserUrlWhitelist(url) {
+    try {
+      // Get URL whitelist from current config (loaded from storage)
+      if (!window.checkUserConfig?.urlWhitelist) {
         return false;
       }
-    });
+
+      const urlWhitelist = window.checkUserConfig.urlWhitelist;
+      if (!Array.isArray(urlWhitelist) || urlWhitelist.length === 0) {
+        return false;
+      }
+
+      // Test URL against each whitelist pattern
+      for (const pattern of urlWhitelist) {
+        if (!pattern || !pattern.trim()) continue;
+
+        try {
+          // Convert URL pattern to regex if needed (same logic as options.js)
+          const regexPattern = urlPatternToRegex(pattern.trim());
+          const regex = new RegExp(regexPattern, "i");
+
+          if (regex.test(url)) {
+            logger.log(
+              `✅ URL whitelisted by user pattern "${pattern}": ${url}`
+            );
+            return true;
+          }
+        } catch (error) {
+          logger.warn(`Invalid URL whitelist pattern: ${pattern}`, error);
+        }
+      }
+
+      return false;
+    } catch (error) {
+      logger.warn("Error checking user URL whitelist:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Convert URL pattern with wildcards to regex (same logic as options.js)
+   */
+  function urlPatternToRegex(pattern) {
+    // If it's already a regex pattern (starts with ^ or contains regex chars), return as-is
+    if (
+      pattern.startsWith("^") ||
+      pattern.includes("\\") ||
+      pattern.includes("[") ||
+      pattern.includes("(")
+    ) {
+      return pattern;
+    }
+
+    // Escape special regex characters except *
+    let escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
+
+    // Convert * to .* for wildcard matching
+    escaped = escaped.replace(/\*/g, ".*");
+
+    // Ensure it matches from the beginning
+    if (!escaped.startsWith("^")) {
+      escaped = "^" + escaped;
+    }
+
+    // Add end anchor if pattern doesn't end with wildcard
+    if (!pattern.endsWith("*") && !escaped.endsWith(".*")) {
+      escaped = escaped + "$";
+    }
+
+    return escaped;
   }
 
   /**
@@ -2104,12 +2336,41 @@ if (window.checkExtensionLoaded) {
         } chars content`
       );
 
-      // Load configuration to check protection settings
+      // Load configuration to check protection settings and URL whitelist
       const config = await new Promise((resolve) => {
         chrome.storage.local.get(["config"], (result) => {
           resolve(result.config || {});
         });
       });
+
+      // Store config globally for URL whitelist checking
+      window.checkUserConfig = config;
+
+      // Early exit if URL is in user whitelist (before any other checks)
+      if (checkUserUrlWhitelist(window.location.href)) {
+        logger.log(
+          `✅ URL WHITELISTED BY USER - No scanning needed, exiting immediately`
+        );
+        logger.log(
+          `📋 URL matches user whitelist pattern: ${window.location.href}`
+        );
+
+        // Log as legitimate access for whitelisted URLs (only on first run)
+        if (!isRerun) {
+          logProtectionEvent({
+            type: "legitimate_access",
+            url: location.href,
+            origin: location.origin,
+            reason: "URL matches user-configured whitelist pattern",
+            redirectTo: null,
+            clientId: null,
+            clientSuspicious: false,
+            clientReason: null,
+          });
+        }
+
+        return; // EXIT IMMEDIATELY - can't be phishing on user-whitelisted URL
+      }
 
       // Check if page blocking is disabled
       const protectionEnabled = config.enablePageBlocking !== false;
@@ -2439,9 +2700,15 @@ if (window.checkExtensionLoaded) {
             "✅ Page analysis result: Site appears legitimate (not Microsoft-related, no phishing indicators checked)"
           );
 
-          // Don't set up DOM monitoring for pages with no Microsoft indicators to prevent performance issues
-          logger.log("📄 Skipping DOM monitoring - page has insufficient Microsoft elements");
-          return; // EXIT - No Microsoft elements detected, no need for phishing checks
+          // Always set up DOM monitoring - phishing pages may inject Microsoft content later via document.write()
+          logger.log(
+            "� Setting up DOM monitoring - phishing pages may inject Microsoft content dynamically"
+          );
+          if (!isRerun) {
+            setupDOMMonitoring();
+            setupDynamicScriptMonitoring();
+          }
+          return; // EXIT - No Microsoft elements detected initially, but monitoring for dynamic injection
         }
 
         logger.log(
@@ -2731,8 +2998,7 @@ if (window.checkExtensionLoaded) {
             severity: "critical",
             redirectTo: redirectHostname,
             clientId: clientInfo.clientId,
-            clientSuspicious: clientInfo.isMalicious,
-            clientReason: clientInfo.reason,
+            appName: clientInfo.appInfo?.appName || "Unknown",
             ruleType: "rogue_app_detection",
           });
 
@@ -3389,14 +3655,40 @@ if (window.checkExtensionLoaded) {
                 if (node.nodeType === Node.ELEMENT_NODE) {
                   newElementsAdded = true;
                   const tagName = node.tagName?.toLowerCase();
+
+                  // Log what's being added for debugging
+                  logger.debug(`DOM mutation: Adding ${tagName} element`);
+                  if (
+                    node.textContent &&
+                    node.textContent.length > 0 &&
+                    node.textContent.length < 200
+                  ) {
+                    logger.debug(
+                      `  Content preview: "${node.textContent.substring(
+                        0,
+                        100
+                      )}"`
+                    );
+                  }
+                  if (node.className) {
+                    logger.debug(`  Classes: "${node.className}"`);
+                  }
+                  if (node.id) {
+                    logger.debug(`  ID: "${node.id}"`);
+                  }
+
                   if (
                     tagName === "form" ||
                     tagName === "input" ||
-                    tagName === "script"
+                    tagName === "script" ||
+                    tagName === "div" || // Many login forms are built with divs
+                    tagName === "button" ||
+                    tagName === "label" ||
+                    tagName === "iframe" // Some phishing pages load content in iframes
                   ) {
                     shouldRerun = true;
                     logger.debug(
-                      `DOM change detected: ${tagName} element added`
+                      `DOM change detected: ${tagName} element added - triggering re-scan`
                     );
                     break;
                   }
@@ -3407,13 +3699,53 @@ if (window.checkExtensionLoaded) {
                     (node.textContent.includes("loginfmt") ||
                       node.textContent.includes("idPartnerPL") ||
                       node.textContent.includes("Microsoft") ||
-                      node.textContent.includes("Office 365"))
+                      node.textContent.includes("Office 365") ||
+                      node.textContent.includes("Sign in") ||
+                      node.textContent.includes("Azure") ||
+                      node.textContent.includes("Outlook") ||
+                      node.textContent.includes("OneDrive") ||
+                      node.textContent.includes("Teams") ||
+                      node.textContent.includes("Enter password") ||
+                      node.textContent.includes("msauth") ||
+                      node.textContent.includes("microsoftonline"))
                   ) {
                     shouldRerun = true;
                     logger.debug(
-                      "DOM change detected: Microsoft-related content added"
+                      "DOM change detected: Microsoft-related content added - triggering re-scan"
+                    );
+                    logger.debug(
+                      `  Microsoft content: "${node.textContent.substring(
+                        0,
+                        200
+                      )}"`
                     );
                     break;
+                  }
+
+                  // Check for login-related classes or IDs being added
+                  if (node.className || node.id) {
+                    const classAndId = (
+                      node.className +
+                      " " +
+                      node.id
+                    ).toLowerCase();
+                    if (
+                      classAndId.includes("login") ||
+                      classAndId.includes("signin") ||
+                      classAndId.includes("password") ||
+                      classAndId.includes("email") ||
+                      classAndId.includes("username") ||
+                      classAndId.includes("microsoft") ||
+                      classAndId.includes("office") ||
+                      classAndId.includes("azure")
+                    ) {
+                      shouldRerun = true;
+                      logger.debug(
+                        "DOM change detected: Login-related element added - triggering re-scan"
+                      );
+                      logger.debug(`  Login classes/ID: "${classAndId}"`);
+                      break;
+                    }
                   }
                 }
               }
@@ -3560,6 +3892,9 @@ if (window.checkExtensionLoaded) {
 
       // Log the enriched details for debugging
       logger.log("Enriched blocking details:", blockingDetails);
+
+      // Store debug data before redirect so it can be retrieved on blocked page
+      storeDebugDataBeforeRedirect(location.href, analysisData);
 
       // Encode the details for the blocking page
       const encodedDetails = encodeURIComponent(
@@ -4209,6 +4544,9 @@ if (window.checkExtensionLoaded) {
     try {
       logger.log("Initializing Check");
 
+      // Setup console capture early to catch all logs
+      setupConsoleCapture();
+
       // Apply branding colors first
       applyBrandingColors();
 
@@ -4333,6 +4671,84 @@ if (window.checkExtensionLoaded) {
         });
       }
       return true; // Keep message channel open for async response
+    }
+
+    if (message.type === "RETRIGGER_ANALYSIS") {
+      try {
+        logger.log("🔄 POPUP REQUEST: Re-triggering analysis");
+        runProtection(true); // Force re-run
+        sendResponse({ success: true });
+      } catch (error) {
+        logger.error("Failed to retrigger analysis:", error);
+        sendResponse({ success: false, error: error.message });
+      }
+      return true;
+    }
+
+    if (message.type === "GET_DETECTION_DETAILS") {
+      try {
+        logger.log("🔍 POPUP REQUEST: Getting detection details");
+        const details = {
+          m365Detection: lastDetectionResult
+            ? {
+                isDetected: lastDetectionResult.isMicrosoftLogin || false,
+                weight: lastDetectionResult.weight || 0,
+                totalElements: lastDetectionResult.totalElements || 0,
+                foundElements: lastDetectionResult.foundElements || [],
+                missingElements: lastDetectionResult.missingElements || [],
+              }
+            : null,
+          phishingIndicators: lastDetectionResult
+            ? {
+                threats: lastDetectionResult.threats || [],
+                score: lastDetectionResult.phishingScore || 0,
+                totalChecked: lastDetectionResult.totalIndicatorsChecked || 0,
+              }
+            : null,
+          observerStatus: {
+            isActive: !!domObserver,
+            scanCount: scanCount,
+            lastScanTime: lastScanTime,
+          },
+          pageSource: lastScannedPageSource
+            ? {
+                content: lastScannedPageSource,
+                length: lastScannedPageSource.length,
+                scanTime: lastPageSourceScanTime,
+              }
+            : null,
+        };
+        sendResponse({ success: true, details });
+      } catch (error) {
+        logger.error("Failed to get detection details:", error);
+        sendResponse({ success: false, error: error.message });
+      }
+      return true;
+    }
+
+    if (message.type === "GET_PAGE_INFO") {
+      sendResponse({
+        success: true,
+        info: {
+          url: window.location.href,
+          title: document.title,
+          hasPassword: !!document.querySelector('input[type="password"]'),
+          hasEmailField: !!document.querySelector('input[type="email"]'),
+        },
+      });
+      return true;
+    }
+
+    if (message.type === "GET_CONSOLE_LOGS") {
+      try {
+        sendResponse({
+          success: true,
+          logs: capturedLogs.slice(), // Send a copy of the logs
+        });
+      } catch (error) {
+        sendResponse({ success: false, error: error.message });
+      }
+      return true;
     }
   });
 

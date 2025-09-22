@@ -17,9 +17,9 @@ Check uses a constantly updated list of rules to identify fake Microsoft login p
 #### **For organizations with custom security rules:**
 
 {% hint style="warning" %}
-#### What if Settings are Grayed Out?
+#### What if Settings Are Not Visible?
 
-If some settings appear grayed out with a little lock icon, it means your organization's IT department has set these for you. This is normal in business environments - your IT team wants to make sure everyone has the same security settings.
+If some settings do not appear on my version, it means your organization's IT department has set these for you. This is normal in business environments - your IT team wants to make sure everyone has the same security settings. You will also see text indicating that the extension is being managed by policy.
 {% endhint %}
 
 1. Enter your organization's custom rules URL (provided by IT)
