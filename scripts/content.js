@@ -4005,6 +4005,108 @@ if (window.checkExtensionLoaded) {
       // Set flag to prevent DOM monitoring loops
       showingBanner = true;
 
+      // Fetch cached branding info (memoized after first retrieval)
+      if (!window.__checkBrandingPromise) {
+        window.__checkBrandingPromise = new Promise((resolve) => {
+          try {
+            chrome.runtime.sendMessage(
+              { type: "GET_BRANDING_CONFIG" },
+              (response) => {
+                if (chrome.runtime.lastError) {
+                  resolve({});
+                  return;
+                }
+                if (response && response.success && response.branding) {
+                  resolve(response.branding);
+                } else {
+                  resolve({});
+                }
+              }
+            );
+          } catch (_) {
+            resolve({});
+          }
+        });
+      }
+
+      // We'll render immediately, and then (if async branding arrives) update inline
+      const applyBranding = (bannerEl, branding) => {
+        if (!bannerEl) return;
+        try {
+          const companyName = branding.companyName || branding.productName || "Your Security Team";
+          const supportEmail = branding.supportEmail || "";
+          const supportUrl = branding.supportUrl || "";
+          const logoUrl = branding.logoUrl || branding.assets?.logoUrl || "";
+
+          // Insert branding container if not existing
+            let brandingSlot = bannerEl.querySelector('#check-banner-branding');
+            if (!brandingSlot) {
+              const container = document.createElement('div');
+              container.id = 'check-banner-branding';
+              container.style.cssText = 'display:flex;align-items:center;gap:8px;margin-left:auto;';
+              // Will append after main content but before dismiss button (wrapper uses relative padding-right)
+              const innerWrapper = bannerEl.firstElementChild;
+              if (innerWrapper) {
+                innerWrapper.appendChild(container);
+                brandingSlot = container;
+              }
+            }
+            if (brandingSlot) {
+              brandingSlot.innerHTML = '';
+              if (logoUrl) {
+                const img = document.createElement('img');
+                img.src = logoUrl;
+                img.alt = companyName + ' logo';
+                img.style.cssText = 'width:28px;height:28px;object-fit:contain;border-radius:4px;background:rgba(255,255,255,0.25);padding:2px;';
+                brandingSlot.appendChild(img);
+              }
+              const textWrap = document.createElement('div');
+              textWrap.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;';
+              textWrap.innerHTML = `<span style="font-size:12px;font-weight:600;">Protected by ${companyName}</span>`;
+              // Contact line
+              let contactLine = '';
+              if (supportEmail) {
+                contactLine = `<a href="mailto:${supportEmail}?subject=${encodeURIComponent('False Positive Report')}" style="color:#fff;text-decoration:underline;font-size:11px;">Report false positive</a>`;
+              } else if (supportUrl) {
+                contactLine = `<a href="${supportUrl}" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline;font-size:11px;">Need help?</a>`;
+              }
+              if (contactLine) {
+                const contactDiv = document.createElement('div');
+                contactDiv.innerHTML = contactLine;
+                textWrap.appendChild(contactDiv);
+              }
+              brandingSlot.appendChild(textWrap);
+
+              // Add a false positive button (always) to trigger event logging & optional future flow
+              let fpBtn = bannerEl.querySelector('#check-banner-false-positive');
+              if (!fpBtn) {
+                fpBtn = document.createElement('button');
+                fpBtn.id = 'check-banner-false-positive';
+                fpBtn.textContent = 'False Positive?';
+                fpBtn.title = 'Report this as a false positive to your administrator';
+                fpBtn.style.cssText = 'margin-left:12px;background:rgba(0,0,0,0.25);color:#fff;border:1px solid rgba(255,255,255,0.4);padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;backdrop-filter:blur(2px);';
+                fpBtn.addEventListener('click', () => {
+                  try {
+                    chrome.runtime.sendMessage({ type: 'REPORT_FALSE_POSITIVE', url: location.href, reason });
+                  } catch(_) {}
+                  if (supportEmail) {
+                    // Pre-populate email
+                    const body = encodeURIComponent(`Hello,\n\nI believe this security warning is a false positive.\n\nURL: ${location.href}\nReason shown: ${reason}\nTimestamp: ${new Date().toISOString()}\n\nPlease review.\n`);
+                    window.location.href = `mailto:${supportEmail}?subject=${encodeURIComponent('False Positive - Security Banner')}&body=${body}`;
+                  } else if (supportUrl) {
+                    window.open(supportUrl, '_blank', 'noopener');
+                  } else {
+                    alert('False positive noted. Please contact your administrator.');
+                  }
+                });
+                brandingSlot.appendChild(fpBtn);
+              }
+            }
+        } catch(e) {
+          // Non-fatal
+        }
+      };
+
       const detailsText = analysisData?.score
         ? ` (Score: ${analysisData.score}/${analysisData.threshold})`
         : "";
@@ -4040,23 +4142,19 @@ if (window.checkExtensionLoaded) {
       }
 
       const bannerContent = `
-      <div style="display: flex; align-items: center; justify-content: center; gap: 16px; position: relative; padding-right: 48px;">
-        <span style="font-size: 24px;">${bannerIcon}</span>
-        <div>
-          <strong>${bannerTitle}</strong><br>
-          <small>${reason}${detailsText}</small>
+      <div style="display:flex;align-items:center;justify-content:flex-start;gap:16px;position:relative;padding-right:48px;flex-wrap:wrap;">
+        <span style="font-size:24px;">${bannerIcon}</span>
+        <div style="max-width:480px;">
+          <strong style="display:block;">${bannerTitle}</strong>
+          <small style="opacity:0.95;">${reason}${detailsText}</small>
         </div>
         <button onclick="this.parentElement.parentElement.remove(); document.body.style.marginTop = '0'; window.showingBanner = false;" title="Dismiss" style="
-          position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
-          background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
-          color: white; padding: 0; border-radius: 4px; cursor: pointer;
-          width: 24px; height: 24px; min-width: 24px; min-height: 24px; max-width: 24px; max-height: 24px;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 14px; font-weight: bold; line-height: 1; box-sizing: border-box;
-          font-family: monospace;
-        ">×</button>
-      </div>
-    `;
+          position:absolute;right:16px;top:50%;transform:translateY(-50%);
+          background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);
+          color:#fff;padding:0;border-radius:4px;cursor:pointer;
+          width:24px;height:24px;min-width:24px;min-height:24px;display:flex;align-items:center;justify-content:center;
+          font-size:14px;font-weight:bold;line-height:1;box-sizing:border-box;font-family:monospace;">×</button>
+      </div>`;
 
       // Check if banner already exists
       let banner = document.getElementById("ms365-warning-banner");
@@ -4065,6 +4163,7 @@ if (window.checkExtensionLoaded) {
         // Update existing banner content and color
         banner.innerHTML = bannerContent;
         banner.style.background = bannerColor;
+        window.__checkBrandingPromise?.then((branding)=>applyBranding(banner, branding));
 
         // Ensure page content is still pushed down
         const bannerHeight = banner.offsetHeight || 64;
@@ -4091,8 +4190,11 @@ if (window.checkExtensionLoaded) {
       text-align: center !important;
     `;
 
-      banner.innerHTML = bannerContent;
+  banner.innerHTML = bannerContent;
       document.body.appendChild(banner);
+
+      // Apply branding once available
+      window.__checkBrandingPromise?.then((branding)=>applyBranding(banner, branding));
 
       // Push page content down to avoid covering login header
       const bannerHeight = banner.offsetHeight || 64; // fallback height
