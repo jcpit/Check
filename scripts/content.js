@@ -4043,26 +4043,37 @@ if (window.checkExtensionLoaded) {
             if (!brandingSlot) {
               const container = document.createElement('div');
               container.id = 'check-banner-branding';
-              container.style.cssText = 'display:flex;align-items:center;gap:8px;margin-left:auto;';
-              // Will append after main content but before dismiss button (wrapper uses relative padding-right)
+              container.style.cssText = 'display:flex;align-items:center;gap:8px;';
               const innerWrapper = bannerEl.firstElementChild;
               if (innerWrapper) {
-                innerWrapper.appendChild(container);
+                innerWrapper.insertBefore(container, innerWrapper.firstChild); // ensure left-most
                 brandingSlot = container;
               }
             }
             if (brandingSlot) {
               brandingSlot.innerHTML = '';
+              let hasLogo = false;
               if (logoUrl) {
                 const img = document.createElement('img');
                 img.src = logoUrl;
                 img.alt = companyName + ' logo';
                 img.style.cssText = 'width:28px;height:28px;object-fit:contain;border-radius:4px;background:rgba(255,255,255,0.25);padding:2px;';
+                img.addEventListener('error', () => {
+                  // Remove broken image and update text to include prefix
+                  img.remove();
+                  if (titleSpan && !titleSpan.textContent.startsWith('Protected by')) {
+                    titleSpan.textContent = 'Protected by ' + companyName;
+                  }
+                });
                 brandingSlot.appendChild(img);
+                hasLogo = true;
               }
               const textWrap = document.createElement('div');
               textWrap.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;';
-              textWrap.innerHTML = `<span style="font-size:12px;font-weight:600;">Protected by ${companyName}</span>`;
+              const titleSpan = document.createElement('span');
+              titleSpan.style.cssText = 'font-size:12px;font-weight:600;';
+              titleSpan.textContent = (hasLogo ? '' : 'Protected by ') + companyName;
+              textWrap.appendChild(titleSpan);
               // Contact line
               let contactLine = '';
               if (supportEmail) {
