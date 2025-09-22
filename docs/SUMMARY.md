@@ -25,3 +25,4 @@
 ## Troubleshooting
 
 * [Common Issues](troubleshooting/common-issues.md)
+* [Testing Check](troubleshooting/testing-check.md)

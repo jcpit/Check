@@ -17,6 +17,10 @@ When you open the Activity Logs section, you'll see a table with recent activity
 
 Additionally, clicking on a row will allow you to review detailed information on the event and the criteria used to make the threat level determination.
 
+{% hint style="info" %}
+By default, Check only logs blocked pages. If you want to show valid login pages, check `Enable Debug Logging.`
+{% endhint %}
+
 #### Understanding Common Log Entries <a href="#understanding-common-log-entries" id="understanding-common-log-entries"></a>
 
 **"Page Scanned" with Threat Level "None"**
