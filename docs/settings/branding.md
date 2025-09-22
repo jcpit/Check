@@ -11,11 +11,9 @@ Most individual users can skip this section unless they want to personalize the 
 ## Company Information
 
 {% hint style="warning" %}
-
 ### What if Settings Are Not Visible?
 
 If some settings do not appear on your version, it means your organization's IT department has set these for you. This is normal in business environments - your IT team wants to make sure everyone has the same security settings. You will also see text indicating that the extension is being managed by policy.
-
 {% endhint %}
 
 1. **Company Name** - Enter your organization's name. This appears in the extension interface and blocked page messages.
@@ -32,29 +30,29 @@ If some settings do not appear on your version, it means your organization's IT 
 
 The branding preview shows you exactly how your customizations will appear to users. Changes are reflected immediately as you modify the settings, showing:
 
-- Your custom logo and company name in the header
-- How the primary color affects buttons and interface elements
-- The overall visual appearance users will see
+* Your custom logo and company name in the header
+* How the primary color affects buttons and interface elements
+* The overall visual appearance users will see
 
 ## Logo Requirements and Tips
 
 ### **Technical requirements:**
 
-- Format: PNG, JPG, or SVG
-- Size: 48x48 pixels recommended (maximum 128x128)
-- Must be accessible via HTTPS URL
+* Format: PNG, JPG, or SVG
+* Size: 48x48 pixels recommended (maximum 128x128)
+* Must be accessible via HTTPS URL
 
 ### **Design tips:**
 
-- Use a square logo for best results
-- Ensure it looks good on both light and dark backgrounds
-- Keep it simple - small logos need to be clear
+* Use a square logo for best results
+* Ensure it looks good on both light and dark backgrounds
+* Keep it simple - small logos need to be clear
 
 ### **Common logo hosting options:**
 
-- Your company website: `https://yourcompany.com/logo.png`
-- Cloud storage: Upload to Google Drive, Dropbox, etc. and get a public link
-- Image hosting: Use services like Imgur or similar
+* Your company website: `https://yourcompany.com/logo.png`
+* Cloud storage: Upload to Google Drive, Dropbox, etc. and get a public link
+* Image hosting: Use services like Imgur or similar
 
 ## Troubleshooting Branding Issues
 
