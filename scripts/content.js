@@ -4005,31 +4005,15 @@ if (window.checkExtensionLoaded) {
       // Set flag to prevent DOM monitoring loops
       showingBanner = true;
 
-      // Fetch cached branding info (memoized after first retrieval)
-      if (!window.__checkBrandingPromise) {
-        window.__checkBrandingPromise = new Promise((resolve) => {
-          try {
-            chrome.runtime.sendMessage(
-              { type: "GET_BRANDING_CONFIG" },
-              (response) => {
-                if (chrome.runtime.lastError) {
-                  resolve({});
-                  return;
-                }
-                if (response && response.success && response.branding) {
-                  resolve(response.branding);
-                } else {
-                  resolve({});
-                }
-              }
-            );
-          } catch (_) {
-            resolve({});
-          }
-        });
-      }
+      // Fetch branding configuration (uniform pattern: storage only, like applyBrandingColors)
+      const fetchBranding = () => new Promise((resolve) => {
+        try {
+          chrome.storage.local.get(["brandingConfig"], (result) => {
+            resolve(result?.brandingConfig || {});
+          });
+        } catch(_) { resolve({}); }
+      });
 
-      // Extract phishing indicators using the same comprehensive logic as blocked.js
       const extractPhishingIndicators = (details) => {
         if (!details) return "Unknown detection criteria";
 
@@ -4085,89 +4069,63 @@ if (window.checkExtensionLoaded) {
         }
       };
 
-      // We'll render immediately, and then (if async branding arrives) update inline
       const applyBranding = (bannerEl, branding) => {
         if (!bannerEl) return;
         try {
           const companyName = branding.companyName || branding.productName || "Your Security Team";
-          const supportEmail = branding.supportEmail || ""; // Only show report link when email provided
-          const supportUrl = branding.supportUrl || ""; // Still available for future use but not used for report link now
-          const logoUrl = branding.logoUrl || branding.assets?.logoUrl || "";
-
-          // Insert branding container if not existing
-            let brandingSlot = bannerEl.querySelector('#check-banner-branding');
-            if (!brandingSlot) {
-              const container = document.createElement('div');
-              container.id = 'check-banner-branding';
-              container.style.cssText = 'display:flex;align-items:center;gap:8px;';
-              const innerWrapper = bannerEl.firstElementChild;
-              if (innerWrapper) {
-                innerWrapper.insertBefore(container, innerWrapper.firstChild); // ensure left-most
-                brandingSlot = container;
-              }
+          const supportEmail = branding.supportEmail || "";
+          let logoUrl = branding.logoUrl || "";
+          const packagedFallback = chrome.runtime.getURL('images/icon48.png');
+          // Simplified: rely on upstream input validation; only fallback when empty/falsy
+          if (!logoUrl) {
+            logoUrl = packagedFallback;
+          }
+          let brandingSlot = bannerEl.querySelector('#check-banner-branding');
+          if (!brandingSlot) {
+            const container = document.createElement('div');
+            container.id = 'check-banner-branding';
+            container.style.cssText = 'display:flex;align-items:center;gap:8px;';
+            const innerWrapper = bannerEl.firstElementChild;
+            if (innerWrapper) innerWrapper.insertBefore(container, innerWrapper.firstChild);
+            brandingSlot = container;
+          }
+          if (brandingSlot) {
+            brandingSlot.innerHTML = '';
+            if (logoUrl) {
+              const img = document.createElement('img');
+              img.src = logoUrl;
+              img.alt = companyName + ' logo';
+              img.style.cssText = 'width:28px;height:28px;object-fit:contain;border-radius:4px;background:rgba(255,255,255,0.25);padding:2px;';
+              brandingSlot.appendChild(img);
             }
-            if (brandingSlot) {
-              brandingSlot.innerHTML = '';
-              let hasLogo = false;
-              if (logoUrl) {
-                const img = document.createElement('img');
-                img.src = logoUrl;
-                img.alt = companyName + ' logo';
-                img.style.cssText = 'width:28px;height:28px;object-fit:contain;border-radius:4px;background:rgba(255,255,255,0.25);padding:2px;';
-                brandingSlot.appendChild(img);
-                hasLogo = true;
-              }
-              const textWrap = document.createElement('div');
-              textWrap.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;';
-              const titleSpan = document.createElement('span');
-              titleSpan.style.cssText = 'font-size:12px;font-weight:600;';
-              titleSpan.textContent = 'Protected by ' + companyName;
-              textWrap.appendChild(titleSpan);
-              // Contact line - only if supportEmail configured (hide when absent)
-              if (supportEmail) {
-                const contactDiv = document.createElement('div');
-                const contactLink = document.createElement('a');
-                contactLink.style.cssText = 'color:#fff;text-decoration:underline;font-size:11px;cursor:pointer;';
-                contactLink.textContent = 'Report as clean/safe';
-                contactLink.title = 'Report this page as clean/safe to your administrator';
-                // Provide a basic mailto for fallback (so middle-click / copy link still works)
-                contactLink.href = `mailto:${supportEmail}?subject=${encodeURIComponent('Security Review: Possible Clean/Safe Page')}`;
-
-                contactLink.addEventListener('click', (e) => {
-                  try {
-                    chrome.runtime.sendMessage({ type: 'REPORT_FALSE_POSITIVE', url: location.href, reason });
-                  } catch(_) {}
-
-                  // Dynamically enrich body at click time while allowing default navigation
-                  // Build structured email body similar to blocked page format, adapted for clean/safe report
-                  // Use the same comprehensive indicator extraction logic as blocked.js
-                  let indicatorsText = 'Not available';
-                  try {
-                    indicatorsText = extractPhishingIndicators(analysisData);
-                  } catch(error) {
-                    console.error("Failed to extract phishing indicators:", error);
-                    indicatorsText = "Parse error - check browser console";
-                  }
-
-                  const detectionScoreLine = analysisData?.score !== undefined
-                    ? `Detection Score: ${analysisData.score}/${analysisData.threshold}`
-                    : 'Detection Score: N/A';
-
-                  const subject = `Security Review: Mark Clean - ${location.hostname}`;
-                  const body = encodeURIComponent(`Security Review Request: Possible Clean/Safe Page\n\nThis message was generated when a user clicked 'Report as clean/safe' on a security warning banner. Please review to determine if the page should be allow‑listed.\n\nPage URL: ${location.href}\nHostname: ${location.hostname}\nTimestamp (UTC): ${new Date().toISOString()}\nBanner Title: ${bannerTitle}\nDisplayed Reason: ${reason}\n${detectionScoreLine}\n\nDetected Indicators (for context):\n${indicatorsText}\n\nUser Justification / Business Need:\n[Please explain why this page is believed to be safe]\n\n--\nAutomated Notice from Security Banner`);
-                  // Update href with subject & body just before navigation
-                  e.currentTarget.href = `mailto:${supportEmail}?subject=${encodeURIComponent(subject)}&body=${body}`;
-                  // Do NOT preventDefault so the browser handles the mailto normally
-                });
-
-                contactDiv.appendChild(contactLink);
-                textWrap.appendChild(contactDiv);
-              }
-              brandingSlot.appendChild(textWrap);
+            const textWrap = document.createElement('div');
+            textWrap.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;';
+            const titleSpan = document.createElement('span');
+            titleSpan.style.cssText = 'font-size:12px;font-weight:600;';
+            titleSpan.textContent = 'Protected by ' + companyName;
+            textWrap.appendChild(titleSpan);
+            if (supportEmail) {
+              const contactDiv = document.createElement('div');
+              const contactLink = document.createElement('a');
+              contactLink.style.cssText = 'color:#fff;text-decoration:underline;font-size:11px;cursor:pointer;';
+              contactLink.textContent = 'Report as clean/safe';
+              contactLink.title = 'Report this page as clean/safe to your administrator';
+              contactLink.href = `mailto:${supportEmail}?subject=${encodeURIComponent('Security Review: Possible Clean/Safe Page')}`;
+              contactLink.addEventListener('click', (e) => {
+                try { chrome.runtime.sendMessage({ type: 'REPORT_FALSE_POSITIVE', url: location.href, reason }); } catch(_) {}
+                let indicatorsText = 'Not available';
+                try { indicatorsText = extractPhishingIndicators(analysisData); } catch(err) { indicatorsText = 'Parse error - see console'; }
+                const detectionScoreLine = analysisData?.score !== undefined ? `Detection Score: ${analysisData.score}/${analysisData.threshold}` : 'Detection Score: N/A';
+                const subject = `Security Review: Mark Clean - ${location.hostname}`;
+                const body = encodeURIComponent(`Security Review Request: Possible Clean/Safe Page\n\nPage URL: ${location.href}\nHostname: ${location.hostname}\nTimestamp (UTC): ${new Date().toISOString()}\nBanner Title: ${bannerTitle}\nDisplayed Reason: ${reason}\n${detectionScoreLine}\n\nDetected Indicators:\n${indicatorsText}\n\nUser Justification:\n[Explain why this page is safe]`);
+                e.currentTarget.href = `mailto:${supportEmail}?subject=${encodeURIComponent(subject)}&body=${body}`;
+              });
+              contactDiv.appendChild(contactLink);
+              textWrap.appendChild(contactDiv);
             }
-        } catch(e) {
-          // Non-fatal
-        }
+            brandingSlot.appendChild(textWrap);
+          }
+        } catch(e) { /* non-fatal */ }
       };
 
       const detailsText = analysisData?.score
@@ -4227,7 +4185,7 @@ if (window.checkExtensionLoaded) {
         // Update existing banner content and color
         banner.innerHTML = bannerContent;
         banner.style.background = bannerColor;
-        window.__checkBrandingPromise?.then((branding)=>applyBranding(banner, branding));
+        fetchBranding().then(branding => applyBranding(banner, branding));
 
         // Ensure page content is still pushed down
         const bannerHeight = banner.offsetHeight || 64;
@@ -4257,21 +4215,16 @@ if (window.checkExtensionLoaded) {
       banner.innerHTML = bannerContent;
       document.body.appendChild(banner);
 
-      // Apply branding once available
-      window.__checkBrandingPromise?.then((branding)=>applyBranding(banner, branding));
+      fetchBranding().then(branding => applyBranding(banner, branding));
 
       // Push page content down to avoid covering login header
       const bannerHeight = banner.offsetHeight || 64; // fallback height
       document.body.style.marginTop = `${bannerHeight}px`;
 
       logger.log("Warning banner displayed");
-
-      // Don't clear the showingBanner flag immediately - let it persist
-      // to prevent DOM monitoring from interfering while the user sees the warning
-      // The flag will be cleared when the banner is updated or removed
     } catch (error) {
       logger.error("Failed to show warning banner:", error.message);
-      showingBanner = false; // Make sure flag is cleared on error
+      showingBanner = false;
     }
   }
 

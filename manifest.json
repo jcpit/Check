@@ -49,6 +49,7 @@
       "resources": [
         "config/*",
         "rules/*",
+        "images/*",
         "blocked.html",
         "scripts/utils/logger.js",
         "scripts/blocked.js"
