@@ -252,9 +252,9 @@ export class ConfigManager {
       scanDelay: 100,
       maxScanDepth: 10,
 
-      // Whitelist/Blacklist
-      whitelistedDomains: [],
-      blacklistedDomains: [],
+      // Allow/Deny lists
+      allowlistedDomains: [],
+      denylistedDomains: [],
 
       // Enterprise features
       enterpriseMode: false,

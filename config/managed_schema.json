@@ -53,14 +53,14 @@
       "maximum": 168,
       "default": 24
     },
-    "urlWhitelist": {
-      "title": "URL Whitelist (URLs with wildcards or Regex)",
-      "description": "Array of URL patterns or regex patterns to whitelist URLs from detection. Supports simple URLs with * wildcards (e.g., https://google.com/*) or advanced regex patterns.",
+    "urlAllowlist": {
+      "title": "URL Allowlist (URLs with wildcards or Regex)",
+      "description": "Array of URL patterns or regex patterns to allowlist URLs from detection. Supports simple URLs with * wildcards (e.g., https://google.com/*) or advanced regex patterns.",
       "type": "array",
       "items": {
         "type": "string",
         "title": "URL Pattern or Regex",
-        "description": "URL with wildcards (e.g., https://google.com/*) or regular expression pattern to match URLs that should be whitelisted"
+        "description": "URL with wildcards (e.g., https://google.com/*) or regular expression pattern to match URLs that should be allowlisted"
       },
       "default": []
     },

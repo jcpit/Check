@@ -56,7 +56,7 @@ class CheckOptions {
     // Detection settings
     this.elements.customRulesUrl = document.getElementById("customRulesUrl");
     this.elements.updateInterval = document.getElementById("updateInterval");
-    this.elements.urlWhitelist = document.getElementById("urlWhitelist");
+    this.elements.urlAllowlist = document.getElementById("urlAllowlist");
     this.elements.refreshDetectionRules = document.getElementById(
       "refreshDetectionRules"
     );
@@ -575,12 +575,12 @@ class CheckOptions {
       this.config?.customRulesUrl ||
       "";
 
-    // URL Whitelist settings
-    if (this.elements.urlWhitelist) {
-      const whitelist = this.config?.urlWhitelist || [];
-      this.elements.urlWhitelist.value = Array.isArray(whitelist)
-        ? whitelist.join('\n')
-        : (whitelist || '');
+    // URL Allowlist settings
+    if (this.elements.urlAllowlist) {
+      const allowlist = this.config?.urlAllowlist || [];
+      this.elements.urlAllowlist.value = Array.isArray(allowlist)
+        ? allowlist.join('\n')
+        : (allowlist || '');
     }
 
     // Handle updateInterval - ensure we always show hours in the UI
@@ -799,9 +799,9 @@ class CheckOptions {
       customRulesUrl: this.elements.customRulesUrl?.value || "",
       updateInterval: parseInt(this.elements.updateInterval?.value || 24),
       
-      // URL Whitelist settings
-      urlWhitelist: this.elements.urlWhitelist?.value
-        ? this.elements.urlWhitelist.value.split('\n').filter(line => line.trim())
+      // URL Allowlist settings
+      urlAllowlist: this.elements.urlAllowlist?.value
+        ? this.elements.urlAllowlist.value.split('\n').filter(line => line.trim())
         : [],
 
       // Debug logging setting
@@ -856,15 +856,15 @@ class CheckOptions {
       return { valid: false, message: "Custom rules URL is not valid" };
     }
 
-    // URL Whitelist validation
-    if (config.urlWhitelist && Array.isArray(config.urlWhitelist)) {
-      for (const pattern of config.urlWhitelist) {
+    // URL Allowlist validation
+    if (config.urlAllowlist && Array.isArray(config.urlAllowlist)) {
+      for (const pattern of config.urlAllowlist) {
         if (pattern.trim()) {
           const validationResult = this.validateUrlPattern(pattern.trim());
           if (!validationResult.valid) {
             return {
               valid: false,
-              message: `Invalid pattern in URL whitelist: "${pattern.trim()}" - ${validationResult.error}`
+              message: `Invalid pattern in URL allowlist: "${pattern.trim()}" - ${validationResult.error}`
             };
           }
         }
@@ -2017,7 +2017,7 @@ class CheckOptions {
           // Custom branding (matches managed_schema.json structure)
           customBranding: {
             companyName: "CyberDrain",
-			CompanyURL: "https://cyberdrain.com/",
+			companyURL: "https://cyberdrain.com/",
             productName: "Check Enterprise",
             primaryColor: "#F77F00",
             logoUrl:
@@ -2153,7 +2153,7 @@ class CheckOptions {
       cippTenantId: this.elements.cippTenantId,
       customRulesUrl: this.elements.customRulesUrl,
       updateInterval: this.elements.updateInterval,
-      urlWhitelist: this.elements.urlWhitelist,
+      urlAllowlist: this.elements.urlAllowlist,
       enableDebugLogging: this.elements.enableDebugLogging,
       // Note: enableDeveloperConsoleLogging is excluded - should remain available for debugging
       // Branding fields (if customBranding policy is present)
