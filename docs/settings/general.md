@@ -14,6 +14,10 @@ This is Check's main job - blocking dangerous websites. When this is turned on (
 
 CIPP is a system that IT professionals use to monitor security across multiple organizations. Enabling the CIPP monitoring allows you to send the information from Check directly to CIPP, thus allowing you to alert and report on what's going on with your endpoints. When enabled, you would configure the CIPP Server URL and Tenant ID/Domain below.
 
+{% hint style="info" %}
+Currently, CIPP displays these alerts in the logbook. Future updates to CIPP are planned to provide additional functionality. Keep an eye on the CIPP release notes for more updates!
+{% endhint %}
+
 ### User Interface
 
 #### **Show Notifications**&#x20;
