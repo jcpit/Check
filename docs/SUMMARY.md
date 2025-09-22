@@ -21,3 +21,7 @@
 ## Advanced
 
 * [Creating Detection Rules](advanced/creating-detection-rules.md)
+
+## Troubleshooting
+
+* [Common Issues](troubleshooting/common-issues.md)
