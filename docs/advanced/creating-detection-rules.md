@@ -19,10 +19,10 @@ Contributions to our rules can be done via [https://github.com/CyberDrain/Check/
 
 Rules are managed by the [`DetectionRulesManager`](https://github.com/CyberDrain/Check/blob/main/scripts/modules/detection-rules-manager.js) class. It's job is to:
 
-- Load rules at extension startup
-- Check for updates based on the configured interval (default: 24 hours)
-- Cache rules locally in browser storage for offline use
-- Fall back to local rules ([`rules/detection-rules.json`](https://github.com/CyberDrain/Check/blob/main/rules/detection-rules.json)) if remote fetch fails
+* Load rules at extension startup
+* Check for updates based on the configured interval (default: 24 hours)
+* Cache rules locally in browser storage for offline use
+* Fall back to local rules ([`rules/detection-rules.json`](https://github.com/CyberDrain/Check/blob/main/rules/detection-rules.json)) if remote fetch fails
 
 **Update Process:**
 
