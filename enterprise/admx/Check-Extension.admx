@@ -131,6 +131,15 @@
       </elements>
     </policy>
 
+    <!-- URL Allowlist -->
+    <policy name="CheckUrlAllowlist" class="Machine" displayName="$(string.CheckUrlAllowlist)" explainText="$(string.CheckUrlAllowlist_Explain)" key="SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\knepjpocdagponkonnbggpcnhnaikajg\policy" presentation="$(presentation.CheckUrlAllowlist)">
+      <parentCategory ref="CheckExtensionEdge" />
+      <supportedOn ref="SUPPORTED_WIN7" />
+      <elements>
+        <list id="UrlAllowlistList" valueName="urlAllowlist" />
+      </elements>
+    </policy>
+
     <!-- Company Name -->
     <policy name="CheckCompanyName" class="Machine" displayName="$(string.CheckCompanyName)" explainText="$(string.CheckCompanyName_Explain)" key="SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\knepjpocdagponkonnbggpcnhnaikajg\policy\customBranding" presentation="$(presentation.CheckCompanyName)">
       <parentCategory ref="CheckExtensionEdge" />
@@ -294,6 +303,15 @@
       <supportedOn ref="SUPPORTED_WIN7" />
       <elements>
         <decimal id="UpdateIntervalChrome" valueName="updateInterval" minValue="1" maxValue="168" />
+      </elements>
+    </policy>
+
+    <!-- URL Allowlist - Chrome -->
+    <policy name="CheckUrlAllowlistChrome" class="Machine" displayName="$(string.CheckUrlAllowlistChrome)" explainText="$(string.CheckUrlAllowlistChrome_Explain)" key="SOFTWARE\Policies\Google\Chrome\3rdparty\extensions\benimdeioplgkhanklclahllklceahbe\policy" presentation="$(presentation.CheckUrlAllowlistChrome)">
+      <parentCategory ref="CheckExtensionChrome" />
+      <supportedOn ref="SUPPORTED_WIN7" />
+      <elements>
+        <list id="UrlAllowlistListChrome" valueName="urlAllowlist" />
       </elements>
     </policy>
 

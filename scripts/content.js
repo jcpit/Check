@@ -1919,21 +1919,102 @@ if (window.checkExtensionLoaded) {
 
   /**
    * Check if domain should be excluded from phishing detection
+   * Now includes both detection rules exclusions AND user-configured URL allowlist
    */
   function checkDomainExclusion(url) {
-    if (!detectionRules?.exclusion_system?.domain_patterns) {
-      return false;
-    }
+    if (detectionRules?.exclusion_system?.domain_patterns) {
+      const rulesExcluded =
+        detectionRules.exclusion_system.domain_patterns.some((pattern) => {
+          try {
+            const regex = new RegExp(pattern, "i");
+            return regex.test(url);
+          } catch (error) {
+            logger.warn(`Invalid exclusion pattern: ${pattern}`);
+            return false;
+          }
+        });
 
-    return detectionRules.exclusion_system.domain_patterns.some((pattern) => {
-      try {
-        const regex = new RegExp(pattern, "i");
-        return regex.test(url);
-      } catch (error) {
-        logger.warn(`Invalid exclusion pattern: ${pattern}`);
+      if (rulesExcluded) {
+        logger.log(`✅ URL excluded by detection rules: ${url}`);
+        return true;
+      }
+    }
+    return checkUserUrlAllowlist(url);
+  }
+
+  /**
+   * Check if URL matches user-configured allowlist patterns
+   */
+  function checkUserUrlAllowlist(url) {
+    try {
+      // Get URL allowlist from current config (loaded from storage)
+      if (!window.checkUserConfig?.urlAllowlist) {
         return false;
       }
-    });
+
+      const urlAllowlist = window.checkUserConfig.urlAllowlist;
+      if (!Array.isArray(urlAllowlist) || urlAllowlist.length === 0) {
+        return false;
+      }
+
+      // Test URL against each allowlist pattern
+      for (const pattern of urlAllowlist) {
+        if (!pattern || !pattern.trim()) continue;
+
+        try {
+          // Convert URL pattern to regex if needed (same logic as options.js)
+          const regexPattern = urlPatternToRegex(pattern.trim());
+          const regex = new RegExp(regexPattern, "i");
+
+          if (regex.test(url)) {
+            logger.log(
+              `✅ URL allowlisted by user pattern "${pattern}": ${url}`
+            );
+            return true;
+          }
+        } catch (error) {
+          logger.warn(`Invalid URL allowlist pattern: ${pattern}`, error);
+        }
+      }
+
+      return false;
+    } catch (error) {
+      logger.warn("Error checking user URL allowlist:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Convert URL pattern with wildcards to regex (same logic as options.js)
+   */
+  function urlPatternToRegex(pattern) {
+    // If it's already a regex pattern (starts with ^ or contains regex chars), return as-is
+    if (
+      pattern.startsWith("^") ||
+      pattern.includes("\\") ||
+      pattern.includes("[") ||
+      pattern.includes("(")
+    ) {
+      return pattern;
+    }
+
+    // Escape special regex characters except *
+    let escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
+
+    // Convert * to .* for wildcard matching
+    escaped = escaped.replace(/\*/g, ".*");
+
+    // Ensure it matches from the beginning
+    if (!escaped.startsWith("^")) {
+      escaped = "^" + escaped;
+    }
+
+    // Add end anchor if pattern doesn't end with wildcard
+    if (!pattern.endsWith("*") && !escaped.endsWith(".*")) {
+      escaped = escaped + "$";
+    }
+
+    return escaped;
   }
 
   /**
@@ -2255,12 +2336,41 @@ if (window.checkExtensionLoaded) {
         } chars content`
       );
 
-      // Load configuration to check protection settings
+      // Load configuration to check protection settings and URL allowlist
       const config = await new Promise((resolve) => {
         chrome.storage.local.get(["config"], (result) => {
           resolve(result.config || {});
         });
       });
+
+      // Store config globally for URL allowlist checking
+      window.checkUserConfig = config;
+
+      // Early exit if URL is in user allowlist (before any other checks)
+      if (checkUserUrlAllowlist(window.location.href)) {
+        logger.log(
+          `✅ URL ALLOWLISTED BY USER - No scanning needed, exiting immediately`
+        );
+        logger.log(
+          `📋 URL matches user allowlist pattern: ${window.location.href}`
+        );
+
+        // Log as legitimate access for allowlisted URLs (only on first run)
+        if (!isRerun) {
+          logProtectionEvent({
+            type: "legitimate_access",
+            url: location.href,
+            origin: location.origin,
+            reason: "URL matches user-configured allowlist pattern",
+            redirectTo: null,
+            clientId: null,
+            clientSuspicious: false,
+            clientReason: null,
+          });
+        }
+
+        return; // EXIT IMMEDIATELY - can't be phishing on user-allowlisted URL
+      }
 
       // Check if page blocking is disabled
       const protectionEnabled = config.enablePageBlocking !== false;

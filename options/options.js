@@ -56,6 +56,7 @@ class CheckOptions {
     // Detection settings
     this.elements.customRulesUrl = document.getElementById("customRulesUrl");
     this.elements.updateInterval = document.getElementById("updateInterval");
+    this.elements.urlAllowlist = document.getElementById("urlAllowlist");
     this.elements.refreshDetectionRules = document.getElementById(
       "refreshDetectionRules"
     );
@@ -891,6 +892,14 @@ class CheckOptions {
       this.config?.customRulesUrl ||
       "";
 
+    // URL Allowlist settings
+    if (this.elements.urlAllowlist) {
+      const allowlist = this.config?.urlAllowlist || [];
+      this.elements.urlAllowlist.value = Array.isArray(allowlist)
+        ? allowlist.join('\n')
+        : (allowlist || '');
+    }
+
     // Handle updateInterval - ensure we always show hours in the UI
     let updateIntervalHours = 24; // default
     if (this.config?.updateInterval) {
@@ -1106,6 +1115,11 @@ class CheckOptions {
       // Detection settings
       customRulesUrl: this.elements.customRulesUrl?.value || "",
       updateInterval: parseInt(this.elements.updateInterval?.value || 24),
+      
+      // URL Allowlist settings
+      urlAllowlist: this.elements.urlAllowlist?.value
+        ? this.elements.urlAllowlist.value.split('\n').filter(line => line.trim())
+        : [],
 
       // Debug logging setting
       enableDebugLogging: this.elements.enableDebugLogging?.checked || false,
@@ -1159,6 +1173,21 @@ class CheckOptions {
       return { valid: false, message: "Custom rules URL is not valid" };
     }
 
+    // URL Allowlist validation
+    if (config.urlAllowlist && Array.isArray(config.urlAllowlist)) {
+      for (const pattern of config.urlAllowlist) {
+        if (pattern.trim()) {
+          const validationResult = this.validateUrlPattern(pattern.trim());
+          if (!validationResult.valid) {
+            return {
+              valid: false,
+              message: `Invalid pattern in URL allowlist: "${pattern.trim()}" - ${validationResult.error}`
+            };
+          }
+        }
+      }
+    }
+
     return { valid: true };
   }
 
@@ -1168,6 +1197,39 @@ class CheckOptions {
       return true;
     } catch (_) {
       return false;
+    }
+  }
+
+  // Convert URL pattern with wildcards to regex
+  urlPatternToRegex(pattern) {
+    // If it's already a regex pattern (starts with ^ or contains regex chars), return as-is
+    if (pattern.startsWith('^') || pattern.includes('\\') || pattern.includes('[') || pattern.includes('(')) {
+      return pattern;
+    }
+    // Escape special regex characters except *
+    let escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+    // Convert * to .* for wildcard matching
+    escaped = escaped.replace(/\*/g, '.*');
+    // Ensure it matches from the beginning
+    if (!escaped.startsWith('^')) {
+      escaped = '^' + escaped;
+    }
+    // Add end anchor if pattern doesn't end with wildcard
+    if (!pattern.endsWith('*') && !escaped.endsWith('.*')) {
+      escaped = escaped + '$';
+    }
+    return escaped;
+  }
+
+  // Validate URL pattern (either URL with wildcards or regex)
+  validateUrlPattern(pattern) {
+    try {
+      // Try to convert to regex and test it
+      const regexPattern = this.urlPatternToRegex(pattern);
+      new RegExp(regexPattern);
+      return { valid: true };
+    } catch (error) {
+      return { valid: false, error: error.message };
     }
   }
 
@@ -2408,6 +2470,7 @@ class CheckOptions {
       cippTenantId: this.elements.cippTenantId,
       customRulesUrl: this.elements.customRulesUrl,
       updateInterval: this.elements.updateInterval,
+      urlAllowlist: this.elements.urlAllowlist,
       enableDebugLogging: this.elements.enableDebugLogging,
       // Note: enableDeveloperConsoleLogging is excluded - should remain available for debugging
       // Branding fields (if customBranding policy is present)
