@@ -4029,6 +4029,62 @@ if (window.checkExtensionLoaded) {
         });
       }
 
+      // Extract phishing indicators using the same comprehensive logic as blocked.js
+      const extractPhishingIndicators = (details) => {
+        if (!details) return "Unknown detection criteria";
+
+        // Try to extract phishing indicators from various possible fields
+        // This matches the exact logic from blocked.js openMailto function
+        if (details.phishingIndicators && Array.isArray(details.phishingIndicators)) {
+          return details.phishingIndicators
+            .map(indicator => `- ${indicator.id || indicator.name || "Unknown"}: ${indicator.description || indicator.reason || "Detected"}`)
+            .join("\n");
+        } else if (details.matchedRules && Array.isArray(details.matchedRules)) {
+          return details.matchedRules
+            .map(rule => `- ${rule.id || rule.name || "Unknown"}: ${rule.description || rule.reason || "Rule matched"}`)
+            .join("\n");
+        } else if (details.threats && Array.isArray(details.threats)) {
+          // Filter out the summary threat and show only specific indicators
+          const specificThreats = details.threats.filter((threat, index) => {
+            // Skip first threat if it's a summary (contains "legitimacy score" or is a general threat type)
+            // Keep threats with specific IDs (phishing rules)
+            if (threat.id && threat.id.startsWith("phi_")) {
+              return true;
+            }
+            // Keep threats with specific types that aren't summary types
+            if (threat.type && !threat.type.includes("threat") && threat.description) {
+              return true;
+            }
+            // Keep anything else that looks like a specific threat
+            return (threat.description && threat.description.length > 10 && threat.id);
+          });
+          return specificThreats
+            .map(threat => `- ${threat.type || threat.category || threat.id || "Phishing Indicator"}: ${threat.description || threat.reason || "Threat detected"}`)
+            .join("\n");
+        } else if (details.foundThreats && Array.isArray(details.foundThreats)) {
+          return details.foundThreats
+            .map(threat => `- ${threat.id || threat}: ${threat.description || "Detected"}`)
+            .join("\n");
+        } else if (details.indicators && Array.isArray(details.indicators)) {
+          return details.indicators
+            .map(indicator => `- ${indicator.id}: ${indicator.description || indicator.id} (${indicator.severity || "unknown"})`)
+            .join("\n");
+        } else if (details.foundIndicators && Array.isArray(details.foundIndicators)) {
+          return details.foundIndicators
+            .map(indicator => `- ${indicator.id || indicator}: ${indicator.description || ""}`)
+            .join("\n");
+        } else {
+          // Fallback: Look for any array properties that might contain indicators
+          const arrayProps = Object.keys(details).filter(key => Array.isArray(details[key]) && details[key].length > 0);
+          
+          if (arrayProps.length > 0) {
+            return `Multiple indicators detected (${details.reason || "see browser console for details"})`;
+          } else {
+            return `${details.reason || "Unknown detection criteria"}`;
+          }
+        }
+      };
+
       // We'll render immediately, and then (if async branding arrives) update inline
       const applyBranding = (bannerEl, branding) => {
         if (!bannerEl) return;
@@ -4084,15 +4140,14 @@ if (window.checkExtensionLoaded) {
 
                   // Dynamically enrich body at click time while allowing default navigation
                   // Build structured email body similar to blocked page format, adapted for clean/safe report
+                  // Use the same comprehensive indicator extraction logic as blocked.js
                   let indicatorsText = 'Not available';
                   try {
-                    if (analysisData && Array.isArray(analysisData.threats) && analysisData.threats.length) {
-                      const mapped = analysisData.threats
-                        .filter(t => (t.description || t.reason))
-                        .map(t => `- ${(t.id || t.type || 'Indicator')}: ${t.description || t.reason || ''}`);
-                      if (mapped.length) indicatorsText = mapped.join('\n');
-                    }
-                  } catch(_) {}
+                    indicatorsText = extractPhishingIndicators(analysisData);
+                  } catch(error) {
+                    console.error("Failed to extract phishing indicators:", error);
+                    indicatorsText = "Parse error - check browser console";
+                  }
 
                   const detectionScoreLine = analysisData?.score !== undefined
                     ? `Detection Score: ${analysisData.score}/${analysisData.threshold}`
@@ -4199,7 +4254,7 @@ if (window.checkExtensionLoaded) {
       text-align: center !important;
     `;
 
-  banner.innerHTML = bannerContent;
+      banner.innerHTML = bannerContent;
       document.body.appendChild(banner);
 
       // Apply branding once available
