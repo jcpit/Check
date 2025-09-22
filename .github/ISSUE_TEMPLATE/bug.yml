@@ -1,0 +1,80 @@
+name: "🐞 Bug report"
+description: "Report errors or unexpected behaviors for Check"
+title: "[Bug]: " 
+labels:
+  - "unconfirmed-by-user"
+  - "bug"
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Thank you for taking the time to report a potential bug for Check!**
+
+        Please follow the instructions below and provide as much detail as possible to help us understand and reproduce the issue.
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: "Required confirmations before submitting"
+      description: "Please check all boxes that apply."
+      options:
+        - label: "**I can reproduce this issue on the latest released version** of Check."
+          required: true
+        - label: "**I have searched existing issues** (both open and closed) to avoid duplicates."
+          required: true
+        - label: "I am **not** requesting general support; this is an actual bug report."
+          required: true
+
+  # 3) Description / Steps to reproduce
+  - type: textarea
+    id: description
+    attributes:
+      label: "Issue Description"
+      description: |
+        **Describe the issue clearly and provide step-by-step instructions to reproduce it.**  
+        Screenshots can be attached by pasting them here.
+
+        Example steps to reproduce:
+        1. Go to {legitimate page URL}  
+        2. Wait for Check processing/scanning  
+        3. Observe the blockage on the legitimate page  
+        4. See `phi_007` as the detected blocking indicator
+    validations:
+      required: true
+
+  # 4) Extension / Rules versions
+  - type: input
+    id: extension_version
+    attributes:
+      label: "Extension Version"
+      description: "Please specify the extension version number (e.g., v1.2.3)."
+    validations:
+      required: true
+
+  - type: input
+    id: rules_version
+    attributes:
+      label: "Rules Version"
+      description: "Please specify the rules version number (e.g., v1.2.3)."
+    validations:
+      required: true
+
+  # 6) Additional logs or trace (optional)
+  - type: textarea
+    id: logs
+    attributes:
+      label: "Relevant Logs / Stack Trace"
+      description: |
+        If available, please share any relevant logs or stack trace data.
+        Remove or redact any sensitive info before posting.
+      render: plaintext
+    validations:
+      required: false
+
+  # 7) Closing note
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for your submission! A maintainer will review your report.  
+        Please watch the issue for follow-up questions or status updates.
