@@ -21,7 +21,7 @@ This field allows you to specify a custom URL for fetching detection rules. Leav
 **For organizations with custom security rules:**
 
 1. Enter your organization's custom rules URL (provided by IT)
-2. Custom rules, including allow lists, can be created via [creating-detection-rules.md](../advanced/creating-detection-rules.md "mention").
+2. Custom rules, including allow lists, can be created using [creating-detection-rules.md](../advanced/creating-detection-rules.md "mention").
 
 ### **Update Interval (hours)**
 
