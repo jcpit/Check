@@ -2,12 +2,12 @@
 
 The extension uses a rule-driven architecture where all detection logic is defined in [`rules/detection-rules.json`](https://github.com/CyberDrain/Check/blob/main/rules/detection-rules.json). This file contains:
 
-- **Trusted domain patterns** - Microsoft domains that are always trusted
-- **Exclusion system** - Domains that should never be scanned
-- **Phishing indicators** - Patterns that detect malicious content
-- **Detection requirements** - Elements that identify Microsoft 365 login pages
-- **Blocking rules** - Conditions that immediately block pages
-- **Rogue apps detection** - Dynamic detection of known malicious OAuth applications
+* **Trusted domain patterns** - Microsoft domains that are always trusted
+* **Exclusion system** - Domains that should never be scanned
+* **Phishing indicators** - Patterns that detect malicious content
+* **Detection requirements** - Elements that identify Microsoft 365 login pages
+* **Blocking rules** - Conditions that immediately block pages
+* **Rogue apps detection** - Dynamic detection of known malicious OAuth applications
 
 Each of these rules has their own schema. You can create a custom rules file and host it anywhere publicly (e.g. your own fork of Check's GitHub repo, as an Azure Blob file, etc.). By default, Check loads the CyberDrain rule set from our repository every 24 hours (configurable). Custom rules URLs must be CORS-accessible and return valid JSON matching the schema.
 
@@ -54,10 +54,10 @@ To exclude domains from all scanning (complete bypass), add them to the `exclusi
 
 Use regex patterns that match the full URL:
 
-- `^https://` - Must start with HTTPS
-- `[^/]*` - Match any subdomain
-- `\\.` - Escaped dot for literal dot matching
-- `(/.*)?$` - Optional path at the end
+* `^https://` - Must start with HTTPS
+* `[^/]*` - Match any subdomain
+* `\\.` - Escaped dot for literal dot matching
+* `(/.*)?$` - Optional path at the end
 
 ### Trusted Domains
 
@@ -87,20 +87,20 @@ These domains get immediate trusted status with valid badges:
 
 ### Pattern Properties
 
-- **id**: Unique identifier for the rule
-- **pattern**: Regex pattern to match against page content
-- **flags**: Regex flags (`i` for case-insensitive)
-- **severity**: `critical`, `high`, `medium`, `low`
-- **action**: `block`, `warn`, `monitor`
-- **category**: Grouping category for the rule
-- **confidence**: Confidence level (0.0 to 1.0)
+* **id**: Unique identifier for the rule
+* **pattern**: Regex pattern to match against page content
+* **flags**: Regex flags (`i` for case-insensitive)
+* **severity**: `critical`, `high`, `medium`, `low`
+* **action**: `block`, `warn`, `monitor`
+* **category**: Grouping category for the rule
+* **confidence**: Confidence level (0.0 to 1.0)
 
 ### Severity Levels
 
-- **Critical** (25 points): Immediate blocking threats
-- **High** (15 points): Serious threats requiring attention
-- **Medium** (10 points): Moderate threats for warnings
-- **Low** (5 points): Minor suspicious indicators
+* **Critical** (25 points): Immediate blocking threats
+* **High** (15 points): Serious threats requiring attention
+* **Medium** (10 points): Moderate threats for warnings
+* **Low** (5 points): Minor suspicious indicators
 
 ### Context Requirements
 
@@ -145,19 +145,19 @@ Configure what elements identify a legitimate Microsoft 365 login page:
 
 ### Element Types
 
-- **source_content**: Match against page HTML source
-- **css_pattern**: Match against CSS styles
-- **url_pattern**: Match against the URL
-- **text_content**: Match against visible text
+* **source_content**: Match against page HTML source
+* **css_pattern**: Match against CSS styles
+* **url_pattern**: Match against the URL
+* **text_content**: Match against visible text
 
 ## Rogue Apps Detection
 
 Check includes dynamic detection of known rogue OAuth applications that attempt to steal Microsoft 365 credentials. This feature:
 
-- Automatically fetches the latest list of rogue apps from the [Huntress Labs repository](https://github.com/huntresslabs/rogueapps)
-- Updates every 12 hours by default (configurable in `rogue_apps_detection` section)
-- Warns users when they encounter known malicious OAuth applications
-- Caches data locally for offline protection
+* Automatically fetches the latest list of rogue apps from the [Huntress Labs repository](https://github.com/huntresslabs/rogueapps)
+* Updates every 12 hours by default (configurable in `rogue_apps_detection` section)
+* Warns users when they encounter known malicious OAuth applications
+* Caches data locally for offline protection
 
 The rogue apps detection is configured in the `rogue_apps_detection` section of the detection rules:
 
