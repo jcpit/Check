@@ -33,10 +33,31 @@ Controls how often Check fetches updated detection rules. The default is 24 hour
 
 ### **URL Allowlist (Regex or URL with wildcards)**
 
-Add URLs or patterns that should be excluded from phishing detection. This is useful for internal company sites or trusted third-party services that might trigger false positives. You can use:
+{% hint style="info" %}
+**Need to allowlist a phishing training service?**
+
+MSPs and IT departments commonly need to exclude phishing training platforms (like KnowBe4, Proofpoint, etc.) from detection. Check [Advanced → Creating Detection Rules](../advanced/creating-detection-rules.md#exclusions) for technical details.
+{% endhint %}
+
+Add URLs or patterns that should be excluded from phishing detection. This is useful for internal company sites or trusted third-party services that might trigger false positives.
+
+**How it works:** Your allowlist patterns are **added to** (not replacing) the default CyberDrain exclusions, providing additional protection without losing baseline coverage.
+
+You can use:
 
 - **Simple URLs with wildcards:** `https://google.com/*` or `https://*.microsoft.com/*`
 - **Advanced regex patterns:** `^https://trusted\.example\.com/.*`
+
+**Copy-paste examples (based on existing default exclusions):**
+
+```
+https://*.google.com/*
+https://*.auth0.com/*
+https://*.amazon.com/*
+https://*.facebook.com/*
+https://training.your-company.com/*
+https://*.internal-domain.com/*
+```
 
 Enter one pattern per line. These patterns are added to the exclusion rules without replacing the entire ruleset from your Config URL.
 

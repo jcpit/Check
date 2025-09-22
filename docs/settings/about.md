@@ -41,5 +41,5 @@ The About section provides quick access to essential resources:
 
 ### Development and Support
 
-- **GitHub Repository** - View source code, report issues, and contribute to the project
-- **CyberDrain Website** - Learn more about CyberDrain's solutions and services
+- **[GitHub Repository](https://github.com/CyberDrain/Check)** - View source code, report issues, and contribute to the project
+- **[CyberDrain Website](https://cyberdrain.com)** - Learn more about CyberDrain's solutions and services

@@ -103,7 +103,7 @@ You tried to log into Office 365 but got blocked. Looking at logs:​Timestamp: 
 1. Check "Enable Debug Logging"
 2. Reproduce the problem
 3. Export logs (see below)
-4. Send logs to support
+4. Send logs to support (see [Common Issues](../troubleshooting/common-issues.md) for additional troubleshooting steps)
 5. Uncheck debug logging when done (saves storage space)
 
 **For admins wanting to simulate end-user experience**
@@ -147,7 +147,7 @@ You tried to log into Office 365 but got blocked. Looking at logs:​Timestamp: 
 2. Go to Activity Logs
 3. Look for "Threat Blocked" entries around that time
 4. Click the entry to see why it was blocked
-5. If you think it was blocked incorrectly, contact support with the log details
+5. If you think it was blocked incorrectly, contact support with the log details or check [Common Issues](../troubleshooting/common-issues.md) for known problems
 
 **Scenario 3: Preparing for support**
 
@@ -155,4 +155,4 @@ You tried to log into Office 365 but got blocked. Looking at logs:​Timestamp: 
 2. Try to reproduce the problem
 3. Export logs immediately after the problem occurs
 4. Disable debug logging
-5. Send the exported file to support
+5. Send the exported file to support or check [Common Issues](../troubleshooting/common-issues.md) first
