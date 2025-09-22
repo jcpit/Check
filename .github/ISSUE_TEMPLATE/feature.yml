@@ -1,0 +1,70 @@
+name: "✨ Feature request"
+description: "Suggest a new feature or improvement"
+title: "[Feature Request]: "
+labels:
+  - "enhancement"
+  - "no-priority"
+
+body:
+  # Introductory Markdown
+  - type: markdown
+    attributes:
+      value: |
+        **Thank you for suggesting a new feature or improvement for CIPP**
+
+        Before creating a request, please:
+
+        1. Search existing **open and closed** feature requests to avoid duplicates.
+        2. Note that **repeat feature requests** are permitted if a previous request was closed more than 30 days ago.
+        3. Consider implementing the feature yourself by reviewing the [contribution guidelines](./CyberDrain/Check/blob/main/CONTRIBUTING.md).
+        4. Feature requests that lack sufficient detail or feasibility may be closed at any time.
+        5. **This request will auto-close in 14 days** if no meaningful progress or collaboration occurs.
+        6. If you would like to work on this feature, comment `"I'd like to work on this please!"`
+        7. Any request that is detrimental to security or the product's stability will be closed without notice.
+
+  # Checkboxes for Confirmations
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: "Please confirm:"
+      description: "Check all boxes that apply."
+      options:
+        - label: "**I have searched existing feature requests** (open and closed) and found no duplicates."
+          required: true
+
+  - type: textarea
+    id: problem-statement
+    attributes:
+      label: "Problem Statement"
+      description: |
+        **What problem does this feature solve or what gap does it fill?**  
+        Provide a concise explanation. For example:
+        - "When I browse to a site built with {x} phishing kit, it is not detected by Check. Please add this detection to the ruleset."
+        - "I am unable to set my branding on the 'About' page in the dashboard. Please allow us to add our own logo and links."
+    validations:
+      required: true
+
+  # Field 2: Benefits for MSPs
+  - type: textarea
+    id: msp-benefits
+    attributes:
+      label: "Benefits for MSPs"
+      description: |
+        **How would this feature help MSPs increase their browsers' protection against phishing?**  
+        - Does it reduce manual work?  
+        - Does it improve the customizability of the extension?  
+        - Does it fill a coverage gap previously unaddressed?
+    validations:
+      required: true
+
+  # Field 3: Value or Importance
+  - type: textarea
+    id: feature-value
+    attributes:
+      label: "Value or Importance"
+      description: |
+        **Why is this feature particularly valuable or important to add?**  
+        - If it's critical, explain why.  
+        - If it's optional or nice-to-have, describe how it still adds notable value.
+    validations:
+      required: true
