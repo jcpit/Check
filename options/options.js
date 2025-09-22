@@ -2017,7 +2017,7 @@ class CheckOptions {
           // Custom branding (matches managed_schema.json structure)
           customBranding: {
             companyName: "CyberDrain",
-			CompanyURL: "https://cyberdrain.com/",
+			companyURL: "https://cyberdrain.com/",
             productName: "Check Enterprise",
             primaryColor: "#F77F00",
             logoUrl:
