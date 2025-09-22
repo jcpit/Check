@@ -1,19 +1,58 @@
 # Activity Logs
 
-## Activity Logs
+## Controls and Configuration
 
 The Activity Logs show you everything Check has been doing to protect you. Here's how to use this information effectively.
 
-#### Reading Your Logs <a href="#reading-your-logs" id="reading-your-logs"></a>
+## Debug and Developer Settings
+
+### **Enable Debug Logging**
+
+When enabled, Check logs additional detail about page scans, rule evaluations, and internal operations. By default, Check only logs blocked pages and security events. Enable debug logging when:
+
+- Troubleshooting detection issues
+- Working with support to diagnose problems
+- Investigating false positives or missed detections
+
+**Important:** Debug logging increases storage usage and should be disabled after troubleshooting.
+
+### **Developer Mode**
+
+Enables additional console logging visible in the browser's Developer Tools. This provides real-time information about Check's operations for advanced troubleshooting.
+
+### **Simulate Enterprise Policy Mode (Dev Only)**
+
+This development-only feature simulates how the extension behaves when managed by enterprise policies. Useful for administrators testing policy deployments or understanding the end-user experience under policy management.
+
+## Log Filtering and Management
+
+### **Event Type Filter**
+
+Filter logs by event type to focus on specific activities:
+
+- **All Events** - Shows everything Check has logged
+- **Security Events** - Threats detected, pages blocked, warnings issued
+- **URL Access** - Pages Check has analyzed (requires debug logging)
+- **Threats Detected** - Only shows actual threats found and blocked
+- **Page Scans** - Detailed scanning activity (requires debug logging)
+- **Debug Events** - Internal operations and detailed analysis (requires debug logging)
+
+### **Log Actions**
+
+- **Refresh** - Reload the current logs from storage
+- **Clear Logs** - Permanently delete all stored logs (cannot be undone)
+- **Export Logs** - Download logs as a JSON file for support or analysis
+
+## Reading Your Logs <a href="#reading-your-logs" id="reading-your-logs"></a>
 
 When you open the Activity Logs section, you'll see a table with recent activity. Here's what each column means:
 
-* **Timestamp** - When the event happened
-* **Event Type** - What kind of activity (like "Threat Blocked" or "Page Scanned")
-* **URL/Domain** - Which website was involved
-* **Threat Level** - How dangerous it was (None, Low, Medium, High, Critical)
-* **Action Taken** - What Check did about it
-* **Details** - A summary of what happened
+- **Timestamp** - When the event happened
+- **Event Type** - What kind of activity (like "Threat Blocked" or "Page Scanned")
+- **URL/Domain** - Which website was involved
+- **Threat Level** - How dangerous it was (None, Low, Medium, High, Critical)
+- **Action Taken** - What Check did about it
+- **Details** - A summary of what happened
 
 Additionally, clicking on a row will allow you to review detailed information on the event and the criteria used to make the threat level determination.
 
@@ -21,24 +60,24 @@ Additionally, clicking on a row will allow you to review detailed information on
 By default, Check only logs blocked pages. If you want to show valid login pages, check `Enable Debug Logging.`
 {% endhint %}
 
-#### Understanding Common Log Entries <a href="#understanding-common-log-entries" id="understanding-common-log-entries"></a>
+### Understanding Common Log Entries <a href="#understanding-common-log-entries" id="understanding-common-log-entries"></a>
 
 **"Page Scanned" with Threat Level "None"**
 
-* This is normal - Check scanned a page and found it safe
-* You'll see lots of these for legitimate websites
+- This is normal - Check scanned a page and found it safe
+- You'll see lots of these for legitimate websites
 
 **"Threat Blocked" with Threat Level "High"**
 
-* Check found a dangerous page and blocked it
-* This is Check protecting you from a real threat
+- Check found a dangerous page and blocked it
+- This is Check protecting you from a real threat
 
 **"Legitimate Access" with Threat Level "None"**
 
-* Check verified this was a real Microsoft login page
-* You can trust this page with your credentials
+- Check verified this was a real Microsoft login page
+- You can trust this page with your credentials
 
-#### Investigating Suspicious Activity <a href="#investigating-suspicious-activity" id="investigating-suspicious-activity"></a>
+### Investigating Suspicious Activity <a href="#investigating-suspicious-activity" id="investigating-suspicious-activity"></a>
 
 If you think something suspicious happened:
 
@@ -51,13 +90,13 @@ If you think something suspicious happened:
 
 You tried to log into Office 365 but got blocked. Looking at logs:​Timestamp: 2024-01-15 14:30:22Event Type: Threat BlockedURL: office365-login-secure.com (suspicious domain)Threat Level: HighDetails: Phishing page impersonating Microsoft loginThis shows Check correctly blocked a fake Office 365 page.
 
-#### Configuring Log Detail Level <a href="#configuring-log-detail-level" id="configuring-log-detail-level"></a>
+### Configuring Log Detail Level <a href="#configuring-log-detail-level" id="configuring-log-detail-level"></a>
 
 **For regular users:**
 
-* Leave "Enable Debug Logging" unchecked
-* Leave "Enable Developer Console Logging" unchecked
-* Leave "Simulate Enteprise Policy Mode (Dev Only)" unchecked
+- Leave "Enable Debug Logging" unchecked
+- Leave "Enable Developer Console Logging" unchecked
+- Leave "Simulate Enteprise Policy Mode (Dev Only)" unchecked
 
 **For troubleshooting or working with support:**
 
@@ -73,12 +112,12 @@ You tried to log into Office 365 but got blocked. Looking at logs:​Timestamp: 
 2. Review behavior, investigate setting, grab screenshots for documentation, etc.
 3. Uncheck the setting when done and refresh the page to return to normal operations
 
-#### Managing Your Log Data <a href="#managing-your-log-data" id="managing-your-log-data"></a>
+### Managing Your Log Data <a href="#managing-your-log-data" id="managing-your-log-data"></a>
 
 **Refreshing Logs:**
 
-* Click "Refresh" to see the latest activity
-* Useful if you just experienced a security event
+- Click "Refresh" to see the latest activity
+- Useful if you just experienced a security event
 
 **Clearing Old Logs:**
 
@@ -93,7 +132,7 @@ You tried to log into Office 365 but got blocked. Looking at logs:​Timestamp: 
 3. The file will be named like `check-logs-2024-01-15.json`
 4. Send this file to support when reporting issues
 
-#### Real-World Scenarios <a href="#real-world-scenarios" id="real-world-scenarios"></a>
+### Real-World Scenarios <a href="#real-world-scenarios" id="real-world-scenarios"></a>
 
 **Scenario 1: Checking if Check is working**
 

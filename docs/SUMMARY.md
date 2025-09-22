@@ -17,6 +17,7 @@
 * [Detection Rules](settings/detection-rules.md)
 * [Activity Logs](settings/activity-logs.md)
 * [Branding](settings/branding.md)
+* [About](settings/about.md)
 
 ## Advanced
 
