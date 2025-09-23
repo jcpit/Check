@@ -295,7 +295,7 @@ class CheckBackground {
 
     // CyberDrain integration
     this.policy = null;
-    this.extraWhitelist = new Set();
+    this.extraAllowlist = new Set();
     this.tabHeaders = new Map();
     this.HEADER_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
     this.MAX_HEADER_CACHE_ENTRIES = 100;
@@ -454,7 +454,7 @@ class CheckBackground {
     return {
       BrandingName: "CyberDrain Check Phishing Protection",
       BrandingImage: "",
-      ExtraWhitelist: [],
+      ExtraAllowlist: [],
       CIPPReportingServer: "",
       AlertWhenLogon: true,
       ValidPageBadgeImage: "",
@@ -470,8 +470,8 @@ class CheckBackground {
       // Load policy from policy manager
       const policyData = await this.policyManager.getPolicies();
       this.policy = policyData || this.getDefaultPolicy();
-      this.extraWhitelist = new Set(
-        (this.policy?.ExtraWhitelist || [])
+      this.extraAllowlist = new Set(
+        (this.policy?.ExtraAllowlist || [])
           .map((s) => this.urlOrigin(s))
           .filter(Boolean)
       );
@@ -482,7 +482,7 @@ class CheckBackground {
         error
       );
       this.policy = this.getDefaultPolicy();
-      this.extraWhitelist = new Set();
+      this.extraAllowlist = new Set();
     }
   }
 
@@ -506,7 +506,7 @@ class CheckBackground {
         "https://account.microsoft.com",
       ]);
     if (trustedOrigins.has && trustedOrigins.has(origin)) return "trusted";
-    if (this.extraWhitelist.has(origin)) return "trusted-extra";
+    if (this.extraAllowlist.has(origin)) return "trusted-extra";
     return "not-evaluated"; // Changed from "unknown" - don't show badge until we know it's relevant
   }
 

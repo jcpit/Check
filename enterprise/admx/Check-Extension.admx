@@ -131,12 +131,12 @@
       </elements>
     </policy>
 
-    <!-- URL Whitelist -->
-    <policy name="CheckUrlWhitelist" class="Machine" displayName="$(string.CheckUrlWhitelist)" explainText="$(string.CheckUrlWhitelist_Explain)" key="SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\knepjpocdagponkonnbggpcnhnaikajg\policy" presentation="$(presentation.CheckUrlWhitelist)">
+    <!-- URL Allowlist -->
+    <policy name="CheckUrlAllowlist" class="Machine" displayName="$(string.CheckUrlAllowlist)" explainText="$(string.CheckUrlAllowlist_Explain)" key="SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\knepjpocdagponkonnbggpcnhnaikajg\policy" presentation="$(presentation.CheckUrlAllowlist)">
       <parentCategory ref="CheckExtensionEdge" />
       <supportedOn ref="SUPPORTED_WIN7" />
       <elements>
-        <list id="UrlWhitelistList" valueName="urlWhitelist" />
+        <list id="UrlAllowlistList" valueName="urlAllowlist" />
       </elements>
     </policy>
 
@@ -306,12 +306,12 @@
       </elements>
     </policy>
 
-    <!-- URL Whitelist - Chrome -->
-    <policy name="CheckUrlWhitelistChrome" class="Machine" displayName="$(string.CheckUrlWhitelistChrome)" explainText="$(string.CheckUrlWhitelistChrome_Explain)" key="SOFTWARE\Policies\Google\Chrome\3rdparty\extensions\benimdeioplgkhanklclahllklceahbe\policy" presentation="$(presentation.CheckUrlWhitelistChrome)">
+    <!-- URL Allowlist - Chrome -->
+    <policy name="CheckUrlAllowlistChrome" class="Machine" displayName="$(string.CheckUrlAllowlistChrome)" explainText="$(string.CheckUrlAllowlistChrome_Explain)" key="SOFTWARE\Policies\Google\Chrome\3rdparty\extensions\benimdeioplgkhanklclahllklceahbe\policy" presentation="$(presentation.CheckUrlAllowlistChrome)">
       <parentCategory ref="CheckExtensionChrome" />
       <supportedOn ref="SUPPORTED_WIN7" />
       <elements>
-        <list id="UrlWhitelistListChrome" valueName="urlWhitelist" />
+        <list id="UrlAllowlistListChrome" valueName="urlAllowlist" />
       </elements>
     </policy>
 

@@ -1919,7 +1919,7 @@ if (window.checkExtensionLoaded) {
 
   /**
    * Check if domain should be excluded from phishing detection
-   * Now includes both detection rules exclusions AND user-configured URL whitelist
+   * Now includes both detection rules exclusions AND user-configured URL allowlist
    */
   function checkDomainExclusion(url) {
     if (detectionRules?.exclusion_system?.domain_patterns) {
@@ -1939,26 +1939,26 @@ if (window.checkExtensionLoaded) {
         return true;
       }
     }
-    return checkUserUrlWhitelist(url);
+    return checkUserUrlAllowlist(url);
   }
 
   /**
-   * Check if URL matches user-configured whitelist patterns
+   * Check if URL matches user-configured allowlist patterns
    */
-  function checkUserUrlWhitelist(url) {
+  function checkUserUrlAllowlist(url) {
     try {
-      // Get URL whitelist from current config (loaded from storage)
-      if (!window.checkUserConfig?.urlWhitelist) {
+      // Get URL allowlist from current config (loaded from storage)
+      if (!window.checkUserConfig?.urlAllowlist) {
         return false;
       }
 
-      const urlWhitelist = window.checkUserConfig.urlWhitelist;
-      if (!Array.isArray(urlWhitelist) || urlWhitelist.length === 0) {
+      const urlAllowlist = window.checkUserConfig.urlAllowlist;
+      if (!Array.isArray(urlAllowlist) || urlAllowlist.length === 0) {
         return false;
       }
 
-      // Test URL against each whitelist pattern
-      for (const pattern of urlWhitelist) {
+      // Test URL against each allowlist pattern
+      for (const pattern of urlAllowlist) {
         if (!pattern || !pattern.trim()) continue;
 
         try {
@@ -1968,18 +1968,18 @@ if (window.checkExtensionLoaded) {
 
           if (regex.test(url)) {
             logger.log(
-              `✅ URL whitelisted by user pattern "${pattern}": ${url}`
+              `✅ URL allowlisted by user pattern "${pattern}": ${url}`
             );
             return true;
           }
         } catch (error) {
-          logger.warn(`Invalid URL whitelist pattern: ${pattern}`, error);
+          logger.warn(`Invalid URL allowlist pattern: ${pattern}`, error);
         }
       }
 
       return false;
     } catch (error) {
-      logger.warn("Error checking user URL whitelist:", error);
+      logger.warn("Error checking user URL allowlist:", error);
       return false;
     }
   }
@@ -2336,32 +2336,32 @@ if (window.checkExtensionLoaded) {
         } chars content`
       );
 
-      // Load configuration to check protection settings and URL whitelist
+      // Load configuration to check protection settings and URL allowlist
       const config = await new Promise((resolve) => {
         chrome.storage.local.get(["config"], (result) => {
           resolve(result.config || {});
         });
       });
 
-      // Store config globally for URL whitelist checking
+      // Store config globally for URL allowlist checking
       window.checkUserConfig = config;
 
-      // Early exit if URL is in user whitelist (before any other checks)
-      if (checkUserUrlWhitelist(window.location.href)) {
+      // Early exit if URL is in user allowlist (before any other checks)
+      if (checkUserUrlAllowlist(window.location.href)) {
         logger.log(
-          `✅ URL WHITELISTED BY USER - No scanning needed, exiting immediately`
+          `✅ URL ALLOWLISTED BY USER - No scanning needed, exiting immediately`
         );
         logger.log(
-          `📋 URL matches user whitelist pattern: ${window.location.href}`
+          `📋 URL matches user allowlist pattern: ${window.location.href}`
         );
 
-        // Log as legitimate access for whitelisted URLs (only on first run)
+        // Log as legitimate access for allowlisted URLs (only on first run)
         if (!isRerun) {
           logProtectionEvent({
             type: "legitimate_access",
             url: location.href,
             origin: location.origin,
-            reason: "URL matches user-configured whitelist pattern",
+            reason: "URL matches user-configured allowlist pattern",
             redirectTo: null,
             clientId: null,
             clientSuspicious: false,
@@ -2369,7 +2369,7 @@ if (window.checkExtensionLoaded) {
           });
         }
 
-        return; // EXIT IMMEDIATELY - can't be phishing on user-whitelisted URL
+        return; // EXIT IMMEDIATELY - can't be phishing on user-allowlisted URL
       }
 
       // Check if page blocking is disabled
