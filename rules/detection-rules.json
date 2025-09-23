@@ -47,7 +47,8 @@
       "^https://[^/]*\\.amazon\\.(com|co\\.uk|ca|de|fr)(/.*)?$",
       "^https://[^/]*\\.(facebook|twitter|x|linkedin|instagram)\\.com(/.*)?$",
       "^https://[^/]*\\.(youtube|youtu)\\.be(/.*)?$",
-      "^https://[^/]*\\.apple\\.com(/.*)?$"
+      "^https://[^/]*\\.apple\\.com(/.*)?$",
+      "^https://[^/]*\\.zoom\\.(us|com)(/.*)?$"
     ],
     "context_indicators": {
       "description": "Additional context that indicates legitimate discussion vs phishing",
