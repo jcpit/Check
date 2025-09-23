@@ -4149,7 +4149,7 @@ if (window.checkExtensionLoaded) {
       const applyBranding = (bannerEl, branding) => {
         if (!bannerEl) return;
         try {
-          const companyName = branding.companyName || branding.productName || "Your Security Team";
+          const companyName = branding.companyName || branding.productName || "CyberDrain";
           const supportEmail = branding.supportEmail || "";
           let logoUrl = branding.logoUrl || "";
           const packagedFallback = chrome.runtime.getURL('images/icon48.png');
