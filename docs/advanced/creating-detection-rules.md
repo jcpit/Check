@@ -1,6 +1,6 @@
 # Creating Detection Rules
 
-The extension uses a rule-driven architecture where all detection logic is defined in `rules/detection-rules.json`. This file contains:
+The extension uses a rule-driven architecture where all detection logic is defined in [`rules/detection-rules.json`](https://github.com/CyberDrain/Check/blob/main/rules/detection-rules.json). This file contains:
 
 * **Trusted domain patterns** - Microsoft domains that are always trusted
 * **Exclusion system** - Domains that should never be scanned
@@ -13,16 +13,16 @@ Each of these rules has their own schema. You can create a custom rules file and
 
 **Important:** After updating rules via the UI or changing custom URLs, reload any open tabs for changes to take effect on those pages. The extension loads rules at startup and on the configured interval.
 
-Contributions to our rules can be done via [https://github.com/CyberDrain/Check/blob/main/rules/detection-rules.json](../../rules/detection-rules.json)
+Contributions to our rules can be done via [https://github.com/CyberDrain/Check/blob/main/rules/detection-rules.json](https://github.com/CyberDrain/Check/blob/main/rules/detection-rules.json)
 
 ## Rule Configuration and Updates
 
-Rules are managed by the `DetectionRulesManager` class in the `detection-rules-manager.js` script. The manager:
+Rules are managed by the [`DetectionRulesManager`](https://github.com/CyberDrain/Check/blob/main/scripts/modules/detection-rules-manager.js) class. It's job is to:
 
-- Loads rules at extension startup
-- Checks for updates based on the configured interval (default: 24 hours)
-- Caches rules locally in browser storage for offline use
-- Falls back to local rules (`rules/detection-rules.json`) if remote fetch fails
+* Load rules at extension startup
+* Check for updates based on the configured interval (default: 24 hours)
+* Cache rules locally in browser storage for offline use
+* Fall back to local rules ([`rules/detection-rules.json`](https://github.com/CyberDrain/Check/blob/main/rules/detection-rules.json)) if remote fetch fails
 
 **Update Process:**
 
@@ -32,6 +32,10 @@ Rules are managed by the `DetectionRulesManager` class in the `detection-rules-m
 4. Open tabs require reload to apply the new rules
 
 ## Exclusions
+
+{% hint style="info" %}
+**For simple exclusions:** Most users should use the [Settings → Detection Rules](../settings/detection-rules.md#url-allowlist-regex-or-url-with-wildcards) UI field, which supports both wildcards and regex patterns. This section is for advanced users creating custom rule files.
+{% endhint %}
 
 To exclude domains from all scanning (complete bypass), add them to the `exclusion_system.domain_patterns` array:
 
