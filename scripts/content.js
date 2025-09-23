@@ -4106,7 +4106,7 @@ if (window.checkExtensionLoaded) {
             .join("\n");
         } else if (details.threats && Array.isArray(details.threats)) {
           // Filter out the summary threat and show only specific indicators
-          const specificThreats = details.threats.filter((threat, index) => {
+          const specificThreats = details.threats.filter((threat) => {
             // Skip first threat if it's a summary (contains "legitimacy score" or is a general threat type)
             // Keep threats with specific IDs (phishing rules)
             if (threat.id && threat.id.startsWith("phi_")) {
@@ -4190,7 +4190,7 @@ if (window.checkExtensionLoaded) {
               contactLink.href = `mailto:${supportEmail}?subject=${encodeURIComponent('Security Review: Possible Clean/Safe Page')}`;
               contactLink.addEventListener('click', (e) => {
                 try { chrome.runtime.sendMessage({ type: 'REPORT_FALSE_POSITIVE', url: location.href, reason }); } catch(_) {}
-                let indicatorsText = 'Not available';
+                let indicatorsText;
                 try { indicatorsText = extractPhishingIndicators(analysisData); } catch(err) { indicatorsText = 'Parse error - see console'; }
                 const detectionScoreLine = analysisData?.score !== undefined ? `Detection Score: ${analysisData.score}/${analysisData.threshold}` : 'Detection Score: N/A';
                 const subject = `Security Review: Mark Clean - ${location.hostname}`;
