@@ -4082,6 +4082,129 @@ if (window.checkExtensionLoaded) {
       // Set flag to prevent DOM monitoring loops
       showingBanner = true;
 
+      // Fetch branding configuration (uniform pattern: storage only, like applyBrandingColors)
+      const fetchBranding = () => new Promise((resolve) => {
+        try {
+          chrome.storage.local.get(["brandingConfig"], (result) => {
+            resolve(result?.brandingConfig || {});
+          });
+        } catch(_) { resolve({}); }
+      });
+
+      const extractPhishingIndicators = (details) => {
+        if (!details) return "Unknown detection criteria";
+
+        // Try to extract phishing indicators from various possible fields
+        // This matches the exact logic from blocked.js openMailto function
+        if (details.phishingIndicators && Array.isArray(details.phishingIndicators)) {
+          return details.phishingIndicators
+            .map(indicator => `- ${indicator.id || indicator.name || "Unknown"}: ${indicator.description || indicator.reason || "Detected"}`)
+            .join("\n");
+        } else if (details.matchedRules && Array.isArray(details.matchedRules)) {
+          return details.matchedRules
+            .map(rule => `- ${rule.id || rule.name || "Unknown"}: ${rule.description || rule.reason || "Rule matched"}`)
+            .join("\n");
+        } else if (details.threats && Array.isArray(details.threats)) {
+          // Filter out the summary threat and show only specific indicators
+          const specificThreats = details.threats.filter((threat) => {
+            // Skip first threat if it's a summary (contains "legitimacy score" or is a general threat type)
+            // Keep threats with specific IDs (phishing rules)
+            if (threat.id && threat.id.startsWith("phi_")) {
+              return true;
+            }
+            // Keep threats with specific types that aren't summary types
+            if (threat.type && !threat.type.includes("threat") && threat.description) {
+              return true;
+            }
+            // Keep anything else that looks like a specific threat
+            return (threat.description && threat.description.length > 10 && threat.id);
+          });
+          return specificThreats
+            .map(threat => `- ${threat.type || threat.category || threat.id || "Phishing Indicator"}: ${threat.description || threat.reason || "Threat detected"}`)
+            .join("\n");
+        } else if (details.foundThreats && Array.isArray(details.foundThreats)) {
+          return details.foundThreats
+            .map(threat => `- ${threat.id || threat}: ${threat.description || "Detected"}`)
+            .join("\n");
+        } else if (details.indicators && Array.isArray(details.indicators)) {
+          return details.indicators
+            .map(indicator => `- ${indicator.id}: ${indicator.description || indicator.id} (${indicator.severity || "unknown"})`)
+            .join("\n");
+        } else if (details.foundIndicators && Array.isArray(details.foundIndicators)) {
+          return details.foundIndicators
+            .map(indicator => `- ${indicator.id || indicator}: ${indicator.description || ""}`)
+            .join("\n");
+        } else {
+          // Fallback: Look for any array properties that might contain indicators
+          const arrayProps = Object.keys(details).filter(key => Array.isArray(details[key]) && details[key].length > 0);
+          
+          if (arrayProps.length > 0) {
+            return `Multiple indicators detected (${details.reason || "see browser console for details"})`;
+          } else {
+            return `${details.reason || "Unknown detection criteria"}`;
+          }
+        }
+      };
+
+      const applyBranding = (bannerEl, branding) => {
+        if (!bannerEl) return;
+        try {
+          const companyName = branding.companyName || branding.productName || "CyberDrain";
+          const supportEmail = branding.supportEmail || "";
+          let logoUrl = branding.logoUrl || "";
+          const packagedFallback = chrome.runtime.getURL('images/icon48.png');
+          // Simplified: rely on upstream input validation; only fallback when empty/falsy
+          if (!logoUrl) {
+            logoUrl = packagedFallback;
+          }
+          let brandingSlot = bannerEl.querySelector('#check-banner-branding');
+          if (!brandingSlot) {
+            const container = document.createElement('div');
+            container.id = 'check-banner-branding';
+            container.style.cssText = 'display:flex;align-items:center;gap:8px;';
+            const innerWrapper = bannerEl.firstElementChild;
+            if (innerWrapper) innerWrapper.insertBefore(container, innerWrapper.firstChild);
+            brandingSlot = container;
+          }
+          if (brandingSlot) {
+            brandingSlot.innerHTML = '';
+            if (logoUrl) {
+              const img = document.createElement('img');
+              img.src = logoUrl;
+              img.alt = companyName + ' logo';
+              img.style.cssText = 'width:28px;height:28px;object-fit:contain;border-radius:4px;background:rgba(255,255,255,0.25);padding:2px;';
+              brandingSlot.appendChild(img);
+            }
+            const textWrap = document.createElement('div');
+            textWrap.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;';
+            const titleSpan = document.createElement('span');
+            titleSpan.style.cssText = 'font-size:12px;font-weight:600;';
+            titleSpan.textContent = 'Protected by ' + companyName;
+            textWrap.appendChild(titleSpan);
+            if (supportEmail) {
+              const contactDiv = document.createElement('div');
+              const contactLink = document.createElement('a');
+              contactLink.style.cssText = 'color:#fff;text-decoration:underline;font-size:11px;cursor:pointer;';
+              contactLink.textContent = 'Report as clean/safe';
+              contactLink.title = 'Report this page as clean/safe to your administrator';
+              contactLink.href = `mailto:${supportEmail}?subject=${encodeURIComponent('Security Review: Possible Clean/Safe Page')}`;
+              contactLink.addEventListener('click', (e) => {
+                try { chrome.runtime.sendMessage({ type: 'REPORT_FALSE_POSITIVE', url: location.href, reason }); } catch(_) {}
+                let indicatorsText;
+                try { indicatorsText = extractPhishingIndicators(analysisData); } catch(err) { indicatorsText = 'Parse error - see console'; }
+                const detectionScoreLine = analysisData?.score !== undefined ? `Detection Score: ${analysisData.score}/${analysisData.threshold}` : 'Detection Score: N/A';
+                const subject = `Security Review: Mark Clean - ${location.hostname}`;
+                const body = encodeURIComponent(`Security Review Request: Possible Clean/Safe Page\n\nPage URL: ${location.href}\nHostname: ${location.hostname}\nTimestamp (UTC): ${new Date().toISOString()}\nBanner Title: ${bannerTitle}\nDisplayed Reason: ${reason}\n${detectionScoreLine}\n\nDetected Indicators:\n${indicatorsText}\n\nUser Justification:\n[Explain why this page is safe]`);
+                e.currentTarget.href = `mailto:${supportEmail}?subject=${encodeURIComponent(subject)}&body=${body}`;
+              });
+              contactDiv.appendChild(contactLink);
+              textWrap.appendChild(contactDiv);
+            }
+            brandingSlot.appendChild(textWrap);
+          }
+        } catch(e) { /* non-fatal */ }
+      };
+
       const detailsText = analysisData?.score
         ? ` (Score: ${analysisData.score}/${analysisData.threshold})`
         : "";
@@ -4116,24 +4239,21 @@ if (window.checkExtensionLoaded) {
         bannerColor = "linear-gradient(135deg, #ff5722, #d84315)"; // Orange-red for high risk
       }
 
+      // Layout: left branding slot, absolutely centered message block, dismiss button on right.
       const bannerContent = `
-      <div style="display: flex; align-items: center; justify-content: center; gap: 16px; position: relative; padding-right: 48px;">
-        <span style="font-size: 24px;">${bannerIcon}</span>
-        <div>
-          <strong>${bannerTitle}</strong><br>
-          <small>${reason}${detailsText}</small>
+      <div style="position:relative;display:flex;align-items:center;gap:16px;min-height:56px;">
+        <div id="check-banner-left" style="display:flex;align-items:center;gap:12px;z-index:2;"></div>
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;max-width:60%;z-index:1;pointer-events:none;">
+          <span style="display:block;font-size:24px;margin-bottom:4px;">${bannerIcon}</span>
+          <strong style="display:block;">${bannerTitle}</strong>
+          <small style="opacity:0.95;display:block;margin-top:2px;">${reason}${detailsText}</small>
         </div>
-        <button onclick="this.parentElement.parentElement.remove(); document.body.style.marginTop = '0'; window.showingBanner = false;" title="Dismiss" style="
-          position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
-          background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
-          color: white; padding: 0; border-radius: 4px; cursor: pointer;
-          width: 24px; height: 24px; min-width: 24px; min-height: 24px; max-width: 24px; max-height: 24px;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 14px; font-weight: bold; line-height: 1; box-sizing: border-box;
-          font-family: monospace;
-        ">×</button>
-      </div>
-    `;
+        <button onclick="this.closest('#ms365-warning-banner').remove(); document.body.style.marginTop = '0'; window.showingBanner = false;" title="Dismiss" style="
+          margin-left:auto;position:relative;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);
+          color:#fff;padding:0;border-radius:4px;cursor:pointer;
+          width:24px;height:24px;min-width:24px;min-height:24px;display:flex;align-items:center;justify-content:center;
+          font-size:14px;font-weight:bold;line-height:1;box-sizing:border-box;font-family:monospace;z-index:2;">×</button>
+      </div>`;
 
       // Check if banner already exists
       let banner = document.getElementById("ms365-warning-banner");
@@ -4142,6 +4262,7 @@ if (window.checkExtensionLoaded) {
         // Update existing banner content and color
         banner.innerHTML = bannerContent;
         banner.style.background = bannerColor;
+        fetchBranding().then(branding => applyBranding(banner, branding));
 
         // Ensure page content is still pushed down
         const bannerHeight = banner.offsetHeight || 64;
@@ -4171,18 +4292,16 @@ if (window.checkExtensionLoaded) {
       banner.innerHTML = bannerContent;
       document.body.appendChild(banner);
 
+      fetchBranding().then(branding => applyBranding(banner, branding));
+
       // Push page content down to avoid covering login header
       const bannerHeight = banner.offsetHeight || 64; // fallback height
       document.body.style.marginTop = `${bannerHeight}px`;
 
       logger.log("Warning banner displayed");
-
-      // Don't clear the showingBanner flag immediately - let it persist
-      // to prevent DOM monitoring from interfering while the user sees the warning
-      // The flag will be cleared when the banner is updated or removed
     } catch (error) {
       logger.error("Failed to show warning banner:", error.message);
-      showingBanner = false; // Make sure flag is cleared on error
+      showingBanner = false;
     }
   }
 
