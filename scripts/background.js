@@ -1651,7 +1651,7 @@ class CheckBackground {
     const config = (await safe(this.configManager.getConfig())) || {};
     // ONLY log normal page access if debug logging is explicitly enabled
     // Otherwise, only security events (blocked/warnings/threats) should be logged
-    if (!config.enableDebugLogging) {
+    if (config.enableDebugLogging !== true) {
       return; // Skip all routine URL access logging in normal operation
     }
     // If debug logging is enabled, log all page access for debugging purposes

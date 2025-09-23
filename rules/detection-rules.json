@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.5",
   "lastUpdated": "2025-09-08T14:20:00Z",
   "description": "Phishing detection logic for identifying phishing attempts targeting Microsoft 365 login pages",
   "trusted_login_patterns": [
@@ -47,7 +47,8 @@
       "^https://[^/]*\\.amazon\\.(com|co\\.uk|ca|de|fr)(/.*)?$",
       "^https://[^/]*\\.(facebook|twitter|x|linkedin|instagram)\\.com(/.*)?$",
       "^https://[^/]*\\.(youtube|youtu)\\.be(/.*)?$",
-      "^https://[^/]*\\.apple\\.com(/.*)?$"
+      "^https://[^/]*\\.apple\\.com(/.*)?$",
+      "^https://(?:[^/]*\\.)?zoom\\.us(/.*)?$"
     ],
     "context_indicators": {
       "description": "Additional context that indicates legitimate discussion vs phishing",
@@ -258,26 +259,19 @@
   "aad_detection_elements": [
     {
       "id": "loginfmt_field",
-      "selectors": [
-        "input[name='loginfmt']",
-        "#i0116"
-      ],
+      "selectors": ["input[name='loginfmt']", "#i0116"],
       "description": "Azure AD username/email input field",
       "weight": 30
     },
     {
       "id": "next_button",
-      "selectors": [
-        "#idSIButton9"
-      ],
+      "selectors": ["#idSIButton9"],
       "description": "Azure AD Next/Sign in button",
       "weight": 25
     },
     {
       "id": "password_field",
-      "selectors": [
-        "input[type='password']"
-      ],
+      "selectors": ["input[type='password']"],
       "description": "Password input field",
       "weight": 20
     },
@@ -307,25 +301,19 @@
     },
     {
       "id": "urlMsaSignUp",
-      "text_patterns": [
-        "urlMsaSignUp"
-      ],
+      "text_patterns": ["urlMsaSignUp"],
       "description": "Microsoft signup URL reference",
       "weight": 15
     },
     {
       "id": "flowToken",
-      "text_patterns": [
-        "flowToken"
-      ],
+      "text_patterns": ["flowToken"],
       "description": "Microsoft authentication flow token",
       "weight": 15
     },
     {
       "id": "aadcdn_msauth",
-      "text_patterns": [
-        "https://aadcdn\\.msauth\\.net/"
-      ],
+      "text_patterns": ["https://aadcdn\\.msauth\\.net/"],
       "description": "Microsoft authentication CDN reference",
       "weight": 15
     }
@@ -336,9 +324,7 @@
       "type": "url",
       "weight": 25,
       "condition": {
-        "domains": [
-          "login.microsoftonline.com"
-        ]
+        "domains": ["login.microsoftonline.com"]
       },
       "description": "Verify legitimate Microsoft domain (must be login.microsoftonline.com)"
     },
@@ -390,10 +376,7 @@
       "type": "dom",
       "weight": 20,
       "condition": {
-        "selectors": [
-          "input[name='loginfmt']",
-          "#i0116"
-        ]
+        "selectors": ["input[name='loginfmt']", "#i0116"]
       },
       "description": "Check for loginfmt input field availability"
     },
@@ -557,7 +540,7 @@
       "description": "Page attempts to block or detect developer tools usage",
       "action": "block",
       "category": "anti_analysis",
-      "confidence": 0.90,
+      "confidence": 0.9,
       "additional_checks": [
         "document.addEventListener('keydown'",
         "event.keyCode === 123",
@@ -731,9 +714,7 @@
     },
     {
       "id": "leg_004",
-      "resource_patterns": [
-        "https://aadcdn.msftauthimages.net/.*customcss.*"
-      ],
+      "resource_patterns": ["https://aadcdn.msftauthimages.net/.*customcss.*"],
       "description": "Legitimate source for custom CSS resources",
       "confidence": 0.9
     },
@@ -900,6 +881,47 @@
         "action": "flag_phishy",
         "severity": "medium",
         "description": "Non-Microsoft resources detected"
+      },
+      {
+        "id": "phi_020_base64_document_write",
+        "pattern": "document\\.write\\s*\\(\\s*atob\\s*\\(\\s*[\"'][A-Za-z0-9+/=]{40,}[\"']\\s*\\)\\s*\\)",
+        "flags": "gi",
+        "severity": "critical",
+        "description": "Base64 obfuscated document.write detected - common iframe injection technique",
+        "action": "block",
+        "category": "iframe_evasion",
+        "confidence": 0.95
+      },
+      {
+        "id": "phi_021_large_base64_strings",
+        "pattern": "[\"'][A-Za-z0-9+/=]{100,}[\"']",
+        "flags": "g",
+        "severity": "medium",
+        "description": "Large base64 strings detected in page content",
+        "action": "warn",
+        "category": "code_obfuscation",
+        "confidence": 0.7,
+        "context_required": ["(?:atob|eval|innerHTML|document\\.write)"]
+      },
+      {
+        "id": "phi_022_cross_origin_fullscreen_iframe",
+        "pattern": "<iframe[^>]*(?:width\\s*[:=]\\s*[\"']?100%[\"']?|height\\s*[:=]\\s*[\"']?100(?:%|vh)[\"']?)[^>]*src\\s*=\\s*[\"']https?://(?!(?:[^./]*\\.)?(?:microsoft|microsoftonline|office|office365|sharepoint|onedrive|live|hotmail|outlook|azure|msauth|msftauth|msftauthimages|msauthimages|msidentity|microsoftonline-p|microsoftazuread-sso|azureedge|bing)\\.)[^\"']+[\"'][^>]*>",
+        "flags": "gi",
+        "severity": "critical",
+        "description": "Cross-origin full-viewport iframe detected",
+        "action": "block",
+        "category": "iframe_evasion",
+        "confidence": 0.9
+      },
+      {
+        "id": "phi_024_unsandboxed_cross_origin_iframe",
+        "pattern": "<iframe(?![^>]*sandbox)[^>]*src\\s*=\\s*[\"']https?://(?!(?:[^./]*\\.)?(?:microsoft|microsoftonline|office|office365|sharepoint|onedrive|live|hotmail|outlook|azure|msauth|msftauth|msftauthimages|msauthimages|msidentity|microsoftonline-p|microsoftazuread-sso|azureedge|bing)\\.)[^\"']+[\"'][^>]*>",
+        "flags": "gi",
+        "severity": "high",
+        "description": "Cross-origin iframe without sandbox attribute",
+        "action": "warn",
+        "category": "iframe_security",
+        "confidence": 0.75
       }
     ],
     "form_validation_rules": [
@@ -914,9 +936,7 @@
       {
         "id": "validate_css_origin",
         "pattern": "customcss",
-        "required_origins": [
-          "aadcdn.msftauthimages.net"
-        ],
+        "required_origins": ["aadcdn.msftauthimages.net"],
         "action": "block",
         "description": "Custom CSS must come from Microsoft CDN"
       }

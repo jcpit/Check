@@ -31,6 +31,7 @@ if (window.checkExtensionLoaded) {
   let showingBanner = false; // Flag to prevent DOM monitoring loops when showing banners
   const MAX_SCANS = 5; // Prevent infinite scanning - reduced for performance
   const SCAN_COOLDOWN = 1200; // 1200ms between scans - increased for performance
+  const WARNING_THRESHOLD = 3; // Block if 4+ warning threats found (escalation threshold)
   let initialBody; // Reference to the initial body element
 
   // Console log capturing
@@ -847,6 +848,14 @@ if (window.checkExtensionLoaded) {
    */
   function hasMicrosoftElements() {
     try {
+      const isExcludedDomain = checkDomainExclusion(window.location.href);
+      if (isExcludedDomain) {
+        logger.log(
+          `✅ Domain excluded from scanning - skipping Microsoft elements check: ${window.location.href}`
+        );
+        return false; // Skip phishing indicators for excluded domains
+      }
+
       if (!detectionRules?.m365_detection_requirements) {
         return false;
       }
@@ -2813,15 +2822,25 @@ if (window.checkExtensionLoaded) {
           );
 
           if (warningThreats.length > 0) {
-            const reason = `Suspicious phishing indicators detected: ${warningThreats
-              .map((t) => t.id)
-              .join(", ")}`;
+            // Check if we have enough warning threats to escalate to blocking
+            const shouldEscalateToBlock =
+              warningThreats.length >= WARNING_THRESHOLD;
+
+            const reason = shouldEscalateToBlock
+              ? `Multiple phishing indicators detected on non-Microsoft page (${
+                  warningThreats.length
+                }/${WARNING_THRESHOLD} threshold exceeded): ${warningThreats
+                  .map((t) => t.id)
+                  .join(", ")}`
+              : `Suspicious phishing indicators detected: ${warningThreats
+                  .map((t) => t.id)
+                  .join(", ")}`;
 
             // Store detection result
             lastDetectionResult = {
-              verdict: "suspicious",
+              verdict: shouldEscalateToBlock ? "blocked" : "suspicious",
               isSuspicious: true,
-              isBlocked: false,
+              isBlocked: shouldEscalateToBlock && protectionEnabled,
               threats: warningThreats.map((t) => ({
                 type: t.category || t.id,
                 id: t.id,
@@ -2830,46 +2849,104 @@ if (window.checkExtensionLoaded) {
                 severity: t.severity,
               })),
               reason: reason,
-              score: 50, // Medium suspicion score
+              score: shouldEscalateToBlock ? 0 : 50, // Critical score if escalated
               threshold: 85,
               phishingIndicators: warningThreats.map((t) => t.id),
+              escalated: shouldEscalateToBlock,
+              escalationReason: shouldEscalateToBlock
+                ? `${warningThreats.length} warning threats exceeded threshold of ${WARNING_THRESHOLD}`
+                : null,
             };
 
-            logger.warn(
-              `⚠️ SUSPICIOUS CONTENT: Showing warning for phishing indicators`
-            );
-            showWarningBanner(`SUSPICIOUS CONTENT DETECTED: ${reason}`, {
-              threats: warningThreats,
-            });
+            if (shouldEscalateToBlock) {
+              logger.error(
+                `🚨 ESCALATED TO BLOCK: ${warningThreats.length} warning threats on non-Microsoft page exceeded threshold of ${WARNING_THRESHOLD}`
+              );
+
+              if (protectionEnabled) {
+                logger.error(
+                  "🛡️ PROTECTION ACTIVE: Blocking page due to escalated warning threats"
+                );
+                showBlockingOverlay(reason, {
+                  threats: warningThreats,
+                  score: phishingResult.score,
+                  escalated: true,
+                  escalationReason: `${warningThreats.length} warning threats exceeded threshold`,
+                });
+                disableFormSubmissions();
+                disableCredentialInputs();
+                stopDOMMonitoring();
+              } else {
+                logger.warn(
+                  "⚠️ PROTECTION DISABLED: Would block escalated threats but showing critical warning banner instead"
+                );
+                showWarningBanner(
+                  `CRITICAL THREATS DETECTED (ESCALATED): ${reason}`,
+                  {
+                    threats: warningThreats,
+                    severity: "critical", // Escalate banner severity
+                    escalated: true,
+                  }
+                );
+                if (!isRerun) {
+                  setupDOMMonitoring();
+                  setupDynamicScriptMonitoring();
+                }
+              }
+            } else {
+              logger.warn(
+                `⚠️ SUSPICIOUS CONTENT: Showing warning for ${warningThreats.length} phishing indicators on non-Microsoft page (below ${WARNING_THRESHOLD} threshold)`
+              );
+              showWarningBanner(`SUSPICIOUS CONTENT DETECTED: ${reason}`, {
+                threats: warningThreats,
+              });
+            }
 
             const redirectHostname = extractRedirectHostname(location.href);
             const clientInfo = await extractClientInfo(location.href);
 
             logProtectionEvent({
-              type: "threat_detected_no_action",
+              type: shouldEscalateToBlock
+                ? protectionEnabled
+                  ? "threat_blocked"
+                  : "threat_detected_no_action"
+                : "threat_detected_no_action",
               url: location.href,
               reason: reason,
-              severity: "medium",
+              severity: shouldEscalateToBlock ? "critical" : "medium",
               protectionEnabled: protectionEnabled,
               redirectTo: redirectHostname,
               clientId: clientInfo.clientId,
               clientSuspicious: clientInfo.isMalicious,
               clientReason: clientInfo.reason,
               phishingIndicators: warningThreats.map((t) => t.id),
+              escalated: shouldEscalateToBlock,
+              escalationReason: shouldEscalateToBlock
+                ? `${warningThreats.length} warning threats exceeded threshold of ${WARNING_THRESHOLD}`
+                : null,
+              warningThresholdCount: warningThreats.length,
             });
 
             sendCippReport({
-              type: "suspicious_content_detected",
+              type: shouldEscalateToBlock
+                ? "escalated_threats_blocked"
+                : "suspicious_content_detected",
               url: location.href,
               reason: reason,
-              severity: "medium",
+              severity: shouldEscalateToBlock ? "critical" : "medium",
               legitimate: false,
               timestamp: new Date().toISOString(),
               phishingIndicators: warningThreats.map((t) => t.id),
+              escalated: shouldEscalateToBlock,
+              escalationReason: shouldEscalateToBlock
+                ? `${warningThreats.length} warning threats exceeded threshold of ${WARNING_THRESHOLD}`
+                : null,
+              warningThresholdCount: warningThreats.length,
+              warningThreshold: WARNING_THRESHOLD,
             });
 
-            // Continue monitoring for suspicious pages
-            if (!isRerun) {
+            // Continue monitoring for suspicious pages (only if not escalated to block)
+            if (!shouldEscalateToBlock && !isRerun) {
               setupDOMMonitoring();
               setupDynamicScriptMonitoring();
             }

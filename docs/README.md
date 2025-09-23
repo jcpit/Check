@@ -50,7 +50,7 @@ Nothing. We're not even kidding, we don't collect any data at all. You can set u
 
 ## How does it look?
 
-When a user gets the plugin added, a new icon will appear, this icon is brandable to customize it to your own logo and name.
+When a user gets the plugin added, a new icon will appear, this icon is [brandable](settings/branding.md) to customize it to your own logo and name.
 
 <figure><img src=".gitbook/assets/image (1).png" alt=""><figcaption></figcaption></figure>
 
@@ -58,4 +58,4 @@ When visiting a page that is suspect, but our certainty if the page is phishing 
 
 <figure><img src=".gitbook/assets/image (3).png" alt=""><figcaption></figcaption></figure>
 
-This too is completely brandable, and can be made to match company colours. The Contact Admin button is a mailto: link that contains the information about what page the user tried to visit, including a defanged URL.
+This too is completely [brandable](settings/branding.md), and can be made to match company colours. The Contact Admin button is a mailto: link that contains the information about what page the user tried to visit, including a defanged URL.

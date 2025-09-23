@@ -1,18 +1,41 @@
 # Creating Detection Rules
 
-The extension uses a rule-driven architecture where all detection logic is defined in `rules/detection-rules.json`. This file contains:
+The extension uses a rule-driven architecture where all detection logic is defined in [`rules/detection-rules.json`](https://github.com/CyberDrain/Check/blob/main/rules/detection-rules.json). This file contains:
 
 * **Trusted domain patterns** - Microsoft domains that are always trusted
 * **Exclusion system** - Domains that should never be scanned
 * **Phishing indicators** - Patterns that detect malicious content
 * **Detection requirements** - Elements that identify Microsoft 365 login pages
 * **Blocking rules** - Conditions that immediately block pages
+* **Rogue apps detection** - Dynamic detection of known malicious OAuth applications
 
-Each of these rules has their own schema. You can create a custom rules file and host it anywhere publicly (e.g. your own fork of Check's GitHub repo, as an Azure Blob file, etc.), by default Check will always load the CyberDrain rule set from our repository. Sometimes you have custom pages, or specific logon pages that have a pattern that must be added, you can add these exclusions in your own configuration file, or contribute to the primary repository.
+Each of these rules has their own schema. You can create a custom rules file and host it anywhere publicly (e.g. your own fork of Check's GitHub repo, as an Azure Blob file, etc.). By default, Check loads the CyberDrain rule set from our repository every 24 hours (configurable). Custom rules URLs must be CORS-accessible and return valid JSON matching the schema.
 
-Contributions to our pages can be done via [https://github.com/CyberDrain/Check/blob/main/rules/detection-rules.json](../../rules/detection-rules.json)
+**Important:** After updating rules via the UI or changing custom URLs, reload any open tabs for changes to take effect on those pages. The extension loads rules at startup and on the configured interval.
 
-### Exclusions
+Contributions to our rules can be done via [https://github.com/CyberDrain/Check/blob/main/rules/detection-rules.json](https://github.com/CyberDrain/Check/blob/main/rules/detection-rules.json)
+
+## Rule Configuration and Updates
+
+Rules are managed by the [`DetectionRulesManager`](https://github.com/CyberDrain/Check/blob/main/scripts/modules/detection-rules-manager.js) class. It's job is to:
+
+* Load rules at extension startup
+* Check for updates based on the configured interval (default: 24 hours)
+* Cache rules locally in browser storage for offline use
+* Fall back to local rules ([`rules/detection-rules.json`](https://github.com/CyberDrain/Check/blob/main/rules/detection-rules.json)) if remote fetch fails
+
+**Update Process:**
+
+1. Rules are fetched from the configured URL (remote or fallback to local)
+2. New rules are cached locally and immediately applied
+3. A message is sent to notify other extension components of the update
+4. Open tabs require reload to apply the new rules
+
+## Exclusions
+
+{% hint style="info" %}
+**For simple exclusions:** Most users should use the [Settings → Detection Rules](../settings/detection-rules.md#url-allowlist-regex-or-url-with-wildcards) UI field, which supports both wildcards and regex patterns. This section is for advanced users creating custom rule files.
+{% endhint %}
 
 To exclude domains from all scanning (complete bypass), add them to the `exclusion_system.domain_patterns` array:
 
@@ -27,7 +50,7 @@ To exclude domains from all scanning (complete bypass), add them to the `exclusi
 }
 ```
 
-#### Pattern Format
+### Pattern Format
 
 Use regex patterns that match the full URL:
 
@@ -62,7 +85,7 @@ These domains get immediate trusted status with valid badges:
 }
 ```
 
-#### Pattern Properties
+### Pattern Properties
 
 * **id**: Unique identifier for the rule
 * **pattern**: Regex pattern to match against page content
@@ -72,14 +95,14 @@ These domains get immediate trusted status with valid badges:
 * **category**: Grouping category for the rule
 * **confidence**: Confidence level (0.0 to 1.0)
 
-#### Severity Levels
+### Severity Levels
 
 * **Critical** (25 points): Immediate blocking threats
 * **High** (15 points): Serious threats requiring attention
 * **Medium** (10 points): Moderate threats for warnings
 * **Low** (5 points): Minor suspicious indicators
 
-### **Context Requirements**
+### Context Requirements
 
 Only trigger if specific context is present:
 
@@ -87,9 +110,7 @@ Only trigger if specific context is present:
 {
   "id": "context_example",
   "pattern": "malicious-pattern",
-  "context_required": [
-    "(?:microsoft|office|365|login|password|credential)"
-  ]
+  "context_required": ["(?:microsoft|office|365|login|password|credential)"]
 }
 ```
 
@@ -122,33 +143,58 @@ Configure what elements identify a legitimate Microsoft 365 login page:
 }
 ```
 
-#### Element Types
+### Element Types
 
-* **source\_content**: Match against page HTML source
-* **css\_pattern**: Match against CSS styles
-* **url\_pattern**: Match against the URL
-* **text\_content**: Match against visible text
+* **source_content**: Match against page HTML source
+* **css_pattern**: Match against CSS styles
+* **url_pattern**: Match against the URL
+* **text_content**: Match against visible text
 
-### Browser Console Testing
+## Rogue Apps Detection
+
+Check includes dynamic detection of known rogue OAuth applications that attempt to steal Microsoft 365 credentials. This feature:
+
+* Automatically fetches the latest list of rogue apps from the [Huntress Labs repository](https://github.com/huntresslabs/rogueapps)
+* Updates every 12 hours by default (configurable in `rogue_apps_detection` section)
+* Warns users when they encounter known malicious OAuth applications
+* Caches data locally for offline protection
+
+The rogue apps detection is configured in the `rogue_apps_detection` section of the detection rules:
+
+```json
+"rogue_apps_detection": {
+  "enabled": true,
+  "source_url": "https://raw.githubusercontent.com/huntresslabs/rogueapps/refs/heads/main/public/rogueapps.json",
+  "cache_duration": 86400000,
+  "update_interval": 43200000,
+  "detection_action": "warn",
+  "severity": "high",
+  "auto_update": true
+}
+```
+
+## Browser Console Testing
 
 Use these functions in the browser console to test your rules:
 
 ```javascript
 // Test detection patterns
-testDetectionPatterns()
+testDetectionPatterns();
 
 // Test phishing indicators
-testPhishingIndicators()
+testPhishingIndicators();
 
 // Check rules status
-checkRulesStatus()
+checkRulesStatus();
 
 // Analyze current page
-analyzeCurrentPage()
+analyzeCurrentPage();
 
 // Manual phishing check
-manualPhishingCheck()
+manualPhishingCheck();
 
 // Re-run protection
-rerunProtection()
+rerunProtection();
 ```
+
+**Note:** These console functions are available when the extension is loaded and debug logging is enabled. Use the browser's Developer Tools (F12) to access the console.
