@@ -847,6 +847,14 @@ if (window.checkExtensionLoaded) {
    */
   function hasMicrosoftElements() {
     try {
+      const isExcludedDomain = checkDomainExclusion(window.location.href);
+      if (isExcludedDomain) {
+        logger.log(
+          `✅ Domain excluded from scanning - skipping Microsoft elements check: ${window.location.href}`
+        );
+        return false; // Skip phishing indicators for excluded domains
+      }
+
       if (!detectionRules?.m365_detection_requirements) {
         return false;
       }
