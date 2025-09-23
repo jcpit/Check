@@ -900,6 +900,49 @@
         "action": "flag_phishy",
         "severity": "medium",
         "description": "Non-Microsoft resources detected"
+      },
+      {
+        "id": "phi_020_base64_document_write",
+        "pattern": "document\\.write\\s*\\(\\s*atob\\s*\\(\\s*[\"'][A-Za-z0-9+/=]{40,}[\"']\\s*\\)\\s*\\)",
+        "flags": "gi",
+        "severity": "critical",
+        "description": "Base64 obfuscated document.write detected - common iframe injection technique",
+        "action": "block",
+        "category": "iframe_evasion",
+        "confidence": 0.95
+      },
+      {
+        "id": "phi_021_large_base64_strings",
+        "pattern": "[\"'][A-Za-z0-9+/=]{100,}[\"']",
+        "flags": "g",
+        "severity": "medium",
+        "description": "Large base64 strings detected in page content",
+        "action": "warn",
+        "category": "code_obfuscation",
+        "confidence": 0.7,
+        "context_required": [
+          "(?:atob|eval|innerHTML|document\\.write)"
+        ]
+      },
+      {
+        "id": "phi_022_cross_origin_fullscreen_iframe",
+        "pattern": "<iframe[^>]*(?:width\\s*[:=]\\s*[\"']?100%[\"']?|height\\s*[:=]\\s*[\"']?100(?:%|vh)[\"']?)[^>]*src\\s*=\\s*[\"']https?://(?!(?:[^./]*\\.)?(?:microsoft|microsoftonline|office|office365|sharepoint|onedrive|live|hotmail|outlook|azure|msauth|msftauth|msftauthimages|msauthimages|msidentity|microsoftonline-p|microsoftazuread-sso|azureedge|bing)\\.)[^\"']+[\"'][^>]*>",
+        "flags": "gi",
+        "severity": "critical",
+        "description": "Cross-origin full-viewport iframe detected",
+        "action": "block",
+        "category": "iframe_evasion",
+        "confidence": 0.9
+      },
+      {
+        "id": "phi_024_unsandboxed_cross_origin_iframe",
+        "pattern": "<iframe(?![^>]*sandbox)[^>]*src\\s*=\\s*[\"']https?://(?!(?:[^./]*\\.)?(?:microsoft|microsoftonline|office|office365|sharepoint|onedrive|live|hotmail|outlook|azure|msauth|msftauth|msftauthimages|msauthimages|msidentity|microsoftonline-p|microsoftazuread-sso|azureedge|bing)\\.)[^\"']+[\"'][^>]*>",
+        "flags": "gi",
+        "severity": "high",
+        "description": "Cross-origin iframe without sandbox attribute",
+        "action": "warn",
+        "category": "iframe_security",
+        "confidence": 0.75
       }
     ],
     "form_validation_rules": [
