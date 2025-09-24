@@ -665,33 +665,6 @@ class CheckBackground {
     }
   }
 
-  // CyberDrain integration - Send event to reporting server with timeout and proper POST
-  async sendEvent(evt) {
-    if (!this.policy?.CIPPReportingServer) return;
-    try {
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 5000);
-      const res = await fetch(
-        this.policy.CIPPReportingServer.replace(/\/+$/, "") +
-          "/events/cyberdrain-phish",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ts: new Date().toISOString(),
-            ua: navigator.userAgent,
-            ...evt,
-          }),
-          signal: ctrl.signal,
-        }
-      );
-      clearTimeout(t);
-      await res.text();
-    } catch {
-      /* best-effort */
-    }
-  }
-
   setupEventListeners() {
     // Prevent duplicate listener registration
     if (this._listenersReady) return;
@@ -1705,8 +1678,24 @@ class CheckBackground {
     this.pendingLocal.securityEvents.push(logEntry);
     this.scheduleFlush();
 
-    // Send to CIPP if enabled
-    await this.sendToCipp(logEntry, config);
+    // Send to CIPP if enabled using the correct method
+    if (config?.enableCippReporting && config?.cippServerUrl) {
+      try {
+        await this.handleCippReport({
+          type: logEntry.event.type,
+          severity: logEntry.event.threatLevel || "medium",
+          timestamp: logEntry.timestamp,
+          url: logEntry.event.url,
+          reason: logEntry.event.reason || "Security event logged",
+          tabId: logEntry.tabId,
+          event: logEntry.event,
+          profile: logEntry.profile,
+        });
+      } catch (error) {
+        logger.error("Failed to send event to CIPP:", error);
+        // Don't fail the entire logging operation if CIPP is unavailable
+      }
+    }
   }
 
   enhanceEventForLogging(event) {
@@ -2150,52 +2139,6 @@ class CheckBackground {
       },
       timestamp: profileInfo.timestamp,
     };
-  }
-
-  // Send telemetry data to CIPP
-  async sendToCipp(logEntry, config) {
-    if (!config?.enableCippReporting || !config?.cippServerUrl) {
-      return; // CIPP reporting not enabled
-    }
-
-    try {
-      const cippPayload = {
-        timestamp: logEntry.timestamp,
-        source: "microsoft-365-phishing-protection",
-        version: chrome.runtime.getManifest().version,
-        event: logEntry.event,
-        profile: logEntry.profile,
-        tabId: logEntry.tabId,
-        type: logEntry.type,
-      };
-
-      // Add tenant/organization context if available
-      if (logEntry.profile?.isManaged) {
-        cippPayload.context = "managed";
-      }
-
-      const response = await fetch(`${config.cippServerUrl}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent": `Microsoft365PhishingProtection/${
-            chrome.runtime.getManifest().version
-          }`,
-        },
-        body: JSON.stringify(cippPayload),
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          `CIPP server responded with ${response.status}: ${response.statusText}`
-        );
-      }
-
-      logger.log("Successfully sent telemetry to CIPP");
-    } catch (error) {
-      logger.error("Failed to send telemetry to CIPP:", error);
-      // Don't fail the entire logging operation if CIPP is unavailable
-    }
   }
 
   // Handle CIPP reports from content script
