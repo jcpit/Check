@@ -27,9 +27,9 @@ This field allows you to specify a custom URL for fetching detection rules. Leav
 
 Controls how often Check fetches updated detection rules. The default is 24 hours. Set update interval based on your security requirements:
 
-- High security environments: 6-12 hours
-- Standard environments: 24 hours
-- Limited bandwidth: 48-72 hours
+* High security environments: 6-12 hours
+* Standard environments: 24 hours
+* Limited bandwidth: 48-72 hours
 
 ### **URL Allowlist (Regex or URL with wildcards)**
 
@@ -45,8 +45,8 @@ Add URLs or patterns that should be excluded from phishing detection. This is us
 
 You can use:
 
-- **Simple URLs with wildcards:** `https://google.com/*` or `https://*.microsoft.com/*`
-- **Advanced regex patterns:** `^https://trusted\.example\.com/.*`
+* **Simple URLs with wildcards:** `https://google.com/*` or `https://*.microsoft.com/*`
+* **Advanced regex patterns:** `^https://trusted\.example\.com/.*`
 
 **Copy-paste examples (based on existing default exclusions):**
 
@@ -66,13 +66,13 @@ Enter one pattern per line. These patterns are added to the exclusion rules with
 Sometimes you need to update rules immediately:
 
 1. **When to do this:**
-   - You've heard about a new phishing campaign
-   - Check isn't detecting a threat it should
-   - Your IT department asks you to update
+   * You've heard about a new phishing campaign
+   * Check isn't detecting a threat it should
+   * Your IT department asks you to update
 2. **How to do it:**
-   - Go to Detection Rules section
-   - Click "Update Rules Now"
-   - Wait for the "Rules updated successfully" message
+   * Go to Detection Rules section
+   * Click "Update Rules Now"
+   * Wait for the "Rules updated successfully" message
 
 ## Understanding the Configuration Overview
 
@@ -80,29 +80,27 @@ The Configuration Overview section displays your current detection rules in two 
 
 **Formatted View (default):**
 
-- **Version number** - Higher numbers are newer
-- **Last Updated** - Should be recent (within your update interval)
-- **Total Rules** - More rules generally mean better protection
-- **Rule Categories** - Shows breakdown by rule type (exclusions, indicators, etc.)
+* **Version number** - Higher numbers are newer
+* **Last Updated** - Should be recent (within your update interval)
+* **Total Rules** - More rules generally mean better protection
+* **Rule Categories** - Shows breakdown by rule type (exclusions, indicators, etc.)
 
 **Raw JSON View:**
 
-- Click "Show Raw JSON" to view the complete detection rules file
-- Useful for advanced users and troubleshooting
-- Shows the exact configuration being used by the extension
+* Click "Show Raw JSON" to view the complete detection rules file
+* Useful for advanced users and troubleshooting
+* Shows the exact configuration being used by the extension
 
 **If you see problems:**
 
-- Very old "Last Updated" date → Click "Update Rules Now"
-- Version shows "Error loading" → Check your internet connection
-- No rules showing → Contact support
+* Very old "Last Updated" date → Click "Update Rules Now"
+* Version shows "Error loading" → Check your internet connection
+* No rules showing → Contact support
 
 {% hint style="warning" %}
-
-### What if Settings Are Not Visible?
+#### What if Settings Are Not Visible?
 
 If some settings do not appear in your version, it means your organization's IT department has set these for you. This is normal in business environments - your IT team wants to make sure everyone has the same security settings. You will also see text indicating that the extension is being managed by policy.
-
 {% endhint %}
 
 ## Troubleshooting Rule Updates
@@ -119,3 +117,82 @@ If some settings do not appear in your version, it means your organization's IT 
 1. Wait 5-10 minutes for the new rules to fully load
 2. Restart your browser
 3. If still slow, try updating rules again
+
+## Using the Rule Playground
+
+{% hint style="warning" %}
+Note that the Rule Playground is in Beta. Some limitations exist around how the rule playground can handle more complex detection filters so results may not be identical to the extension's behavior.
+{% endhint %}
+
+The rule playground is your chance to prototype and test detection rules locally.
+
+### Setting Up Candidate Rules
+
+There are two options for how to build out your candidate rules:
+
+1. You can use the `Load Current` button to pull in the configured detection rules for the browser. You can test as is or add/edit the rules JSON until you have the candidate rules you want to test.
+2. Create a fully custom candidate ruleset. These should be array. See the format of the default rule detection set for the structure of the data.
+
+Once created, you have additional tools to review your JSON.&#x20;
+
+* [**Validate**](detection-rules.md#understanding-the-validation-tool)
+* [**Sanitize**](detection-rules.md#understanding-the-sanitize-tool)
+* **Copy**: Copies the current JSON to your clipboard. This will allow you to paste it into the editor of your choice or use in creating a pull request to GitHub if you are contributing back to the source code.
+
+#### Understanding the Validation Tool
+
+What it checks:
+
+1. JSON validity
+   * Tries to parse the text. If parsing fails shows “Invalid JSON: \<error>” and stops.
+2. Overall shape (must be ONE of):
+   * An array of rule objects
+   * An object with a rules array (parsed.rules)
+   * A single rule object that has both id and type
+   * If none match it will issue “JSON does not look like rule(s) array or object with 'rules'.”
+3. For each rule it inspects ONLY these fields:
+   * id: Missing → issue “Rule missing 'id'”
+   * type: Missing → issue “Rule \<id or (unknown)> missing 'type'”
+   * weight: Present but not a number → issue “Rule \<id> weight should be number”
+   * description: Missing → suggestion “Rule \<id> missing description (optional but recommended)”
+4. Output:
+   * Issues (blocking problems) listed if any
+   * Suggestions (non‑blocking) listed if any
+   * “No blocking validation issues found.” if zero issues
+   * Displays results panel; does NOT change your JSON
+
+What Validate does NOT do
+
+* Does not check regex correctness
+* Does not verify severity/action/pattern semantics
+* Does not add or remove fields
+* Does not reformat or reorder anything
+* Does not merge with stored extension rules
+
+#### Understanding the Sanitize Tool
+
+What Sanitize actually “fixes”
+
+* Only whitespace / indentation / line structure,
+
+What Sanitize does NOT change
+
+* Field names, values, types
+* Order of object properties beyond natural JS enumeration
+* Array ordering
+* Missing required fields (id/type etc.)
+* Invalid logic or patterns
+* It does not validate anything beyond being parseable JSON
+
+### Testing Your Rules
+
+Once you have your candidate rules, you can test your rule set by providing a test URL and sample HTML from that site. It's required to copy the HTML from the site since the tool will not fetch that live. The URL is needed for the rule set evaluation. Once you have the test URL and sample HTML, hit `Test Rules`. If you need to start fresh on your test, you can hit `Clear`.
+
+### Reading the Test Results
+
+Below the `Test Rules` button, you will see the output of your candidate rule set with the test URL and sample HTML.
+
+* **Decision & Summary**: This will provide you with a high-level overview of the result of the test including the decision to allow, warn, or block.
+* **Threats**: This will outline the rules that identified threats in the sample HTML along with a snippet of the HTML that resulted in the detection.
+* **Unsupported Features**: An outline of the features that the playground was unable to check due to the more complex nature of those filters.
+* **Raw JSON**: This will allow you to view the raw output of the playground's evaluation of the sample HTML.
