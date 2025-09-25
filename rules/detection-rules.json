@@ -1,7 +1,7 @@
 {
-  "version": "1.0.5",
+  "version": "2.0.0",
   "lastUpdated": "2025-09-08T14:20:00Z",
-  "description": "Phishing detection logic for identifying phishing attempts targeting Microsoft 365 login pages",
+  "description": "JCPIT TESTING Phishing detection logic for identifying phishing attempts targeting Microsoft 365 login pages",
   "trusted_login_patterns": [
     "^https://login\\.microsoftonline\\.(com|us)$",
     "^https://login\\.microsoft\\.com$",
