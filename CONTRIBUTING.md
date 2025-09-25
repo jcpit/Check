@@ -23,6 +23,12 @@ Thanks for taking the time to contribute! These guidelines help keep contributio
   - Options and popup pages function correctly.
 - Include a brief summary of manual testing in your pull request.
 
+## Scripted Deployment Updates
+- Any new configuration settings result in a need to be managed by scripted deployment. As such, the following files need to be reviewed and have the settings added:
+  - [enterprise/Deploy-Windows-Chrome-and-Edge.ps1](enterprise/Deploy-Windows-Chrome-and-Edge.ps1)
+  - [enterprise/admx/Check-Extension.admx](enterprise/admx/Check-Extension.admx)
+  - [enterprise/admx/en-US/Check-Extension.adml](enterprise/admx/en-US/Check-Extension.adml)
+
 ## Reporting Security Issues
 
 Security vulnerabilities should be reported privately. Refer to [SECURITY.md](SECURITY.md) for disclosure instructions instead of opening public issues or pull requests.
@@ -33,3 +39,8 @@ Security vulnerabilities should be reported privately. Refer to [SECURITY.md](SE
 3. Ensure manual tests pass and any ESLint checks you run are clean.
 4. Push your branch and open a pull request describing the changes and test results.
 5. Address review feedback and update your pull request as needed.
+
+## Documentation Expectations
+- When updating or creating a feature, the corresponding documentation in [docs](docs) should also be updated to reflect your code changes.
+- The documentation hosted at [https:docs.check.tech](https:docs.check.tech) utilizes GitBook which uses mostly GitHub Markdown with some additional syntax. Commit the changes in pure GitHub Markdown while leaving any GitBook sytax in place.
+- New settings should also be added to [config/managed_schema.json](config/managed_schema.json) as this is a central reference for all other documentation
