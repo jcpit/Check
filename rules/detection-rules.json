@@ -199,6 +199,23 @@
   },
   "blocking_rules": [
     {
+  "id": "resource_validation_untrusted_js",
+  "type": "resource_validation",
+  "description": "Block pages loading JavaScript from unknown third‑party hosts (e.g., syntaxerror019, cdn.jsdelivr.net) that are not part of the allowed Microsoft CDN list.",
+  "weight": 30,
+  "condition": {
+    "resource_pattern": ".*(syntaxerror019|cdn\\.jsdelivr\\.net).*\\.js",
+    "required_origin": [
+      "https://aadcdn.msftauthimages.net/",
+      "https://aadcdn.msauth.net/",
+      "https://login.microsoftonline.com/"
+    ],
+    "block_if_different_origin": true
+  },
+  "action": "block",
+  "severity": "critical"
+    },
+    {
       "id": "form_post_not_microsoft",
       "type": "form_action_validation",
       "description": "Block the page if the credentials are not sent to Microsoft",
