@@ -1,5 +1,5 @@
 {
-  "version": "1.0.5",
+  "version": "1.0.6",
   "lastUpdated": "2025-09-08T14:20:00Z",
   "description": "Phishing detection logic for identifying phishing attempts targeting Microsoft 365 login pages",
   "trusted_login_patterns": [
@@ -31,11 +31,11 @@
     "^https://[^.]*\\.microsoftazuread-sso\\.com$",
     "^https://[^.]*\\.azureedge\\.net$",
     "^https://[^.]*\\.bing\\.com$",
-    "^https://.*\\.cloud\\.microsoft$"
   ],
   "exclusion_system": {
     "description": "Centralized exclusion system to prevent false positives on legitimate sites",
     "domain_patterns": [
+      "^https://.*\\.cloud\\.microsoft$",
       "^https://[^/]*\\.cipp\\.app(/.*)?$",
       "^https://(.*\\.)?cyberdrain\\.com(/.*)?$",
       "^https://[^/]*\\.cow\\.tech(/.*)?$",
@@ -48,6 +48,7 @@
       "^https://[^/]*\\.(facebook|twitter|x|linkedin|instagram)\\.com(/.*)?$",
       "^https://[^/]*\\.(youtube|youtu)\\.be(/.*)?$",
       "^https://[^/]*\\.apple\\.com(/.*)?$",
+      "^https://[^/]*\\.dynamics\\.com(/.*)?$",
       "^https://(?:[^/]*\\.)?zoom\\.us(/.*)?$"
     ],
     "context_indicators": {
