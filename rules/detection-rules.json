@@ -30,12 +30,12 @@
     "^https://[^.]*\\.microsoftonline-p\\.com$",
     "^https://[^.]*\\.microsoftazuread-sso\\.com$",
     "^https://[^.]*\\.azureedge\\.net$",
-    "^https://[^.]*\\.bing\\.com$"
+    "^https://[^.]*\\.bing\\.com$",
+    "^https://.*\\.cloud\\.microsoft$"
   ],
   "exclusion_system": {
     "description": "Centralized exclusion system to prevent false positives on legitimate sites",
     "domain_patterns": [
-      "^https://.*\\.cloud\\.microsoft$",
       "^https://[^/]*\\.cipp\\.app(/.*)?$",
       "^https://(.*\\.)?cyberdrain\\.com(/.*)?$",
       "^https://[^/]*\\.cow\\.tech(/.*)?$",
