@@ -29,6 +29,11 @@ export class ConfigManager {
       // Load local configuration with safe wrapper
       const localConfig = await safe(chrome.storage.local.get(["config"]));
 
+      // Migrate legacy configuration structure if needed
+      if (localConfig?.config) {
+        localConfig.config = this.migrateLegacyConfig(localConfig.config);
+      }
+
       // Load branding configuration
       this.brandingConfig = await this.loadBrandingConfig();
 
@@ -45,6 +50,24 @@ export class ConfigManager {
       logger.error("Check: Failed to load configuration:", error);
       throw error;
     }
+  }
+
+  migrateLegacyConfig(config) {
+    // Migrate legacy detectionRules.customRulesUrl to top-level customRulesUrl
+    if (config.detectionRules?.customRulesUrl && !config.customRulesUrl) {
+      config.customRulesUrl = config.detectionRules.customRulesUrl;
+      logger.log("Check: Migrated legacy customRulesUrl to top-level");
+    }
+
+    // Migrate legacy detectionRules.updateInterval to top-level updateInterval
+    if (config.detectionRules?.updateInterval && !config.updateInterval) {
+      // Convert milliseconds to hours if needed
+      const interval = config.detectionRules.updateInterval;
+      config.updateInterval = interval > 1000 ? Math.round(interval / 3600000) : interval;
+      logger.log("Check: Migrated legacy updateInterval to top-level");
+    }
+
+    return config;
   }
 
   async loadEnterpriseConfig() {
@@ -194,6 +217,18 @@ export class ConfigManager {
       ...enterpriseConfig,
     };
 
+    // Fix customRulesUrl precedence - user-saved value should override defaults
+    if (localConfig?.customRulesUrl && localConfig.customRulesUrl.trim() !== "") {
+      // User has saved a custom URL, use it
+      merged.customRulesUrl = localConfig.customRulesUrl;
+      if (merged.detectionRules) {
+        merged.detectionRules.customRulesUrl = localConfig.customRulesUrl;
+      }
+    } else if (localConfig?.detectionRules?.customRulesUrl && localConfig.detectionRules.customRulesUrl.trim() !== "") {
+      // User has saved a custom URL in the nested structure, use it
+      merged.customRulesUrl = localConfig.detectionRules.customRulesUrl;
+    }
+
     // Remove customBranding from the top level since it's been merged into branding
     if (merged.customBranding) {
       delete merged.customBranding;
@@ -229,8 +264,6 @@ export class ConfigManager {
       // Detection settings
       detectionRules: {
         enableCustomRules: true,
-        customRulesUrl:
-          "https://raw.githubusercontent.com/CyberDrain/Check/refs/heads/main/rules/detection-rules.json",
         updateInterval: 86400000, // 24 hours
         strictMode: false,
       },
@@ -244,8 +277,8 @@ export class ConfigManager {
       // Debug settings
       enableDebugLogging: false,
 
-      // Custom rules
-      customRulesUrl: "",
+      // Custom rules - centralized at top level
+      customRulesUrl: "https://raw.githubusercontent.com/CyberDrain/Check/refs/heads/main/rules/detection-rules.json",
       updateInterval: 24, // hours
 
       // Performance settings
