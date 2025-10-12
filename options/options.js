@@ -886,11 +886,8 @@ class CheckOptions {
     this.elements.enableValidPageBadge.checked =
       this.config.enableValidPageBadge || false;
 
-    // Detection settings
-    this.elements.customRulesUrl.value =
-      this.config?.detectionRules?.customRulesUrl ||
-      this.config?.customRulesUrl ||
-      "";
+    // Detection settings - use top-level customRulesUrl consistently
+    this.elements.customRulesUrl.value = this.config?.customRulesUrl || "";
 
     // URL Allowlist settings
     if (this.elements.urlAllowlist) {
