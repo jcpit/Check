@@ -606,6 +606,9 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("blockedUrl").textContent
     );
   }, 1000);
+
+  // Show the resulting page
+  document.body.classList.remove('loading');
 });
 
 // Handle keyboard shortcuts
