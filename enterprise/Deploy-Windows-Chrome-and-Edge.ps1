@@ -59,8 +59,23 @@ function Configure-ExtensionSettings {
     New-ItemProperty -Path $ManagedStorageKey -Name "cippTenantId" -PropertyType String -Value $cippTenantId -Force | Out-Null
     New-ItemProperty -Path $ManagedStorageKey -Name "customRulesUrl" -PropertyType String -Value $customRulesUrl -Force | Out-Null
     New-ItemProperty -Path $ManagedStorageKey -Name "updateInterval" -PropertyType DWord -Value $updateInterval -Force | Out-Null
-    New-ItemProperty -Path $ManagedStorageKey -Name "urlAllowlist" -PropertyType MultiString -Value $urlAllowlist -Force | Out-Null
     New-ItemProperty -Path $ManagedStorageKey -Name "enableDebugLogging" -PropertyType DWord -Value $enableDebugLogging -Force | Out-Null
+
+    # Create and configure URL allow list
+    $urlAllowlistKey = "$ManagedStorageKey\urlAllowlist"
+    if (!(Test-Path $urlAllowlistKey)) {
+        New-Item -Path $urlAllowlistKey -Force | Out-Null
+    }
+
+    # Clear any existing properties
+    Remove-ItemProperty -Path $urlAllowlistKey -Name * -Force | Out-Null
+
+    # Set URL allow list properties with names starting from 1
+    for ($i = 0; $i -lt $urlAllowlist.Count; $i++) {
+        $propertyName = ($i + 1).ToString()
+        $propertyValue = $urlAllowlist[$i]
+        New-ItemProperty -Path $urlAllowlistKey -Name $propertyName -PropertyType String -Value $propertyValue -Force | Out-Null
+    }
 
     # Create and configure custom branding
     $customBrandingKey = "$ManagedStorageKey\customBranding"

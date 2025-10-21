@@ -39,9 +39,9 @@
             <string>https://edge.microsoft.com/extensionwebstorebase/v1/crx</string>
           </value>
         </item>
-        <item key="SOFTWARE\Policies\Microsoft\Edge\ExtensionSettings\knepjpocdagponkonnbggpcnhnaikajg" valueName="toolbar_pin">
+        <item key="SOFTWARE\Policies\Microsoft\Edge\ExtensionSettings\knepjpocdagponkonnbggpcnhnaikajg" valueName="toolbar_state">
           <value>
-            <string>force_pinned</string>
+            <string>force_shown</string>
           </value>
         </item>
       </enabledList>
@@ -132,11 +132,11 @@
     </policy>
 
     <!-- URL Allowlist -->
-    <policy name="CheckUrlAllowlist" class="Machine" displayName="$(string.CheckUrlAllowlist)" explainText="$(string.CheckUrlAllowlist_Explain)" key="SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\knepjpocdagponkonnbggpcnhnaikajg\policy" presentation="$(presentation.CheckUrlAllowlist)">
+    <policy name="CheckUrlAllowlist" class="Machine" displayName="$(string.CheckUrlAllowlist)" explainText="$(string.CheckUrlAllowlist_Explain)" key="SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\knepjpocdagponkonnbggpcnhnaikajg\policy\urlAllowlist" presentation="$(presentation.CheckUrlAllowlist)">
       <parentCategory ref="CheckExtensionEdge" />
       <supportedOn ref="SUPPORTED_WIN7" />
       <elements>
-        <list id="UrlAllowlistList" valueName="urlAllowlist" />
+        <list id="UrlAllowlistList" valueName="urlAllowlist" valuePrefix="" />
       </elements>
     </policy>
 
@@ -307,11 +307,11 @@
     </policy>
 
     <!-- URL Allowlist - Chrome -->
-    <policy name="CheckUrlAllowlistChrome" class="Machine" displayName="$(string.CheckUrlAllowlistChrome)" explainText="$(string.CheckUrlAllowlistChrome_Explain)" key="SOFTWARE\Policies\Google\Chrome\3rdparty\extensions\benimdeioplgkhanklclahllklceahbe\policy" presentation="$(presentation.CheckUrlAllowlistChrome)">
+    <policy name="CheckUrlAllowlistChrome" class="Machine" displayName="$(string.CheckUrlAllowlistChrome)" explainText="$(string.CheckUrlAllowlistChrome_Explain)" key="SOFTWARE\Policies\Google\Chrome\3rdparty\extensions\benimdeioplgkhanklclahllklceahbe\policy\urlAllowlist" presentation="$(presentation.CheckUrlAllowlistChrome)">
       <parentCategory ref="CheckExtensionChrome" />
       <supportedOn ref="SUPPORTED_WIN7" />
       <elements>
-        <list id="UrlAllowlistListChrome" valueName="urlAllowlist" />
+        <list id="UrlAllowlistListChrome" valueName="urlAllowlist" valuePrefix="" />
       </elements>
     </policy>
 
