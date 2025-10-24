@@ -11,7 +11,7 @@ Most individual users can skip this section unless they want to personalize the 
 ## Company Information
 
 {% hint style="warning" %}
-### What if Settings Are Not Visible?
+#### What if Settings Are Not Visible?
 
 If some settings do not appear on your version, it means your organization's IT department has set these for you. This is normal in business environments - your IT team wants to make sure everyone has the same security settings. You will also see text indicating that the extension is being managed by policy.
 {% endhint %}
