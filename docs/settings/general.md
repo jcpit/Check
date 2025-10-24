@@ -32,7 +32,7 @@ You can monitor CIPP reporting status and activity in [Activity Logs](activity-l
 
 ## User Interface
 
-### **Show Notifications**&#x20;
+### **Show Notifications**
 
 When Check blocks a dangerous website or finds something suspicious, it can show you a small popup message to let you know what's going on. We recommend leaving this setting enabled
 
@@ -41,8 +41,7 @@ When Check blocks a dangerous website or finds something suspicious, it can show
 This adds a small green checkmark to real Microsoft login pages. This feature is optional.
 
 {% hint style="warning" %}
-
-### What if Settings Are Not Visible?
+#### What if Settings Are Not Visible?
 
 If some settings do not appear on my version, it means your organization's IT department has set these for you. This is normal in business environments - your IT team wants to make sure everyone has the same security settings. You will also see text indicating that the extension is being managed by policy.
 {% endhint %}

@@ -30,9 +30,9 @@ Documentation to follow
 
 
 1. Download the following from the Check repo on GitHub
-   1. ​[Deploy-ADMX.ps1](../../../../enterprise/Deploy-ADMX.ps1)
-   2. ​[Check-Extension.admx](../../../../enterprise/admx/Check-Extension.admx)​
-   3. ​[Check-Extension.adml](../../../../enterprise/admx/en-US/Check-Extension.adml)​
+   1. ​[Deploy-ADMX.ps1](https://github.com/CyberDrain/Check/blob/main/enterprise/Deploy-ADMX.ps1)
+   2. ​[Check-Extension.admx](https://github.com/CyberDrain/Check/blob/main/enterprise/admx/Check-Extension.admx)​
+   3. ​[Check-Extension.adml](https://github.com/CyberDrain/Check/blob/main/enterprise/admx/en-US/Check-Extension.adml)​
 2. Run Deploy-ADMX.ps1. As long as you keep the other two files in the same folder, it will correctly add the available objects to Group Policy.
 3. Open Group Policy and create a policy using the imported settings that can be found at `Computer Configuration → Policies → Administrative Templates → CyberDrain → Check - Microsoft 365 Phishing Protection`
 
