@@ -34,6 +34,13 @@ if (window.checkExtensionLoaded) {
   const WARNING_THRESHOLD = 3; // Block if 4+ warning threats found (escalation threshold)
   let initialBody; // Reference to the initial body element
 
+  const regexCache = new Map();
+  let cachedPageSource = null;
+  let cachedPageSourceTime = 0;
+  const PAGE_SOURCE_CACHE_TTL = 1000;
+  const domQueryCache = new WeakMap();
+  let cachedStylesheetAnalysis = null;
+
   // Console log capturing
   let capturedLogs = [];
   const MAX_LOGS = 100; // Limit the number of stored logs
@@ -112,6 +119,60 @@ if (window.checkExtensionLoaded) {
     });
   }
 
+  function getCachedRegex(pattern, flags = '') {
+    const key = `${pattern}|||${flags}`;
+    if (!regexCache.has(key)) {
+      try {
+        regexCache.set(key, new RegExp(pattern, flags));
+      } catch (error) {
+        logger.warn(`Invalid regex pattern: ${pattern}`, error);
+        return null;
+      }
+    }
+    return regexCache.get(key);
+  }
+
+  function getPageSource() {
+    const now = Date.now();
+    if (!cachedPageSource || (now - cachedPageSourceTime) > PAGE_SOURCE_CACHE_TTL) {
+      cachedPageSource = document.documentElement.outerHTML;
+      cachedPageSourceTime = now;
+    }
+    return cachedPageSource;
+  }
+
+  function clearPerformanceCaches() {
+    cachedPageSource = null;
+    cachedPageSourceTime = 0;
+    domQueryCache.delete(document);
+    cachedStylesheetAnalysis = null;
+  }
+
+  function analyzeStylesheets() {
+    if (cachedStylesheetAnalysis) return cachedStylesheetAnalysis;
+    const analysis = { hasMicrosoftCSS: false, cssContent: '', sheets: [] };
+    try {
+      const styleSheets = Array.from(document.styleSheets);
+      for (const sheet of styleSheets) {
+        const sheetInfo = { href: sheet.href || 'inline' };
+        if (sheet.href?.match(/msauth|msft|microsoft/i)) {
+          analysis.hasMicrosoftCSS = true;
+        }
+        try {
+          if (sheet.cssRules) {
+            analysis.cssContent += Array.from(sheet.cssRules).map(r => r.cssText).join(' ') + ' ';
+            sheetInfo.accessible = true;
+          }
+        } catch (e) {
+          sheetInfo.accessible = false;
+        }
+        analysis.sheets.push(sheetInfo);
+      }
+    } catch (e) {}
+    cachedStylesheetAnalysis = analysis;
+    return analysis;
+  }
+
   /**
    * Check if a URL matches any pattern in the given pattern array
    * @param {string} url - The URL to check
@@ -120,16 +181,11 @@ if (window.checkExtensionLoaded) {
    */
   function matchesAnyPattern(url, patterns) {
     if (!patterns || patterns.length === 0) return false;
-
     for (const pattern of patterns) {
-      try {
-        const regex = new RegExp(pattern);
-        if (regex.test(url)) {
-          logger.debug(`URL "${url}" matches pattern: ${pattern}`);
-          return true;
-        }
-      } catch (error) {
-        logger.warn(`Invalid regex pattern: ${pattern}`, error);
+      const regex = getCachedRegex(pattern);
+      if (regex && regex.test(url)) {
+        logger.debug(`URL "${url}" matches pattern: ${pattern}`);
+        return true;
       }
     }
     return false;
@@ -202,6 +258,12 @@ if (window.checkExtensionLoaded) {
 
       developerConsoleLoggingEnabled =
         config.enableDeveloperConsoleLogging === true; // "Developer Mode" in UI
+      
+      // Only setup console capture if developer mode is enabled
+      if (developerConsoleLoggingEnabled) {
+        setupConsoleCapture();
+        logger.log("Console capture enabled (developer mode active)");
+      }
     } catch (error) {
       // If there's an error loading settings, default to false
       developerConsoleLoggingEnabled = false;
@@ -222,6 +284,7 @@ if (window.checkExtensionLoaded) {
       domObserver.disconnect();
       domObserver = null;
     }
+    clearPerformanceCaches();
     setupDomObserver();
   }
 
@@ -327,7 +390,7 @@ if (window.checkExtensionLoaded) {
    */
   function testDetectionPatterns() {
     console.log("🔍 MANUAL DETECTION TESTING");
-    const pageSource = document.documentElement.outerHTML;
+    const pageSource = getPageSource();
 
     // Test each pattern individually
     const patterns = [
@@ -803,7 +866,7 @@ if (window.checkExtensionLoaded) {
     );
 
     // Check for suspicious patterns in page source
-    const pageSource = document.documentElement.outerHTML;
+    const pageSource = getPageSource();
     const suspiciousPatterns = [
       {
         name: "Microsoft mentions",
@@ -861,7 +924,7 @@ if (window.checkExtensionLoaded) {
       }
 
       const requirements = detectionRules.m365_detection_requirements;
-      const pageSource = document.documentElement.outerHTML;
+      const pageSource = getPageSource();
       const pageText = document.body?.textContent || "";
 
       // Lower threshold - just need ANY Microsoft-related elements
@@ -980,7 +1043,7 @@ if (window.checkExtensionLoaded) {
       }
 
       const requirements = detectionRules.m365_detection_requirements;
-      const pageSource = document.documentElement.outerHTML;
+      const pageSource = getPageSource();
 
       // Store the page source for debugging purposes
       lastScannedPageSource = pageSource;
@@ -1235,7 +1298,7 @@ if (window.checkExtensionLoaded) {
 
             case "css_spoofing_validation":
               // Check: If page has Microsoft CSS patterns but posts to non-Microsoft domain
-              const pageSource = document.documentElement.outerHTML;
+              const pageSource = getPageSource();
               let cssMatches = 0;
 
               // Count CSS indicator matches
@@ -1642,7 +1705,7 @@ if (window.checkExtensionLoaded) {
 
       const threats = [];
       let totalScore = 0;
-      const pageSource = document.documentElement.outerHTML;
+      const pageSource = getPageSource();
       const pageText = document.body?.textContent || "";
 
       logger.log(
@@ -2074,7 +2137,7 @@ if (window.checkExtensionLoaded) {
 
       let score = 0;
       const triggeredRules = [];
-      const pageHTML = document.documentElement.outerHTML;
+      const pageHTML = getPageSource();
 
       // Process each rule from the detection rules file
       for (const rule of detectionRules.rules) {
@@ -4740,8 +4803,8 @@ if (window.checkExtensionLoaded) {
     try {
       logger.log("Initializing Check");
 
-      // Setup console capture early to catch all logs
-      setupConsoleCapture();
+      // Console capture is now setup only when developer mode is enabled (see loadDeveloperConsoleLoggingSetting)
+      // This eliminates performance overhead for normal users
 
       // Apply branding colors first
       applyBrandingColors();
@@ -4937,10 +5000,18 @@ if (window.checkExtensionLoaded) {
 
     if (message.type === "GET_CONSOLE_LOGS") {
       try {
-        sendResponse({
-          success: true,
-          logs: capturedLogs.slice(), // Send a copy of the logs
-        });
+        // Console logs only available if developer mode is enabled
+        if (!developerConsoleLoggingEnabled) {
+          sendResponse({
+            success: false,
+            error: "Console capture disabled. Enable Developer Mode in options to capture logs.",
+          });
+        } else {
+          sendResponse({
+            success: true,
+            logs: capturedLogs.slice(), // Send a copy of the logs
+          });
+        }
       } catch (error) {
         sendResponse({ success: false, error: error.message });
       }
