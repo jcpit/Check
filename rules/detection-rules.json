@@ -21,6 +21,7 @@
     "^https://[^.]*\\.hotmail\\.com$",
     "^https://[^.]*\\.outlook\\.com$",
     "^https://[^.]*\\.azure\\.com$",
+    "^https://[^.]*\\.azure\\.cn$",
     "^https://[^.]*\\.azurewebsites\\.net$",
     "^https://[^.]*\\.msauth\\.net$",
     "^https://[^.]*\\.msftauth\\.net$",
