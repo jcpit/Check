@@ -3,55 +3,55 @@
   "lastUpdated": "2025-09-08T14:20:00Z",
   "description": "Phishing detection logic for identifying phishing attempts targeting Microsoft 365 login pages",
   "trusted_login_patterns": [
-    "^https://login\\.microsoftonline\\.(com|us)$",
-    "^https://login\\.microsoft\\.com$",
-    "^https://login\\.microsoft\\.net$",
-    "^https://login\\.windows\\.net$",
-    "^https://login\\.partner\\.microsoftonline\\.cn$",
-    "^https://login\\.live\\.com$"
+    "^https:\/\/login\\.microsoftonline\\.(com|us)$",
+    "^https:\/\/login\\.microsoft\\.com$",
+    "^https:\/\/login\\.microsoft\\.net$",
+    "^https:\/\/login\\.windows\\.net$",
+    "^https:\/\/login\\.partner\\.microsoftonline\\.cn$",
+    "^https:\/\/login\\.live\\.com$"
   ],
   "microsoft_domain_patterns": [
-    "^https://[^.]*\\.microsoft\\.com$",
-    "^https://[^.]*\\.microsoftonline\\.com$",
-    "^https://[^.]*\\.office\\.com$",
-    "^https://[^.]*\\.office365\\.com$",
-    "^https://[^.]*\\.sharepoint\\.com$",
-    "^https://[^.]*\\.onedrive\\.com$",
-    "^https://[^.]*\\.live\\.com$",
-    "^https://[^.]*\\.hotmail\\.com$",
-    "^https://[^.]*\\.outlook\\.com$",
-    "^https://[^.]*\\.azure\\.com$",
-    "^https://[^.]*\\.azure\\.cn$",
-    "^https://[^.]*\\.azurewebsites\\.net$",
-    "^https://[^.]*\\.msauth\\.net$",
-    "^https://[^.]*\\.msftauth\\.net$",
-    "^https://[^.]*\\.msftauthimages\\.net$",
-    "^https://[^.]*\\.msauthimages\\.net$",
-    "^https://[^.]*\\.msidentity\\.com$",
-    "^https://[^.]*\\.microsoftonline-p\\.com$",
-    "^https://[^.]*\\.microsoftazuread-sso\\.com$",
-    "^https://[^.]*\\.azureedge\\.net$",
-    "^https://[^.]*\\.bing\\.com$",
-    "^https://.*\\.cloud\\.microsoft$",
-    "^https://([^.]+\\.)*live\\.com(/.*)?$"
+    "^https:\/\/[^.]*\\.microsoft\\.com$",
+    "^https:\/\/[^.]*\\.microsoftonline\\.com$",
+    "^https:\/\/[^.]*\\.office\\.com$",
+    "^https:\/\/[^.]*\\.office365\\.com$",
+    "^https:\/\/[^.]*\\.sharepoint\\.com$",
+    "^https:\/\/[^.]*\\.onedrive\\.com$",
+    "^https:\/\/[^.]*\\.live\\.com$",
+    "^https:\/\/[^.]*\\.hotmail\\.com$",
+    "^https:\/\/[^.]*\\.outlook\\.com$",
+    "^https:\/\/[^.]*\\.azure\\.com$",
+    "^https:\/\/[^.]*\\.azure\\.cn$",
+    "^https:\/\/[^.]*\\.azurewebsites\\.net$",
+    "^https:\/\/[^.]*\\.msauth\\.net$",
+    "^https:\/\/[^.]*\\.msftauth\\.net$",
+    "^https:\/\/[^.]*\\.msftauthimages\\.net$",
+    "^https:\/\/[^.]*\\.msauthimages\\.net$",
+    "^https:\/\/[^.]*\\.msidentity\\.com$",
+    "^https:\/\/[^.]*\\.microsoftonline-p\\.com$",
+    "^https:\/\/[^.]*\\.microsoftazuread-sso\\.com$",
+    "^https:\/\/[^.]*\\.azureedge\\.net$",
+    "^https:\/\/[^.]*\\.bing\\.com$",
+    "^https:\/\/.*\\.cloud\\.microsoft$",
+    "^https:\/\/([^.]+\\.)*live\\.com(/.*)?$"
   ],
   "exclusion_system": {
     "description": "Centralized exclusion system to prevent false positives on legitimate sites",
     "domain_patterns": [
-      "^https://[^/]*\\.cipp\\.app(/.*)?$",
-      "^https://(.*\\.)?cyberdrain\\.com(/.*)?$",
-      "^https://[^/]*\\.cow\\.tech(/.*)?$",
-      "^https://[^/]*\\.auth0\\.com(/.*)?$",
-      "^https://[^/]*\\.google\\.(com|co\\.uk|ca|de|fr|co|nl|com\\.au)(/.*)?$",
-      "^https://[^/]*\\.bing\\.com(/.*)?$",
-      "^https://[^/]*\\.yahoo\\.com(/.*)?$",
-      "^https://[^/]*\\.duckduckgo\\.com(/.*)?$",
-      "^https://[^/]*\\.amazon\\.(com|co\\.uk|ca|de|fr)(/.*)?$",
-      "^https://[^/]*\\.(facebook|twitter|x|linkedin|instagram)\\.com(/.*)?$",
-      "^https://[^/]*\\.(youtube|youtu)\\.be(/.*)?$",
-      "^https://[^/]*\\.apple\\.com(/.*)?$",
-      "^https://[^/]*\\.dynamics\\.com(/.*)?$",
-      "^https://(?:[^/]*\\.)?zoom\\.us(/.*)?$"
+      "^https:\/\/[^/]*\\.cipp\\.app(/.*)?$",
+      "^https:\/\/(.*\\.)?cyberdrain\\.com(/.*)?$",
+      "^https:\/\/[^/]*\\.cow\\.tech(/.*)?$",
+      "^https:\/\/[^/]*\\.auth0\\.com(/.*)?$",
+      "^https:\/\/[^/]*\\.google\\.(com|co\\.uk|ca|de|fr|co|nl|com\\.au)(/.*)?$",
+      "^https:\/\/[^/]*\\.bing\\.com(/.*)?$",
+      "^https:\/\/[^/]*\\.yahoo\\.com(/.*)?$",
+      "^https:\/\/[^/]*\\.duckduckgo\\.com(/.*)?$",
+      "^https:\/\/[^/]*\\.amazon\\.(com|co\\.uk|ca|de|fr)(/.*)?$",
+      "^https:\/\/[^/]*\\.(facebook|twitter|x|linkedin|instagram)\\.com(/.*)?$",
+      "^https:\/\/[^/]*\\.(youtube|youtu)\\.be(/.*)?$",
+      "^https:\/\/[^/]*\\.apple\\.com(/.*)?$",
+      "^https:\/\/[^/]*\\.dynamics\\.com(/.*)?$",
+      "^https:\/\/(?:[^/]*\\.)?zoom\\.us(/.*)?$"
     ],
     "context_indicators": {
       "description": "Additional context that indicates legitimate discussion vs phishing",
@@ -219,7 +219,7 @@
       "description": "Block if customcss is loaded from non-Microsoft CDN",
       "condition": {
         "resource_pattern": "customcss",
-        "required_origin": "https://aadcdn.msftauthimages.net/",
+        "required_origin": "https:\/\/aadcdn.msftauthimages.net/",
         "block_if_different_origin": true
       },
       "action": "block",
@@ -328,7 +328,7 @@
     {
       "id": "aadcdn_msauth",
       "text_patterns": [
-        "https://aadcdn\\.msauth\\.net/"
+        "https:\/\/aadcdn\\.msauth\\.net/"
       ],
       "description": "Microsoft authentication CDN reference",
       "weight": 15
@@ -384,7 +384,7 @@
       "type": "content",
       "weight": 15,
       "condition": {
-        "contains": "https://aadcdn.msauth.net/",
+        "contains": "https:\/\/aadcdn.msauth.net/",
         "search_context": "page_source"
       },
       "description": "Detect aadcdn.msauth.net presence in source"
@@ -417,33 +417,9 @@
       "weight": 25,
       "condition": {
         "network_pattern": "*customcss*",
-        "required_domain": "https://aadcdn.msftauthimages.net/"
+        "required_domain": "https:\/\/aadcdn.msftauthimages.net/"
       },
       "description": "Custom CSS files must originate from aadcdn.msftauthimages.net"
-    },
-    {
-      "id": "check_beginauth_csp",
-      "type": "header",
-      "weight": 30,
-      "condition": {
-        "header_name": "content-security-policy-report-only",
-        "required_domains": [
-          "https://*.msauth.net/",
-          "https://*.msftauth.net/",
-          "https://*.msftauthimages.net/",
-          "https://*.msauthimages.net/",
-          "https://*.msidentity.com/",
-          "https://*.microsoftonline-p.com/",
-          "https://*.microsoftazuread-sso.com/",
-          "https://*.azureedge.net/",
-          "https://*.outlook.com/",
-          "https://*.office.com/",
-          "https://*.office365.com/",
-          "https://*.microsoft.com/",
-          "https://*.bing.com/"
-        ]
-      },
-      "description": "BeginAuth request must contain proper content-security-policy-report-only header"
     },
     {
       "id": "check_valid_referrer",
@@ -728,7 +704,7 @@
       "content_patterns": [
         "urlMsaSignUp",
         "flowToken",
-        "https://aadcdn.msauth.net/"
+        "https:\/\/aadcdn.msauth.net/"
       ],
       "description": "Legitimate Microsoft authentication code patterns",
       "confidence": 0.85
@@ -736,7 +712,7 @@
     {
       "id": "leg_004",
       "resource_patterns": [
-        "https://aadcdn.msftauthimages.net/.*customcss.*"
+        "https:\/\/aadcdn.msftauthimages.net/.*customcss.*"
       ],
       "description": "Legitimate source for custom CSS resources",
       "confidence": 0.9
@@ -744,19 +720,19 @@
     {
       "id": "leg_005",
       "csp_domains": [
-        "https://*.msauth.net/",
-        "https://*.msftauth.net/",
-        "https://*.msftauthimages.net/",
-        "https://*.msauthimages.net/",
-        "https://*.msidentity.com/",
-        "https://*.microsoftonline-p.com/",
-        "https://*.microsoftazuread-sso.com/",
-        "https://*.azureedge.net/",
-        "https://*.outlook.com/",
-        "https://*.office.com/",
-        "https://*.office365.com/",
-        "https://*.microsoft.com/",
-        "https://*.bing.com/"
+        "https:\/\/*.msauth.net/",
+        "https:\/\/*.msftauth.net/",
+        "https:\/\/*.msftauthimages.net/",
+        "https:\/\/*.msauthimages.net/",
+        "https:\/\/*.msidentity.com/",
+        "https:\/\/*.microsoftonline-p.com/",
+        "https:\/\/*.microsoftazuread-sso.com/",
+        "https:\/\/*.azureedge.net/",
+        "https:\/\/*.outlook.com/",
+        "https:\/\/*.office.com/",
+        "https:\/\/*.office365.com/",
+        "https:\/\/*.microsoft.com/",
+        "https:\/\/*.bing.com/"
       ],
       "description": "Required domains in content-security-policy-report-only header",
       "confidence": 1.0
@@ -764,13 +740,13 @@
     {
       "id": "leg_006",
       "referrer_patterns": [
-        "https://login\\.microsoftonline\\.com",
-        "https://login\\.microsoft\\.net",
-        "https://login\\.microsoft\\.com",
-        "https://autologon\\.microsoftazuread-sso\\.com",
-        "https://tasks\\.office\\.com",
-        "https://login\\.windows\\.net",
-        "https://planner\\.cloud\\.microsoft"
+        "https:\/\/login\\.microsoftonline\\.com",
+        "https:\/\/login\\.microsoft\\.net",
+        "https:\/\/login\\.microsoft\\.com",
+        "https:\/\/autologon\\.microsoftazuread-sso\\.com",
+        "https:\/\/tasks\\.office\\.com",
+        "https:\/\/login\\.windows\\.net",
+        "https:\/\/planner\\.cloud\\.microsoft"
       ],
       "description": "Valid Microsoft referrers from custom allow list",
       "confidence": 0.95
