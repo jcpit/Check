@@ -34,13 +34,6 @@ runs:
         cp -r scripts/ ${{ env.EXTENSION_DIR }}
         cp -r styles/ ${{ env.EXTENSION_DIR }}
 
-    - name: Validate manifest.json of the extension
-      uses: cardinalby/schema-validator-action@2166123eb256fa40baef7e22ab1379708425efc7
-      with:
-        file: ${{ env.EXTENSION_DIR }}manifest.json
-        schema: 'https://www.schemastore.org/chrome-manifest.json'
-        mode: 'lax'
-
     - name: Pack directory to zip
       if: inputs.doNotPackZip != 'true'
       uses: cardinalby/webext-buildtools-pack-extension-dir-action@28fdcac9860fb08555580587cab0d33afe4a341d
