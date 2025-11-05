@@ -447,7 +447,7 @@
       "description": "Suspicious domain mimicking Microsoft services",
       "action": "block",
       "category": "domain_spoofing",
-      "confidence": 0.9
+      "confidence": 0.3
     },
     {
       "id": "phi_004",
