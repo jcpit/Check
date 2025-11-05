@@ -1403,6 +1403,9 @@ class CheckBackground {
             // Update the configuration
             await this.configManager.updateConfig(message.config);
 
+            // Reload DetectionRulesManager configuration to pick up customRulesUrl changes
+            await this.detectionRulesManager.reloadConfiguration();
+
             // Get the updated config to check new badge setting
             const updatedConfig = await this.configManager.getConfig();
             const newBadgeEnabled =
@@ -1569,6 +1572,8 @@ class CheckBackground {
       });
       // CyberDrain integration - Refresh policy with defensive handling
       await this.refreshPolicy();
+      // Reload DetectionRulesManager configuration to pick up policy changes
+      await safe(this.detectionRulesManager.reloadConfiguration());
     }
   }
 
