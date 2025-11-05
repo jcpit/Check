@@ -25,19 +25,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      - name: Copy extension to folder
-        run: |
-          mkdir -p ${{ env.EXTENSION_DIR }}
-          cp manifest.json ${{ env.EXTENSION_DIR }}
-          cp blocked.html ${{ env.EXTENSION_DIR }}
-          cp -r config/ ${{ env.EXTENSION_DIR }}
-          cp -r images/ ${{ env.EXTENSION_DIR }}
-          cp -r options/ ${{ env.EXTENSION_DIR }}
-          cp -r popup/ ${{ env.EXTENSION_DIR }}
-          cp -r rules/ ${{ env.EXTENSION_DIR }}
-          cp -r scripts/ ${{ env.EXTENSION_DIR }}
-          cp -r styles/ ${{ env.EXTENSION_DIR }}
-
       - name: Build, test and pack to zip
         id: buildPack
         if: steps.getRelease.outcome != 'success'
