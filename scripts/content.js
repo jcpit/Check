@@ -119,7 +119,16 @@ if (window.checkExtensionLoaded) {
     });
   }
 
-  function getCachedRegex(pattern, flags = '') {
+  function isInIframe() {
+    try {
+      return window.self !== window.top;
+    } catch (e) {
+      // If we can't access window.top due to cross-origin, we're likely in an iframe
+      return true;
+    }
+  }
+
+  function getCachedRegex(pattern, flags = "") {
     const key = `${pattern}|||${flags}`;
     if (!regexCache.has(key)) {
       try {
@@ -134,7 +143,10 @@ if (window.checkExtensionLoaded) {
 
   function getPageSource() {
     const now = Date.now();
-    if (!cachedPageSource || (now - cachedPageSourceTime) > PAGE_SOURCE_CACHE_TTL) {
+    if (
+      !cachedPageSource ||
+      now - cachedPageSourceTime > PAGE_SOURCE_CACHE_TTL
+    ) {
       cachedPageSource = document.documentElement.outerHTML;
       cachedPageSourceTime = now;
     }
@@ -150,17 +162,20 @@ if (window.checkExtensionLoaded) {
 
   function analyzeStylesheets() {
     if (cachedStylesheetAnalysis) return cachedStylesheetAnalysis;
-    const analysis = { hasMicrosoftCSS: false, cssContent: '', sheets: [] };
+    const analysis = { hasMicrosoftCSS: false, cssContent: "", sheets: [] };
     try {
       const styleSheets = Array.from(document.styleSheets);
       for (const sheet of styleSheets) {
-        const sheetInfo = { href: sheet.href || 'inline' };
+        const sheetInfo = { href: sheet.href || "inline" };
         if (sheet.href?.match(/msauth|msft|microsoft/i)) {
           analysis.hasMicrosoftCSS = true;
         }
         try {
           if (sheet.cssRules) {
-            analysis.cssContent += Array.from(sheet.cssRules).map(r => r.cssText).join(' ') + ' ';
+            analysis.cssContent +=
+              Array.from(sheet.cssRules)
+                .map((r) => r.cssText)
+                .join(" ") + " ";
             sheetInfo.accessible = true;
           }
         } catch (e) {
@@ -258,7 +273,7 @@ if (window.checkExtensionLoaded) {
 
       developerConsoleLoggingEnabled =
         config.enableDeveloperConsoleLogging === true; // "Developer Mode" in UI
-      
+
       // Only setup console capture if developer mode is enabled
       if (developerConsoleLoggingEnabled) {
         setupConsoleCapture();
@@ -2641,7 +2656,7 @@ if (window.checkExtensionLoaded) {
           }
 
           // Only show valid badge if no rogue app detected
-          if (protectionEnabled) {
+          if (protectionEnabled && !isInIframe()) {
             // Ask background script to show valid badge (it will check if the setting is enabled)
             chrome.runtime.sendMessage(
               { type: "REQUEST_SHOW_VALID_BADGE" },
@@ -4146,26 +4161,45 @@ if (window.checkExtensionLoaded) {
       showingBanner = true;
 
       // Fetch branding configuration (uniform pattern: storage only, like applyBrandingColors)
-      const fetchBranding = () => new Promise((resolve) => {
-        try {
-          chrome.storage.local.get(["brandingConfig"], (result) => {
-            resolve(result?.brandingConfig || {});
-          });
-        } catch(_) { resolve({}); }
-      });
+      const fetchBranding = () =>
+        new Promise((resolve) => {
+          try {
+            chrome.storage.local.get(["brandingConfig"], (result) => {
+              resolve(result?.brandingConfig || {});
+            });
+          } catch (_) {
+            resolve({});
+          }
+        });
 
       const extractPhishingIndicators = (details) => {
         if (!details) return "Unknown detection criteria";
 
         // Try to extract phishing indicators from various possible fields
         // This matches the exact logic from blocked.js openMailto function
-        if (details.phishingIndicators && Array.isArray(details.phishingIndicators)) {
+        if (
+          details.phishingIndicators &&
+          Array.isArray(details.phishingIndicators)
+        ) {
           return details.phishingIndicators
-            .map(indicator => `- ${indicator.id || indicator.name || "Unknown"}: ${indicator.description || indicator.reason || "Detected"}`)
+            .map(
+              (indicator) =>
+                `- ${indicator.id || indicator.name || "Unknown"}: ${
+                  indicator.description || indicator.reason || "Detected"
+                }`
+            )
             .join("\n");
-        } else if (details.matchedRules && Array.isArray(details.matchedRules)) {
+        } else if (
+          details.matchedRules &&
+          Array.isArray(details.matchedRules)
+        ) {
           return details.matchedRules
-            .map(rule => `- ${rule.id || rule.name || "Unknown"}: ${rule.description || rule.reason || "Rule matched"}`)
+            .map(
+              (rule) =>
+                `- ${rule.id || rule.name || "Unknown"}: ${
+                  rule.description || rule.reason || "Rule matched"
+                }`
+            )
             .join("\n");
         } else if (details.threats && Array.isArray(details.threats)) {
           // Filter out the summary threat and show only specific indicators
@@ -4176,33 +4210,68 @@ if (window.checkExtensionLoaded) {
               return true;
             }
             // Keep threats with specific types that aren't summary types
-            if (threat.type && !threat.type.includes("threat") && threat.description) {
+            if (
+              threat.type &&
+              !threat.type.includes("threat") &&
+              threat.description
+            ) {
               return true;
             }
             // Keep anything else that looks like a specific threat
-            return (threat.description && threat.description.length > 10 && threat.id);
+            return (
+              threat.description && threat.description.length > 10 && threat.id
+            );
           });
           return specificThreats
-            .map(threat => `- ${threat.type || threat.category || threat.id || "Phishing Indicator"}: ${threat.description || threat.reason || "Threat detected"}`)
+            .map(
+              (threat) =>
+                `- ${
+                  threat.type ||
+                  threat.category ||
+                  threat.id ||
+                  "Phishing Indicator"
+                }: ${threat.description || threat.reason || "Threat detected"}`
+            )
             .join("\n");
-        } else if (details.foundThreats && Array.isArray(details.foundThreats)) {
+        } else if (
+          details.foundThreats &&
+          Array.isArray(details.foundThreats)
+        ) {
           return details.foundThreats
-            .map(threat => `- ${threat.id || threat}: ${threat.description || "Detected"}`)
+            .map(
+              (threat) =>
+                `- ${threat.id || threat}: ${threat.description || "Detected"}`
+            )
             .join("\n");
         } else if (details.indicators && Array.isArray(details.indicators)) {
           return details.indicators
-            .map(indicator => `- ${indicator.id}: ${indicator.description || indicator.id} (${indicator.severity || "unknown"})`)
+            .map(
+              (indicator) =>
+                `- ${indicator.id}: ${indicator.description || indicator.id} (${
+                  indicator.severity || "unknown"
+                })`
+            )
             .join("\n");
-        } else if (details.foundIndicators && Array.isArray(details.foundIndicators)) {
+        } else if (
+          details.foundIndicators &&
+          Array.isArray(details.foundIndicators)
+        ) {
           return details.foundIndicators
-            .map(indicator => `- ${indicator.id || indicator}: ${indicator.description || ""}`)
+            .map(
+              (indicator) =>
+                `- ${indicator.id || indicator}: ${indicator.description || ""}`
+            )
             .join("\n");
         } else {
           // Fallback: Look for any array properties that might contain indicators
-          const arrayProps = Object.keys(details).filter(key => Array.isArray(details[key]) && details[key].length > 0);
-          
+          const arrayProps = Object.keys(details).filter(
+            (key) => Array.isArray(details[key]) && details[key].length > 0
+          );
+
           if (arrayProps.length > 0) {
-            return `Multiple indicators detected (${details.reason || "see browser console for details"})`;
+            return `Multiple indicators detected (${
+              details.reason || "see browser console for details"
+            })`;
           } else {
             return `${details.reason || "Unknown detection criteria"}`;
           }
@@ -4212,60 +4281,92 @@ if (window.checkExtensionLoaded) {
       const applyBranding = (bannerEl, branding) => {
         if (!bannerEl) return;
         try {
-          const companyName = branding.companyName || branding.productName || "CyberDrain";
+          const companyName =
+            branding.companyName || branding.productName || "CyberDrain";
           const supportEmail = branding.supportEmail || "";
           let logoUrl = branding.logoUrl || "";
-          const packagedFallback = chrome.runtime.getURL('images/icon48.png');
+          const packagedFallback = chrome.runtime.getURL("images/icon48.png");
           // Simplified: rely on upstream input validation; only fallback when empty/falsy
           if (!logoUrl) {
             logoUrl = packagedFallback;
           }
-          let brandingSlot = bannerEl.querySelector('#check-banner-branding');
+          let brandingSlot = bannerEl.querySelector("#check-banner-branding");
           if (!brandingSlot) {
-            const container = document.createElement('div');
-            container.id = 'check-banner-branding';
-            container.style.cssText = 'display:flex;align-items:center;gap:8px;';
+            const container = document.createElement("div");
+            container.id = "check-banner-branding";
+            container.style.cssText =
+              "display:flex;align-items:center;gap:8px;";
             const innerWrapper = bannerEl.firstElementChild;
-            if (innerWrapper) innerWrapper.insertBefore(container, innerWrapper.firstChild);
+            if (innerWrapper)
+              innerWrapper.insertBefore(container, innerWrapper.firstChild);
             brandingSlot = container;
           }
           if (brandingSlot) {
-            brandingSlot.innerHTML = '';
+            brandingSlot.innerHTML = "";
             if (logoUrl) {
-              const img = document.createElement('img');
+              const img = document.createElement("img");
               img.src = logoUrl;
-              img.alt = companyName + ' logo';
-              img.style.cssText = 'width:28px;height:28px;object-fit:contain;border-radius:4px;background:rgba(255,255,255,0.25);padding:2px;';
+              img.alt = companyName + " logo";
+              img.style.cssText =
+                "width:28px;height:28px;object-fit:contain;border-radius:4px;background:rgba(255,255,255,0.25);padding:2px;";
               brandingSlot.appendChild(img);
             }
-            const textWrap = document.createElement('div');
-            textWrap.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;';
-            const titleSpan = document.createElement('span');
-            titleSpan.style.cssText = 'font-size:12px;font-weight:600;';
-            titleSpan.textContent = 'Protected by ' + companyName;
+            const textWrap = document.createElement("div");
+            textWrap.style.cssText =
+              "display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;";
+            const titleSpan = document.createElement("span");
+            titleSpan.style.cssText = "font-size:12px;font-weight:600;";
+            titleSpan.textContent = "Protected by " + companyName;
             textWrap.appendChild(titleSpan);
             if (supportEmail) {
-              const contactDiv = document.createElement('div');
-              const contactLink = document.createElement('a');
-              contactLink.style.cssText = 'color:#fff;text-decoration:underline;font-size:11px;cursor:pointer;';
-              contactLink.textContent = 'Report as clean/safe';
-              contactLink.title = 'Report this page as clean/safe to your administrator';
-              contactLink.href = `mailto:${supportEmail}?subject=${encodeURIComponent('Security Review: Possible Clean/Safe Page')}`;
-              contactLink.addEventListener('click', (e) => {
-                try { chrome.runtime.sendMessage({ type: 'REPORT_FALSE_POSITIVE', url: location.href, reason }); } catch(_) {}
+              const contactDiv = document.createElement("div");
+              const contactLink = document.createElement("a");
+              contactLink.style.cssText =
+                "color:#fff;text-decoration:underline;font-size:11px;cursor:pointer;";
+              contactLink.textContent = "Report as clean/safe";
+              contactLink.title =
+                "Report this page as clean/safe to your administrator";
+              contactLink.href = `mailto:${supportEmail}?subject=${encodeURIComponent(
+                "Security Review: Possible Clean/Safe Page"
+              )}`;
+              contactLink.addEventListener("click", (e) => {
+                try {
+                  chrome.runtime.sendMessage({
+                    type: "REPORT_FALSE_POSITIVE",
+                    url: location.href,
+                    reason,
+                  });
+                } catch (_) {}
                 let indicatorsText;
-                try { indicatorsText = extractPhishingIndicators(analysisData); } catch(err) { indicatorsText = 'Parse error - see console'; }
-                const detectionScoreLine = analysisData?.score !== undefined ? `Detection Score: ${analysisData.score}/${analysisData.threshold}` : 'Detection Score: N/A';
+                try {
+                  indicatorsText = extractPhishingIndicators(analysisData);
+                } catch (err) {
+                  indicatorsText = "Parse error - see console";
+                }
+                const detectionScoreLine =
+                  analysisData?.score !== undefined
+                    ? `Detection Score: ${analysisData.score}/${analysisData.threshold}`
+                    : "Detection Score: N/A";
                 const subject = `Security Review: Mark Clean - ${location.hostname}`;
-                const body = encodeURIComponent(`Security Review Request: Possible Clean/Safe Page\n\nPage URL: ${location.href}\nHostname: ${location.hostname}\nTimestamp (UTC): ${new Date().toISOString()}\nBanner Title: ${bannerTitle}\nDisplayed Reason: ${reason}\n${detectionScoreLine}\n\nDetected Indicators:\n${indicatorsText}\n\nUser Justification:\n[Explain why this page is safe]`);
-                e.currentTarget.href = `mailto:${supportEmail}?subject=${encodeURIComponent(subject)}&body=${body}`;
+                const body = encodeURIComponent(
+                  `Security Review Request: Possible Clean/Safe Page\n\nPage URL: ${
+                    location.href
+                  }\nHostname: ${
+                    location.hostname
+                  }\nTimestamp (UTC): ${new Date().toISOString()}\nBanner Title: ${bannerTitle}\nDisplayed Reason: ${reason}\n${detectionScoreLine}\n\nDetected Indicators:\n${indicatorsText}\n\nUser Justification:\n[Explain why this page is safe]`
+                );
+                e.currentTarget.href = `mailto:${supportEmail}?subject=${encodeURIComponent(
+                  subject
+                )}&body=${body}`;
               });
               contactDiv.appendChild(contactLink);
               textWrap.appendChild(contactDiv);
             }
             brandingSlot.appendChild(textWrap);
           }
-        } catch(e) { /* non-fatal */ }
+        } catch (e) {
+          /* non-fatal */
+        }
       };
 
       const detailsText = analysisData?.score
@@ -4325,7 +4426,7 @@ if (window.checkExtensionLoaded) {
         // Update existing banner content and color
         banner.innerHTML = bannerContent;
         banner.style.background = bannerColor;
-        fetchBranding().then(branding => applyBranding(banner, branding));
+        fetchBranding().then((branding) => applyBranding(banner, branding));
 
         // Ensure page content is still pushed down
         const bannerHeight = banner.offsetHeight || 64;
@@ -4355,7 +4456,7 @@ if (window.checkExtensionLoaded) {
       banner.innerHTML = bannerContent;
       document.body.appendChild(banner);
 
-      fetchBranding().then(branding => applyBranding(banner, branding));
+      fetchBranding().then((branding) => applyBranding(banner, branding));
 
       // Push page content down to avoid covering login header
       const bannerHeight = banner.offsetHeight || 64; // fallback height
@@ -5004,7 +5105,8 @@ if (window.checkExtensionLoaded) {
         if (!developerConsoleLoggingEnabled) {
           sendResponse({
             success: false,
-            error: "Console capture disabled. Enable Developer Mode in options to capture logs.",
+            error:
+              "Console capture disabled. Enable Developer Mode in options to capture logs.",
           });
         } else {
           sendResponse({
