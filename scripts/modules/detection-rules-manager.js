@@ -82,6 +82,11 @@ export class DetectionRulesManager {
     }
   }
 
+  async reloadConfiguration() {
+    logger.log("DetectionRulesManager: Reloading configuration");
+    await this.loadConfiguration();
+  }
+
   async loadFromCache() {
     try {
       const result = await chrome.storage.local.get([this.cacheKey]);
@@ -231,6 +236,7 @@ export class DetectionRulesManager {
 
   async forceUpdate() {
     logger.log("Forcing detection rules update");
+    await this.reloadConfiguration();
     return await this.updateDetectionRules();
   }
 
