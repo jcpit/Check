@@ -176,7 +176,7 @@
       {
         "id": "password_input_field",
         "type": "source_content",
-        "pattern": "(?:type=[\"']password[\"']|name=[\"']password[\"']|id=[\"'].*password.*[\"'])",
+        "pattern": "<input[^>]*(?:type=[\"']password[\"']|name=[\"']password[\"']|id=[\"'][^\"']*password[^\"']*[\"'])[^>]*>",
         "description": "Password input field present on page (supporting evidence only)",
         "weight": 1,
         "category": "secondary"
@@ -184,8 +184,8 @@
       {
         "id": "login_form_element",
         "type": "source_content",
-        "pattern": "(?:<form[^>]*method=[\"']post[\"'][^>]*>|<input[^>]*type=[\"'](?:email|text|tel)[\"'][^>]*placeholder=[\"'][^\"']+[\"'][^>]*>)",
-        "description": "Login form with POST method or a text/email/tel input with a placeholder",
+        "pattern": "<input[^>]*type=[\"'](?:email|text|tel)[\"'][^>]*(?:placeholder=[\"'][^\"']+[\"'][^>]*|[^>]*)>",
+        "description": "Login form input field (email/text/tel type) with placeholder attribute",
         "weight": 1,
         "category": "secondary"
       }
@@ -447,7 +447,7 @@
       "description": "Suspicious domain mimicking Microsoft services",
       "action": "block",
       "category": "domain_spoofing",
-      "confidence": 0.3
+      "confidence": 0.9
     },
     {
       "id": "phi_004",
