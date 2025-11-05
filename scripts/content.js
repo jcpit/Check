@@ -2417,13 +2417,19 @@ if (window.checkExtensionLoaded) {
   async function runProtection(isRerun = false) {
     try {
       logger.log(
-        `🚀 Starting protection analysis ${isRerun ? "(re-run)" : "(initial)"}`
+        `🚀 Starting protection analysis ${
+          isRerun ? "(re-run)" : "(initial)"
+        } for ${window.location.href}`
       );
       logger.log(
         `📄 Page info: ${document.querySelectorAll("*").length} elements, ${
           document.body?.textContent?.length || 0
         } chars content`
       );
+
+      if (isInIframe()) {
+        logger.log("⚠️ Page is in an iframe");
+      }
 
       // Load configuration to check protection settings and URL allowlist
       const config = await new Promise((resolve) => {
