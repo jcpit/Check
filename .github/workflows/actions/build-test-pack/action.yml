@@ -21,17 +21,17 @@ runs:
     # Add additional build and test steps here
 
     - name: Copy extension to folder
-        run: |
-          mkdir -p ${{ env.EXTENSION_DIR }}
-          cp manifest.json ${{ env.EXTENSION_DIR }}
-          cp blocked.html ${{ env.EXTENSION_DIR }}
-          cp -r config/ ${{ env.EXTENSION_DIR }}
-          cp -r images/ ${{ env.EXTENSION_DIR }}
-          cp -r options/ ${{ env.EXTENSION_DIR }}
-          cp -r popup/ ${{ env.EXTENSION_DIR }}
-          cp -r rules/ ${{ env.EXTENSION_DIR }}
-          cp -r scripts/ ${{ env.EXTENSION_DIR }}
-          cp -r styles/ ${{ env.EXTENSION_DIR }}
+      run: |
+        mkdir -p ${{ env.EXTENSION_DIR }}
+        cp manifest.json ${{ env.EXTENSION_DIR }}
+        cp blocked.html ${{ env.EXTENSION_DIR }}
+        cp -r config/ ${{ env.EXTENSION_DIR }}
+        cp -r images/ ${{ env.EXTENSION_DIR }}
+        cp -r options/ ${{ env.EXTENSION_DIR }}
+        cp -r popup/ ${{ env.EXTENSION_DIR }}
+        cp -r rules/ ${{ env.EXTENSION_DIR }}
+        cp -r scripts/ ${{ env.EXTENSION_DIR }}
+        cp -r styles/ ${{ env.EXTENSION_DIR }}
 
     - name: Validate manifest.json of the extension
       uses: cardinalby/schema-validator-action@2166123eb256fa40baef7e22ab1379708425efc7
