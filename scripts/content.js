@@ -2009,12 +2009,14 @@ if (window.checkExtensionLoaded) {
    * Now includes both detection rules exclusions AND user-configured URL allowlist
    */
   function checkDomainExclusion(url) {
+    const urlObj = new URL(url);
+    const origin = urlObj.origin;
     if (detectionRules?.exclusion_system?.domain_patterns) {
       const rulesExcluded =
         detectionRules.exclusion_system.domain_patterns.some((pattern) => {
           try {
             const regex = new RegExp(pattern, "i");
-            return regex.test(url);
+            return regex.test(origin);
           } catch (error) {
             logger.warn(`Invalid exclusion pattern: ${pattern}`);
             return false;
@@ -2022,11 +2024,11 @@ if (window.checkExtensionLoaded) {
         });
 
       if (rulesExcluded) {
-        logger.log(`✅ URL excluded by detection rules: ${url}`);
+        logger.log(`✅ URL excluded by detection rules: ${origin}`);
         return true;
       }
     }
-    return checkUserUrlAllowlist(url);
+    return checkUserUrlAllowlist(origin);
   }
 
   /**
