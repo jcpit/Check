@@ -21,6 +21,7 @@ runs:
     # Add additional build and test steps here
 
     - name: Copy extension to folder
+      shell: bash
       run: |
         mkdir -p ${{ env.EXTENSION_DIR }}
         cp manifest.json ${{ env.EXTENSION_DIR }}
