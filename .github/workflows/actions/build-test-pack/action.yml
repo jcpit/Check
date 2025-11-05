@@ -39,6 +39,7 @@ runs:
       with:
         file: ${{ env.EXTENSION_DIR }}manifest.json
         schema: 'https://json.schemastore.org/webextension.json'
+        mode: 'lax'
 
     - name: Pack directory to zip
       if: inputs.doNotPackZip != 'true'
