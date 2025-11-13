@@ -281,10 +281,30 @@
         .btn {
           width: 100%;
         }
+
       }
+
+      /* Anti-flicker: Hide content until fully loaded */
+      body.loading .container {
+          opacity: 0;
+      }
+
+      .container {
+          opacity: 1;
+          transition: opacity 0.2s ease-in;
+      }
+
+      .footer {
+          margin-top: 40px;
+          padding-top: 20px;
+          border-top: 1px solid #e5e7eb;
+          font-size: 12px;
+          color: #9ca3af;
+      }
+
     </style>
   </head>
-  <body>
+  <body class="loading">
     <div class="container">
       <div class="icon-container">
         <img id="customLogo" class="company-logo" style="display: none; max-width: 80px; max-height: 80px; border-radius: 50%; object-fit: contain;" alt="Company Logo">
@@ -308,6 +328,9 @@
         <button class="btn btn-primary" id="goBackBtn">Go Back</button>
         <button class="btn btn-secondary" id="contactAdminBtn">
           Contact Admin
+        </button>
+        <button class="btn btn-secondary" id="reportFalsePositiveBtn" style="display: none;">
+          Report False Positive
         </button>
       </div>
 

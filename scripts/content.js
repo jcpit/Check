@@ -34,6 +34,13 @@ if (window.checkExtensionLoaded) {
   const WARNING_THRESHOLD = 3; // Block if 4+ warning threats found (escalation threshold)
   let initialBody; // Reference to the initial body element
 
+  const regexCache = new Map();
+  let cachedPageSource = null;
+  let cachedPageSourceTime = 0;
+  const PAGE_SOURCE_CACHE_TTL = 1000;
+  const domQueryCache = new WeakMap();
+  let cachedStylesheetAnalysis = null;
+
   // Console log capturing
   let capturedLogs = [];
   const MAX_LOGS = 100; // Limit the number of stored logs
@@ -112,6 +119,75 @@ if (window.checkExtensionLoaded) {
     });
   }
 
+  function isInIframe() {
+    try {
+      return window.self !== window.top;
+    } catch (e) {
+      // If we can't access window.top due to cross-origin, we're likely in an iframe
+      return true;
+    }
+  }
+
+  function getCachedRegex(pattern, flags = "") {
+    const key = `${pattern}|||${flags}`;
+    if (!regexCache.has(key)) {
+      try {
+        regexCache.set(key, new RegExp(pattern, flags));
+      } catch (error) {
+        logger.warn(`Invalid regex pattern: ${pattern}`, error);
+        return null;
+      }
+    }
+    return regexCache.get(key);
+  }
+
+  function getPageSource() {
+    const now = Date.now();
+    if (
+      !cachedPageSource ||
+      now - cachedPageSourceTime > PAGE_SOURCE_CACHE_TTL
+    ) {
+      cachedPageSource = document.documentElement.outerHTML;
+      cachedPageSourceTime = now;
+    }
+    return cachedPageSource;
+  }
+
+  function clearPerformanceCaches() {
+    cachedPageSource = null;
+    cachedPageSourceTime = 0;
+    domQueryCache.delete(document);
+    cachedStylesheetAnalysis = null;
+  }
+
+  function analyzeStylesheets() {
+    if (cachedStylesheetAnalysis) return cachedStylesheetAnalysis;
+    const analysis = { hasMicrosoftCSS: false, cssContent: "", sheets: [] };
+    try {
+      const styleSheets = Array.from(document.styleSheets);
+      for (const sheet of styleSheets) {
+        const sheetInfo = { href: sheet.href || "inline" };
+        if (sheet.href?.match(/msauth|msft|microsoft/i)) {
+          analysis.hasMicrosoftCSS = true;
+        }
+        try {
+          if (sheet.cssRules) {
+            analysis.cssContent +=
+              Array.from(sheet.cssRules)
+                .map((r) => r.cssText)
+                .join(" ") + " ";
+            sheetInfo.accessible = true;
+          }
+        } catch (e) {
+          sheetInfo.accessible = false;
+        }
+        analysis.sheets.push(sheetInfo);
+      }
+    } catch (e) {}
+    cachedStylesheetAnalysis = analysis;
+    return analysis;
+  }
+
   /**
    * Check if a URL matches any pattern in the given pattern array
    * @param {string} url - The URL to check
@@ -120,16 +196,11 @@ if (window.checkExtensionLoaded) {
    */
   function matchesAnyPattern(url, patterns) {
     if (!patterns || patterns.length === 0) return false;
-
     for (const pattern of patterns) {
-      try {
-        const regex = new RegExp(pattern);
-        if (regex.test(url)) {
-          logger.debug(`URL "${url}" matches pattern: ${pattern}`);
-          return true;
-        }
-      } catch (error) {
-        logger.warn(`Invalid regex pattern: ${pattern}`, error);
+      const regex = getCachedRegex(pattern);
+      if (regex && regex.test(url)) {
+        logger.debug(`URL "${url}" matches pattern: ${pattern}`);
+        return true;
       }
     }
     return false;
@@ -202,6 +273,12 @@ if (window.checkExtensionLoaded) {
 
       developerConsoleLoggingEnabled =
         config.enableDeveloperConsoleLogging === true; // "Developer Mode" in UI
+
+      // Only setup console capture if developer mode is enabled
+      if (developerConsoleLoggingEnabled) {
+        setupConsoleCapture();
+        logger.log("Console capture enabled (developer mode active)");
+      }
     } catch (error) {
       // If there's an error loading settings, default to false
       developerConsoleLoggingEnabled = false;
@@ -222,6 +299,7 @@ if (window.checkExtensionLoaded) {
       domObserver.disconnect();
       domObserver = null;
     }
+    clearPerformanceCaches();
     setupDomObserver();
   }
 
@@ -327,7 +405,7 @@ if (window.checkExtensionLoaded) {
    */
   function testDetectionPatterns() {
     console.log("🔍 MANUAL DETECTION TESTING");
-    const pageSource = document.documentElement.outerHTML;
+    const pageSource = getPageSource();
 
     // Test each pattern individually
     const patterns = [
@@ -803,7 +881,7 @@ if (window.checkExtensionLoaded) {
     );
 
     // Check for suspicious patterns in page source
-    const pageSource = document.documentElement.outerHTML;
+    const pageSource = getPageSource();
     const suspiciousPatterns = [
       {
         name: "Microsoft mentions",
@@ -861,7 +939,7 @@ if (window.checkExtensionLoaded) {
       }
 
       const requirements = detectionRules.m365_detection_requirements;
-      const pageSource = document.documentElement.outerHTML;
+      const pageSource = getPageSource();
       const pageText = document.body?.textContent || "";
 
       // Lower threshold - just need ANY Microsoft-related elements
@@ -980,7 +1058,7 @@ if (window.checkExtensionLoaded) {
       }
 
       const requirements = detectionRules.m365_detection_requirements;
-      const pageSource = document.documentElement.outerHTML;
+      const pageSource = getPageSource();
 
       // Store the page source for debugging purposes
       lastScannedPageSource = pageSource;
@@ -1235,7 +1313,7 @@ if (window.checkExtensionLoaded) {
 
             case "css_spoofing_validation":
               // Check: If page has Microsoft CSS patterns but posts to non-Microsoft domain
-              const pageSource = document.documentElement.outerHTML;
+              const pageSource = getPageSource();
               let cssMatches = 0;
 
               // Count CSS indicator matches
@@ -1642,7 +1720,7 @@ if (window.checkExtensionLoaded) {
 
       const threats = [];
       let totalScore = 0;
-      const pageSource = document.documentElement.outerHTML;
+      const pageSource = getPageSource();
       const pageText = document.body?.textContent || "";
 
       logger.log(
@@ -1931,12 +2009,14 @@ if (window.checkExtensionLoaded) {
    * Now includes both detection rules exclusions AND user-configured URL allowlist
    */
   function checkDomainExclusion(url) {
+    const urlObj = new URL(url);
+    const origin = urlObj.origin;
     if (detectionRules?.exclusion_system?.domain_patterns) {
       const rulesExcluded =
         detectionRules.exclusion_system.domain_patterns.some((pattern) => {
           try {
             const regex = new RegExp(pattern, "i");
-            return regex.test(url);
+            return regex.test(origin);
           } catch (error) {
             logger.warn(`Invalid exclusion pattern: ${pattern}`);
             return false;
@@ -1944,11 +2024,11 @@ if (window.checkExtensionLoaded) {
         });
 
       if (rulesExcluded) {
-        logger.log(`✅ URL excluded by detection rules: ${url}`);
+        logger.log(`✅ URL excluded by detection rules: ${origin}`);
         return true;
       }
     }
-    return checkUserUrlAllowlist(url);
+    return checkUserUrlAllowlist(origin);
   }
 
   /**
@@ -2074,7 +2154,7 @@ if (window.checkExtensionLoaded) {
 
       let score = 0;
       const triggeredRules = [];
-      const pageHTML = document.documentElement.outerHTML;
+      const pageHTML = getPageSource();
 
       // Process each rule from the detection rules file
       for (const rule of detectionRules.rules) {
@@ -2337,13 +2417,19 @@ if (window.checkExtensionLoaded) {
   async function runProtection(isRerun = false) {
     try {
       logger.log(
-        `🚀 Starting protection analysis ${isRerun ? "(re-run)" : "(initial)"}`
+        `🚀 Starting protection analysis ${
+          isRerun ? "(re-run)" : "(initial)"
+        } for ${window.location.href}`
       );
       logger.log(
         `📄 Page info: ${document.querySelectorAll("*").length} elements, ${
           document.body?.textContent?.length || 0
         } chars content`
       );
+
+      if (isInIframe()) {
+        logger.log("⚠️ Page is in an iframe");
+      }
 
       // Load configuration to check protection settings and URL allowlist
       const config = await new Promise((resolve) => {
@@ -2574,11 +2660,31 @@ if (window.checkExtensionLoaded) {
               redirectTo: redirectHostname,
             });
 
-            return; // Stop processing - do NOT show valid badge for rogue apps
+            // Send rogue_app_detected webhook
+            chrome.runtime.sendMessage({
+              type: "send_webhook",
+              webhookType: "rogue_app_detected",
+              data: {
+                url: location.href,
+                clientId: clientInfo.clientId,
+                appName: clientInfo.appInfo?.appName || "Unknown",
+                reason: clientInfo.reason,
+                severity: "critical",
+                risk: "high",
+                description: clientInfo.appInfo?.description,
+                tags: clientInfo.appInfo?.tags || [],
+                references: clientInfo.appInfo?.references || [],
+                redirectTo: redirectHostname
+              }
+            }).catch(err => {
+              logger.warn("Failed to send rogue_app_detected webhook:", err.message);
+            });
+
+            return;
           }
 
           // Only show valid badge if no rogue app detected
-          if (protectionEnabled) {
+          if (protectionEnabled && !isInIframe()) {
             // Ask background script to show valid badge (it will check if the setting is enabled)
             chrome.runtime.sendMessage(
               { type: "REQUEST_SHOW_VALID_BADGE" },
@@ -3091,6 +3197,26 @@ if (window.checkExtensionLoaded) {
             redirectTo: redirectHostname,
           });
 
+          // Send rogue_app_detected webhook
+          chrome.runtime.sendMessage({
+            type: "send_webhook",
+            webhookType: "rogue_app_detected",
+            data: {
+              url: location.href,
+              clientId: clientInfo.clientId,
+              appName: clientInfo.appInfo?.appName || "Unknown",
+              reason: clientInfo.reason,
+              severity: "critical",
+              risk: "high",
+              description: clientInfo.appInfo?.description,
+              tags: clientInfo.appInfo?.tags || [],
+              references: clientInfo.appInfo?.references || [],
+              redirectTo: redirectHostname
+            }
+          }).catch(err => {
+            logger.warn("Failed to send rogue_app_detected webhook:", err.message);
+          });
+
           // Store detection result as critical threat
           lastDetectionResult = {
             verdict: "rogue-app",
@@ -3144,11 +3270,29 @@ if (window.checkExtensionLoaded) {
           logger.error(
             "🛡️ PROTECTION ACTIVE: Blocking page - redirecting to blocking page"
           );
-          // Redirect to actual blocking page when protection is enabled
+          
+          // Send page_blocked webhook
+          chrome.runtime.sendMessage({
+            type: "send_webhook",
+            webhookType: "page_blocked",
+            data: {
+              url: location.href,
+              reason: blockingResult.reason,
+              severity: blockingResult.severity || "critical",
+              score: 0,
+              threshold: blockingResult.threshold || 85,
+              rule: blockingResult.rule?.id || "blocking_rule",
+              ruleDescription: blockingResult.reason,
+              timestamp: new Date().toISOString()
+            }
+          }).catch(err => {
+            logger.warn("Failed to send page_blocked webhook:", err.message);
+          });
+          
           showBlockingOverlay(blockingResult.reason, blockingResult);
           disableFormSubmissions();
           disableCredentialInputs();
-          stopDOMMonitoring(); // Stop monitoring once we've blocked
+          stopDOMMonitoring();
         } else {
           logger.warn(
             "⚠️ PROTECTION DISABLED: Would block but showing warning banner instead"
@@ -3242,6 +3386,25 @@ if (window.checkExtensionLoaded) {
           logger.error(
             "🛡️ PROTECTION ACTIVE: Blocking due to critical detection rule"
           );
+          
+          // Send page_blocked webhook
+          chrome.runtime.sendMessage({
+            type: "send_webhook",
+            webhookType: "page_blocked",
+            data: {
+              url: location.href,
+              reason: reason,
+              severity: "critical",
+              score: 0,
+              threshold: detectionResult.threshold,
+              rule: criticalBlockingRules[0]?.id || "critical_rule",
+              ruleDescription: reason,
+              timestamp: new Date().toISOString()
+            }
+          }).catch(err => {
+            logger.warn("Failed to send page_blocked webhook:", err.message);
+          });
+          
           showBlockingOverlay(reason, {
             threats: criticalBlockingRules.map((rule) => ({
               description: rule.description,
@@ -3361,6 +3524,25 @@ if (window.checkExtensionLoaded) {
           logger.error(
             "🛡️ PROTECTION ACTIVE: Blocking page due to critical phishing indicators"
           );
+          
+          // Send page_blocked webhook
+          chrome.runtime.sendMessage({
+            type: "send_webhook",
+            webhookType: "page_blocked",
+            data: {
+              url: location.href,
+              reason: reason,
+              severity: "critical",
+              score: 0,
+              threshold: detectionResult.threshold,
+              rule: criticalThreats[0]?.id || "critical_phishing",
+              ruleDescription: reason,
+              timestamp: new Date().toISOString()
+            }
+          }).catch(err => {
+            logger.warn("Failed to send page_blocked webhook:", err.message);
+          });
+          
           showBlockingOverlay(reason, {
             threats: criticalThreats,
             score: phishingResult.score,
@@ -3532,6 +3714,25 @@ if (window.checkExtensionLoaded) {
             logger.error(
               "🛡️ PROTECTION ACTIVE: Blocking page due to high threat"
             );
+            
+            // Send page_blocked webhook
+            chrome.runtime.sendMessage({
+              type: "send_webhook",
+              webhookType: "page_blocked",
+              data: {
+                url: location.href,
+                reason: reason,
+                severity: severity,
+                score: detectionResult.score,
+                threshold: detectionResult.threshold,
+                rule: detectionResult.triggeredRules?.[0] || "unknown",
+                ruleDescription: detectionResult.triggeredRules?.[0] || reason,
+                timestamp: new Date().toISOString()
+              }
+            }).catch(err => {
+              logger.warn("Failed to send page_blocked webhook:", err.message);
+            });
+            
             showBlockingOverlay(reason, lastDetectionResult);
             disableFormSubmissions();
             disableCredentialInputs();
@@ -4083,26 +4284,45 @@ if (window.checkExtensionLoaded) {
       showingBanner = true;
 
       // Fetch branding configuration (uniform pattern: storage only, like applyBrandingColors)
-      const fetchBranding = () => new Promise((resolve) => {
-        try {
-          chrome.storage.local.get(["brandingConfig"], (result) => {
-            resolve(result?.brandingConfig || {});
-          });
-        } catch(_) { resolve({}); }
-      });
+      const fetchBranding = () =>
+        new Promise((resolve) => {
+          try {
+            chrome.storage.local.get(["brandingConfig"], (result) => {
+              resolve(result?.brandingConfig || {});
+            });
+          } catch (_) {
+            resolve({});
+          }
+        });
 
       const extractPhishingIndicators = (details) => {
         if (!details) return "Unknown detection criteria";
 
         // Try to extract phishing indicators from various possible fields
         // This matches the exact logic from blocked.js openMailto function
-        if (details.phishingIndicators && Array.isArray(details.phishingIndicators)) {
+        if (
+          details.phishingIndicators &&
+          Array.isArray(details.phishingIndicators)
+        ) {
           return details.phishingIndicators
-            .map(indicator => `- ${indicator.id || indicator.name || "Unknown"}: ${indicator.description || indicator.reason || "Detected"}`)
+            .map(
+              (indicator) =>
+                `- ${indicator.id || indicator.name || "Unknown"}: ${
+                  indicator.description || indicator.reason || "Detected"
+                }`
+            )
             .join("\n");
-        } else if (details.matchedRules && Array.isArray(details.matchedRules)) {
+        } else if (
+          details.matchedRules &&
+          Array.isArray(details.matchedRules)
+        ) {
           return details.matchedRules
-            .map(rule => `- ${rule.id || rule.name || "Unknown"}: ${rule.description || rule.reason || "Rule matched"}`)
+            .map(
+              (rule) =>
+                `- ${rule.id || rule.name || "Unknown"}: ${
+                  rule.description || rule.reason || "Rule matched"
+                }`
+            )
             .join("\n");
         } else if (details.threats && Array.isArray(details.threats)) {
           // Filter out the summary threat and show only specific indicators
@@ -4113,33 +4333,68 @@ if (window.checkExtensionLoaded) {
               return true;
             }
             // Keep threats with specific types that aren't summary types
-            if (threat.type && !threat.type.includes("threat") && threat.description) {
+            if (
+              threat.type &&
+              !threat.type.includes("threat") &&
+              threat.description
+            ) {
               return true;
             }
             // Keep anything else that looks like a specific threat
-            return (threat.description && threat.description.length > 10 && threat.id);
+            return (
+              threat.description && threat.description.length > 10 && threat.id
+            );
           });
           return specificThreats
-            .map(threat => `- ${threat.type || threat.category || threat.id || "Phishing Indicator"}: ${threat.description || threat.reason || "Threat detected"}`)
+            .map(
+              (threat) =>
+                `- ${
+                  threat.type ||
+                  threat.category ||
+                  threat.id ||
+                  "Phishing Indicator"
+                }: ${threat.description || threat.reason || "Threat detected"}`
+            )
             .join("\n");
-        } else if (details.foundThreats && Array.isArray(details.foundThreats)) {
+        } else if (
+          details.foundThreats &&
+          Array.isArray(details.foundThreats)
+        ) {
           return details.foundThreats
-            .map(threat => `- ${threat.id || threat}: ${threat.description || "Detected"}`)
+            .map(
+              (threat) =>
+                `- ${threat.id || threat}: ${threat.description || "Detected"}`
+            )
             .join("\n");
         } else if (details.indicators && Array.isArray(details.indicators)) {
           return details.indicators
-            .map(indicator => `- ${indicator.id}: ${indicator.description || indicator.id} (${indicator.severity || "unknown"})`)
+            .map(
+              (indicator) =>
+                `- ${indicator.id}: ${indicator.description || indicator.id} (${
+                  indicator.severity || "unknown"
+                })`
+            )
             .join("\n");
-        } else if (details.foundIndicators && Array.isArray(details.foundIndicators)) {
+        } else if (
+          details.foundIndicators &&
+          Array.isArray(details.foundIndicators)
+        ) {
           return details.foundIndicators
-            .map(indicator => `- ${indicator.id || indicator}: ${indicator.description || ""}`)
+            .map(
+              (indicator) =>
+                `- ${indicator.id || indicator}: ${indicator.description || ""}`
+            )
             .join("\n");
         } else {
           // Fallback: Look for any array properties that might contain indicators
-          const arrayProps = Object.keys(details).filter(key => Array.isArray(details[key]) && details[key].length > 0);
-          
+          const arrayProps = Object.keys(details).filter(
+            (key) => Array.isArray(details[key]) && details[key].length > 0
+          );
+
           if (arrayProps.length > 0) {
-            return `Multiple indicators detected (${details.reason || "see browser console for details"})`;
+            return `Multiple indicators detected (${
+              details.reason || "see browser console for details"
+            })`;
           } else {
             return `${details.reason || "Unknown detection criteria"}`;
           }
@@ -4149,60 +4404,92 @@ if (window.checkExtensionLoaded) {
       const applyBranding = (bannerEl, branding) => {
         if (!bannerEl) return;
         try {
-          const companyName = branding.companyName || branding.productName || "CyberDrain";
+          const companyName =
+            branding.companyName || branding.productName || "CyberDrain";
           const supportEmail = branding.supportEmail || "";
           let logoUrl = branding.logoUrl || "";
-          const packagedFallback = chrome.runtime.getURL('images/icon48.png');
+          const packagedFallback = chrome.runtime.getURL("images/icon48.png");
           // Simplified: rely on upstream input validation; only fallback when empty/falsy
           if (!logoUrl) {
             logoUrl = packagedFallback;
           }
-          let brandingSlot = bannerEl.querySelector('#check-banner-branding');
+          let brandingSlot = bannerEl.querySelector("#check-banner-branding");
           if (!brandingSlot) {
-            const container = document.createElement('div');
-            container.id = 'check-banner-branding';
-            container.style.cssText = 'display:flex;align-items:center;gap:8px;';
+            const container = document.createElement("div");
+            container.id = "check-banner-branding";
+            container.style.cssText =
+              "display:flex;align-items:center;gap:8px;";
             const innerWrapper = bannerEl.firstElementChild;
-            if (innerWrapper) innerWrapper.insertBefore(container, innerWrapper.firstChild);
+            if (innerWrapper)
+              innerWrapper.insertBefore(container, innerWrapper.firstChild);
             brandingSlot = container;
           }
           if (brandingSlot) {
-            brandingSlot.innerHTML = '';
+            brandingSlot.innerHTML = "";
             if (logoUrl) {
-              const img = document.createElement('img');
+              const img = document.createElement("img");
               img.src = logoUrl;
-              img.alt = companyName + ' logo';
-              img.style.cssText = 'width:28px;height:28px;object-fit:contain;border-radius:4px;background:rgba(255,255,255,0.25);padding:2px;';
+              img.alt = companyName + " logo";
+              img.style.cssText =
+                "width:28px;height:28px;object-fit:contain;border-radius:4px;background:rgba(255,255,255,0.25);padding:2px;";
               brandingSlot.appendChild(img);
             }
-            const textWrap = document.createElement('div');
-            textWrap.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;';
-            const titleSpan = document.createElement('span');
-            titleSpan.style.cssText = 'font-size:12px;font-weight:600;';
-            titleSpan.textContent = 'Protected by ' + companyName;
+            const textWrap = document.createElement("div");
+            textWrap.style.cssText =
+              "display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;";
+            const titleSpan = document.createElement("span");
+            titleSpan.style.cssText = "font-size:12px;font-weight:600;";
+            titleSpan.textContent = "Protected by " + companyName;
             textWrap.appendChild(titleSpan);
             if (supportEmail) {
-              const contactDiv = document.createElement('div');
-              const contactLink = document.createElement('a');
-              contactLink.style.cssText = 'color:#fff;text-decoration:underline;font-size:11px;cursor:pointer;';
-              contactLink.textContent = 'Report as clean/safe';
-              contactLink.title = 'Report this page as clean/safe to your administrator';
-              contactLink.href = `mailto:${supportEmail}?subject=${encodeURIComponent('Security Review: Possible Clean/Safe Page')}`;
-              contactLink.addEventListener('click', (e) => {
-                try { chrome.runtime.sendMessage({ type: 'REPORT_FALSE_POSITIVE', url: location.href, reason }); } catch(_) {}
+              const contactDiv = document.createElement("div");
+              const contactLink = document.createElement("a");
+              contactLink.style.cssText =
+                "color:#fff;text-decoration:underline;font-size:11px;cursor:pointer;";
+              contactLink.textContent = "Report as clean/safe";
+              contactLink.title =
+                "Report this page as clean/safe to your administrator";
+              contactLink.href = `mailto:${supportEmail}?subject=${encodeURIComponent(
+                "Security Review: Possible Clean/Safe Page"
+              )}`;
+              contactLink.addEventListener("click", (e) => {
+                try {
+                  chrome.runtime.sendMessage({
+                    type: "REPORT_FALSE_POSITIVE",
+                    url: location.href,
+                    reason,
+                  });
+                } catch (_) {}
                 let indicatorsText;
-                try { indicatorsText = extractPhishingIndicators(analysisData); } catch(err) { indicatorsText = 'Parse error - see console'; }
-                const detectionScoreLine = analysisData?.score !== undefined ? `Detection Score: ${analysisData.score}/${analysisData.threshold}` : 'Detection Score: N/A';
+                try {
+                  indicatorsText = extractPhishingIndicators(analysisData);
+                } catch (err) {
+                  indicatorsText = "Parse error - see console";
+                }
+                const detectionScoreLine =
+                  analysisData?.score !== undefined
+                    ? `Detection Score: ${analysisData.score}/${analysisData.threshold}`
+                    : "Detection Score: N/A";
                 const subject = `Security Review: Mark Clean - ${location.hostname}`;
-                const body = encodeURIComponent(`Security Review Request: Possible Clean/Safe Page\n\nPage URL: ${location.href}\nHostname: ${location.hostname}\nTimestamp (UTC): ${new Date().toISOString()}\nBanner Title: ${bannerTitle}\nDisplayed Reason: ${reason}\n${detectionScoreLine}\n\nDetected Indicators:\n${indicatorsText}\n\nUser Justification:\n[Explain why this page is safe]`);
-                e.currentTarget.href = `mailto:${supportEmail}?subject=${encodeURIComponent(subject)}&body=${body}`;
+                const body = encodeURIComponent(
+                  `Security Review Request: Possible Clean/Safe Page\n\nPage URL: ${
+                    location.href
+                  }\nHostname: ${
+                    location.hostname
+                  }\nTimestamp (UTC): ${new Date().toISOString()}\nBanner Title: ${bannerTitle}\nDisplayed Reason: ${reason}\n${detectionScoreLine}\n\nDetected Indicators:\n${indicatorsText}\n\nUser Justification:\n[Explain why this page is safe]`
+                );
+                e.currentTarget.href = `mailto:${supportEmail}?subject=${encodeURIComponent(
+                  subject
+                )}&body=${body}`;
               });
               contactDiv.appendChild(contactLink);
               textWrap.appendChild(contactDiv);
             }
             brandingSlot.appendChild(textWrap);
           }
-        } catch(e) { /* non-fatal */ }
+        } catch (e) {
+          /* non-fatal */
+        }
       };
 
       const detailsText = analysisData?.score
@@ -4262,7 +4549,7 @@ if (window.checkExtensionLoaded) {
         // Update existing banner content and color
         banner.innerHTML = bannerContent;
         banner.style.background = bannerColor;
-        fetchBranding().then(branding => applyBranding(banner, branding));
+        fetchBranding().then((branding) => applyBranding(banner, branding));
 
         // Ensure page content is still pushed down
         const bannerHeight = banner.offsetHeight || 64;
@@ -4292,7 +4579,7 @@ if (window.checkExtensionLoaded) {
       banner.innerHTML = bannerContent;
       document.body.appendChild(banner);
 
-      fetchBranding().then(branding => applyBranding(banner, branding));
+      fetchBranding().then((branding) => applyBranding(banner, branding));
 
       // Push page content down to avoid covering login header
       const bannerHeight = banner.offsetHeight || 64; // fallback height
@@ -4740,8 +5027,8 @@ if (window.checkExtensionLoaded) {
     try {
       logger.log("Initializing Check");
 
-      // Setup console capture early to catch all logs
-      setupConsoleCapture();
+      // Console capture is now setup only when developer mode is enabled (see loadDeveloperConsoleLoggingSetting)
+      // This eliminates performance overhead for normal users
 
       // Apply branding colors first
       applyBrandingColors();
@@ -4937,10 +5224,19 @@ if (window.checkExtensionLoaded) {
 
     if (message.type === "GET_CONSOLE_LOGS") {
       try {
-        sendResponse({
-          success: true,
-          logs: capturedLogs.slice(), // Send a copy of the logs
-        });
+        // Console logs only available if developer mode is enabled
+        if (!developerConsoleLoggingEnabled) {
+          sendResponse({
+            success: false,
+            error:
+              "Console capture disabled. Enable Developer Mode in options to capture logs.",
+          });
+        } else {
+          sendResponse({
+            success: true,
+            logs: capturedLogs.slice(), // Send a copy of the logs
+          });
+        }
       } catch (error) {
         sendResponse({ success: false, error: error.message });
       }

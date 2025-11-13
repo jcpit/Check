@@ -886,11 +886,36 @@ class CheckOptions {
     this.elements.enableValidPageBadge.checked =
       this.config.enableValidPageBadge || false;
 
-    // Detection settings
-    this.elements.customRulesUrl.value =
-      this.config?.detectionRules?.customRulesUrl ||
-      this.config?.customRulesUrl ||
-      "";
+    // Detection settings - use top-level customRulesUrl consistently
+    this.elements.customRulesUrl.value = this.config?.customRulesUrl || "";
+
+    // Generic webhook settings
+    this.elements.genericWebhookEnabled = document.getElementById("genericWebhookEnabled");
+    this.elements.genericWebhookUrl = document.getElementById("genericWebhookUrl");
+    
+    if (this.elements.genericWebhookEnabled) {
+      this.elements.genericWebhookEnabled.checked = this.config?.genericWebhook?.enabled || false;
+    }
+    if (this.elements.genericWebhookUrl) {
+      this.elements.genericWebhookUrl.value = this.config?.genericWebhook?.url || "";
+    }
+
+    const eventTypes = [
+      "detection_alert",
+      "false_positive_report",
+      "page_blocked",
+      "rogue_app_detected",
+      "threat_detected",
+      "validation_event"
+    ];
+
+    const selectedEvents = this.config?.genericWebhook?.events || [];
+    eventTypes.forEach(eventType => {
+      const checkbox = document.getElementById(`webhookEvent_${eventType}`);
+      if (checkbox) {
+        checkbox.checked = selectedEvents.includes(eventType);
+      }
+    });
 
     // URL Allowlist settings
     if (this.elements.urlAllowlist) {
@@ -1115,6 +1140,22 @@ class CheckOptions {
       // Detection settings
       customRulesUrl: this.elements.customRulesUrl?.value || "",
       updateInterval: parseInt(this.elements.updateInterval?.value || 24),
+
+      // Generic webhook
+      genericWebhook: {
+        enabled: this.elements.genericWebhookEnabled?.checked || false,
+        url: this.elements.genericWebhookUrl?.value || "",
+        events: [
+          "detection_alert",
+          "false_positive_report",
+          "page_blocked",
+          "rogue_app_detected",
+          "threat_detected",
+          "validation_event"
+        ].filter(eventType => 
+          document.getElementById(`webhookEvent_${eventType}`)?.checked
+        )
+      },
       
       // URL Allowlist settings
       urlAllowlist: this.elements.urlAllowlist?.value

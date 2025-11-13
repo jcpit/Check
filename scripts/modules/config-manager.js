@@ -29,6 +29,11 @@ export class ConfigManager {
       // Load local configuration with safe wrapper
       const localConfig = await safe(chrome.storage.local.get(["config"]));
 
+      // Migrate legacy configuration structure if needed
+      if (localConfig?.config) {
+        localConfig.config = this.migrateLegacyConfig(localConfig.config);
+      }
+
       // Load branding configuration
       this.brandingConfig = await this.loadBrandingConfig();
 
@@ -45,6 +50,24 @@ export class ConfigManager {
       logger.error("Check: Failed to load configuration:", error);
       throw error;
     }
+  }
+
+  migrateLegacyConfig(config) {
+    // Migrate legacy detectionRules.customRulesUrl to top-level customRulesUrl
+    if (config.detectionRules?.customRulesUrl && !config.customRulesUrl) {
+      config.customRulesUrl = config.detectionRules.customRulesUrl;
+      logger.log("Check: Migrated legacy customRulesUrl to top-level");
+    }
+
+    // Migrate legacy detectionRules.updateInterval to top-level updateInterval
+    if (config.detectionRules?.updateInterval && !config.updateInterval) {
+      // Convert milliseconds to hours if needed
+      const interval = config.detectionRules.updateInterval;
+      config.updateInterval = interval > 1000 ? Math.round(interval / 3600000) : interval;
+      logger.log("Check: Migrated legacy updateInterval to top-level");
+    }
+
+    return config;
   }
 
   async loadEnterpriseConfig() {
@@ -194,6 +217,18 @@ export class ConfigManager {
       ...enterpriseConfig,
     };
 
+    // Fix customRulesUrl precedence - user-saved value should override defaults but NOT enterprise
+    if (!enterpriseConfig?.customRulesUrl) {
+      if (localConfig?.customRulesUrl && localConfig.customRulesUrl.trim() !== "") {
+        merged.customRulesUrl = localConfig.customRulesUrl;
+        if (merged.detectionRules) {
+          merged.detectionRules.customRulesUrl = localConfig.customRulesUrl;
+        }
+      } else if (localConfig?.detectionRules?.customRulesUrl && localConfig.detectionRules.customRulesUrl.trim() !== "") {
+        merged.customRulesUrl = localConfig.detectionRules.customRulesUrl;
+      }
+    }
+
     // Remove customBranding from the top level since it's been merged into branding
     if (merged.customBranding) {
       delete merged.customBranding;
@@ -229,8 +264,6 @@ export class ConfigManager {
       // Detection settings
       detectionRules: {
         enableCustomRules: true,
-        customRulesUrl:
-          "https://raw.githubusercontent.com/CyberDrain/Check/refs/heads/main/rules/detection-rules.json",
         updateInterval: 86400000, // 24 hours
         strictMode: false,
       },
@@ -244,8 +277,8 @@ export class ConfigManager {
       // Debug settings
       enableDebugLogging: false,
 
-      // Custom rules
-      customRulesUrl: "",
+      // Custom rules - centralized at top level
+      customRulesUrl: "https://raw.githubusercontent.com/CyberDrain/Check/refs/heads/main/rules/detection-rules.json",
       updateInterval: 24, // hours
 
       // Performance settings
@@ -343,8 +376,17 @@ export class ConfigManager {
         }
       };
 
-      const currentConfig = await this.getConfig();
-      const updatedConfig = { ...currentConfig, ...updates };
+      // Get the CURRENT LOCAL CONFIG (not merged), so we only save user overrides
+      const localConfigResult = await safe(chrome.storage.local.get(["config"]));
+      const localConfig = localConfigResult?.config || {};
+      
+      // Merge updates into the local config (not the merged config)
+      const updatedLocalConfig = { ...localConfig, ...updates };
+      
+      // Remove empty customRulesUrl to allow fallback to default
+      if (updates.customRulesUrl !== undefined && updates.customRulesUrl.trim() === '') {
+        delete updatedLocalConfig.customRulesUrl;
+      }
 
       // Validate that enterprise-enforced policies are not being modified
       if (this.enterpriseConfig?.enforcedPolicies) {
@@ -363,15 +405,18 @@ export class ConfigManager {
         );
       }
 
-      await safe(chrome.storage.local.set({ config: updatedConfig }));
-      this.config = updatedConfig;
+      // Save only the user's config overrides to local storage
+      await safe(chrome.storage.local.set({ config: updatedLocalConfig }));
+      
+      // Reload the full merged config
+      await this.loadConfig();
 
       // Notify other components of configuration change with safe wrapper
       try {
         chrome.runtime.sendMessage(
           {
             type: "CONFIG_UPDATED",
-            config: updatedConfig,
+            config: this.config,
           },
           () => {
             if (chrome.runtime.lastError) {
@@ -383,7 +428,7 @@ export class ConfigManager {
         // Silently handle errors
       }
 
-      return updatedConfig;
+      return this.config;
     } catch (error) {
       logger.error("Check: Failed to update configuration:", error);
       throw error;
@@ -420,6 +465,12 @@ export class ConfigManager {
         ...this.enterpriseConfig.customBranding,
       };
       logger.log("Check: Applied enterprise custom branding");
+    }
+
+    // Include genericWebhook from config if available
+    const currentConfig = await this.getConfig();
+    if (currentConfig.genericWebhook) {
+      finalBranding.genericWebhook = currentConfig.genericWebhook;
     }
 
     return finalBranding;

