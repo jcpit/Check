@@ -16,6 +16,7 @@ class CheckPopup {
     this.activityItems = [];
     this.isLoading = false;
     this.isBlockedRoute = false;
+    this.cachedDebugData = null; // Store debug data for blocked pages to enable toggling
 
     this.elements = {};
     this.bindElements();
@@ -251,6 +252,13 @@ class CheckPopup {
         this.elements.debugSection.style.display = "block";
         this.elements.pageSourceSection.style.display = "block";
         this.elements.consoleLogsSection.style.display = "block";
+        
+        // Hide the "Re-run Analysis" button when on a blocked page
+        if (this.isBlockedRoute) {
+          this.elements.retriggerAnalysis.style.display = "none";
+        } else {
+          this.elements.retriggerAnalysis.style.display = "inline-flex";
+        }
       } else {
         this.elements.debugSection.style.display = "none";
         this.elements.pageSourceSection.style.display = "none";
@@ -1331,13 +1339,33 @@ class CheckPopup {
     try {
       this.showNotification("Re-triggering analysis...", "info");
 
+      // First, ensure background script is awake (wake it up with a ping)
+      const backgroundReady = await this.checkBackgroundScript();
+      if (!backgroundReady) {
+        console.warn("Check: Background script not responding, trying to wake it up");
+        // Try to wake it up by waiting a bit
+        const wakeupSuccess = await this.waitForBackgroundScript();
+        if (!wakeupSuccess) {
+          console.error("Check: Failed to wake up background script");
+          this.showNotification(
+            "Extension background script is not responding. Try reloading the extension.",
+            "error"
+          );
+          return;
+        }
+      }
+
       // Send message to content script to re-run protection
       chrome.tabs.sendMessage(
         this.currentTab.id,
         { type: "RETRIGGER_ANALYSIS" },
         (response) => {
           if (chrome.runtime.lastError) {
-            this.showNotification("Failed to communicate with page", "error");
+            console.error("Check: Failed to communicate with page:", chrome.runtime.lastError);
+            this.showNotification(
+              "Failed to communicate with page. Content script may not be loaded on this page.",
+              "error"
+            );
             return;
           }
 
@@ -1371,6 +1399,18 @@ class CheckPopup {
       this.elements.showDetectionDetails.innerHTML = `
         <span class="material-icons">visibility</span>
         Show Details
+      `;
+      return;
+    }
+
+    // For blocked pages, use cached debug data if available
+    if (this.isBlockedRoute && this.cachedDebugData && this.cachedDebugData.detectionDetails) {
+      console.log("Re-displaying cached debug data for blocked page");
+      this.displayDetectionDetails(this.cachedDebugData.detectionDetails);
+      this.elements.detectionResults.style.display = "block";
+      this.elements.showDetectionDetails.innerHTML = `
+        <span class="material-icons">visibility_off</span>
+        Hide Details
       `;
       return;
     }
@@ -1860,8 +1900,8 @@ class CheckPopup {
                 "Retrieved stored debug data via background script for URL:",
                 url
               );
-              console.log("Returning debug data:", data);
-              return data; // Return the full data object since it IS the debug data
+              console.log("Returning debug data:", data.debugData);
+              return data.debugData; // Return the nested debugData object
             } else {
               console.log("Data too old or no timestamp, cleaning up");
               // Clean up old data
@@ -1945,6 +1985,9 @@ class CheckPopup {
         );
         console.log("Has consoleLogs:", !!storedDebugData.consoleLogs);
         console.log("Has pageSource:", !!storedDebugData.pageSource);
+
+        // Cache the debug data for toggling
+        this.cachedDebugData = storedDebugData;
 
         // Display detection details if available
         if (storedDebugData.detectionDetails) {

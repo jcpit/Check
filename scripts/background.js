@@ -4,6 +4,9 @@
  * Enhanced with Check, CyberDrain's Microsoft 365 phishing detection
  */
 
+// Import browser polyfill for cross-browser compatibility (Chrome/Firefox)
+import { chrome, storage } from "./browser-polyfill.js";
+
 import { ConfigManager } from "./modules/config-manager.js";
 import { PolicyManager } from "./modules/policy-manager.js";
 import { DetectionRulesManager } from "./modules/detection-rules-manager.js";
@@ -149,7 +152,7 @@ class RogueAppsManager {
 
   async loadFromCache() {
     try {
-      const result = await safe(chrome.storage.local.get([this.cacheKey]));
+      const result = await safe(storage.local.get([this.cacheKey]));
       const cached = result?.[this.cacheKey];
 
       if (cached && cached.apps && cached.lastUpdate) {
@@ -217,7 +220,7 @@ class RogueAppsManager {
 
       // Save to storage
       await safe(
-        chrome.storage.local.set({
+        storage.local.set({
           [this.cacheKey]: {
             apps: apps,
             lastUpdate: this.lastUpdate,
@@ -557,6 +560,39 @@ class CheckBackground {
     }
   }
 
+  // Send event to webhook (wrapper for webhookManager.sendWebhook)
+  async sendEvent(eventData) {
+    try {
+      // Map event types to webhook types
+      const eventTypeMap = {
+        "trusted-login-page": this.webhookManager.webhookTypes.VALIDATION_EVENT,
+        "phishy-detected": this.webhookManager.webhookTypes.THREAT_DETECTED,
+        "page-blocked": this.webhookManager.webhookTypes.PAGE_BLOCKED,
+        "rogue-app-detected": this.webhookManager.webhookTypes.ROGUE_APP,
+        "detection-alert": this.webhookManager.webhookTypes.DETECTION_ALERT,
+      };
+
+      const webhookType = eventTypeMap[eventData.type];
+      if (!webhookType) {
+        logger.warn(`Unknown event type: ${eventData.type}`);
+        return;
+      }
+
+      // Get metadata
+      const metadata = {
+        timestamp: new Date().toISOString(),
+        extensionVersion: chrome.runtime.getManifest().version,
+        ...eventData.metadata,
+      };
+
+      // Send webhook
+      await this.webhookManager.sendWebhook(webhookType, eventData, metadata);
+    } catch (error) {
+      // Log error but don't throw - webhook failures shouldn't break functionality
+      logger.error(`Failed to send event ${eventData.type}:`, error);
+    }
+  }
+
   // CyberDrain integration - Remove valid badges from all tabs when setting is disabled
   async removeValidBadgesFromAllTabs() {
     try {
@@ -692,13 +728,13 @@ class CheckBackground {
 
     // CyberDrain integration - Handle tab activation for badge updates with safe wrappers
     chrome.tabs.onActivated.addListener(async ({ tabId }) => {
-      const data = await safe(chrome.storage.session.get("verdict:" + tabId));
+      const data = await safe(storage.session.get("verdict:" + tabId));
       const verdict = data?.["verdict:" + tabId]?.verdict || "not-evaluated";
       this.setBadge(tabId, verdict);
     });
 
     // Handle storage changes (for enterprise policy updates)
-    chrome.storage.onChanged.addListener((changes, namespace) => {
+    storage.onChanged.addListener((changes, namespace) => {
       this.handleStorageChange(changes, namespace);
     });
 
@@ -774,9 +810,7 @@ class CheckBackground {
 
   async _doFlush() {
     const cur =
-      (await safe(
-        chrome.storage.local.get(["accessLogs", "securityEvents"])
-      )) || {};
+      (await safe(storage.local.get(["accessLogs", "securityEvents"]))) || {};
     const access = (cur.accessLogs || [])
       .concat(this.pendingLocal.accessLogs)
       .slice(-1000);
@@ -787,7 +821,7 @@ class CheckBackground {
     this.pendingLocal.securityEvents.length = 0;
     const payload = { accessLogs: access, securityEvents: sec };
     if (JSON.stringify(payload).length <= 4 * 1024 * 1024) {
-      await safe(chrome.storage.local.set(payload));
+      await safe(storage.local.set(payload));
     }
   }
 
@@ -833,7 +867,7 @@ class CheckBackground {
 
         // Check if there's already a more specific verdict (like rogue-app)
         const existingData = await safe(
-          chrome.storage.session.get("verdict:" + tabId)
+          storage.session.get("verdict:" + tabId)
         );
         const existingVerdict = existingData?.["verdict:" + tabId]?.verdict;
 
@@ -850,7 +884,7 @@ class CheckBackground {
             } → ${urlBasedVerdict}`
           );
           await safe(
-            chrome.storage.session.set({
+            storage.session.set({
               ["verdict:" + tabId]: { verdict: urlBasedVerdict, url: tab.url },
             })
           );
@@ -931,7 +965,7 @@ class CheckBackground {
           if (sender.tab?.id) {
             const tabId = sender.tab.id;
             await safe(
-              chrome.storage.session.set({
+              storage.session.set({
                 ["verdict:" + tabId]: {
                   verdict: "phishy",
                   url: sender.tab.url,
@@ -955,7 +989,7 @@ class CheckBackground {
           if (sender.tab?.id) {
             const tabId = sender.tab.id;
             await safe(
-              chrome.storage.session.set({
+              storage.session.set({
                 ["verdict:" + tabId]: {
                   verdict: "trusted",
                   url: sender.tab.url,
@@ -983,7 +1017,7 @@ class CheckBackground {
           if (sender.tab?.id) {
             const tabId = sender.tab.id;
             await safe(
-              chrome.storage.session.set({
+              storage.session.set({
                 ["verdict:" + tabId]: {
                   verdict: "ms-login-unknown",
                   url: sender.tab.url,
@@ -1015,7 +1049,7 @@ class CheckBackground {
             );
 
             await safe(
-              chrome.storage.session.set({
+              storage.session.set({
                 ["verdict:" + tabId]: {
                   verdict: "rogue-app",
                   url: sender.tab.url,
@@ -1045,7 +1079,7 @@ class CheckBackground {
           if (sender.tab?.id) {
             const tabId = sender.tab.id;
             await safe(
-              chrome.storage.session.set({
+              storage.session.set({
                 ["verdict:" + tabId]: {
                   verdict: "safe",
                   url: sender.tab.url,
@@ -1145,13 +1179,13 @@ class CheckBackground {
 
         case "GET_STORED_DEBUG_DATA":
           try {
-            // Retrieve stored debug data from chrome.storage.local
+            // Retrieve stored debug data from storage.local
             if (message.key) {
               console.log(
                 "Background: Retrieving debug data for key:",
                 message.key
               );
-              const result = await chrome.storage.local.get([message.key]);
+              const result = await storage.local.get([message.key]);
               const debugData = result[message.key];
 
               console.log("Background: Retrieved data:", debugData);
@@ -1330,15 +1364,7 @@ class CheckBackground {
         case "GET_POLICIES":
           try {
             // Test managed storage directly
-            const managedPolicies = await new Promise((resolve, reject) => {
-              chrome.storage.managed.get(null, (result) => {
-                if (chrome.runtime.lastError) {
-                  reject(new Error(chrome.runtime.lastError.message));
-                } else {
-                  resolve(result);
-                }
-              });
-            });
+            const managedPolicies = await storage.managed.get(null);
 
             // Also get enterprise config from config manager
             const enterpriseConfig =
@@ -1540,7 +1566,10 @@ class CheckBackground {
         case "send_webhook":
           try {
             if (!message.webhookType || !message.data) {
-              sendResponse({ success: false, error: "Invalid webhook message" });
+              sendResponse({
+                success: false,
+                error: "Invalid webhook message",
+              });
               return;
             }
 
@@ -1550,7 +1579,7 @@ class CheckBackground {
             const metadata = {
               config: config,
               userProfile: userProfile,
-              extensionVersion: chrome.runtime.getManifest().version
+              extensionVersion: chrome.runtime.getManifest().version,
             };
 
             const result = await this.webhookManager.sendWebhook(
@@ -1713,24 +1742,8 @@ class CheckBackground {
     this.pendingLocal.securityEvents.push(logEntry);
     this.scheduleFlush();
 
-    // Send to CIPP if enabled using the correct method
-    if (config?.enableCippReporting && config?.cippServerUrl) {
-      try {
-        await this.handleCippReport({
-          type: logEntry.event.type,
-          severity: logEntry.event.threatLevel || "medium",
-          timestamp: logEntry.timestamp,
-          url: logEntry.event.url,
-          reason: logEntry.event.reason || "Security event logged",
-          tabId: logEntry.tabId,
-          event: logEntry.event,
-          profile: logEntry.profile,
-        });
-      } catch (error) {
-        logger.error("Failed to send event to CIPP:", error);
-        // Don't fail the entire logging operation if CIPP is unavailable
-      }
-    }
+    // NOTE: Webhooks are sent directly via send_webhook and send_cipp_report messages
+    // Do NOT send webhooks here to avoid duplicates
   }
 
   enhanceEventForLogging(event) {
@@ -1859,8 +1872,6 @@ class CheckBackground {
   }
 
   // Test methods removed - DetectionEngine functionality moved to content script
-
-  // Test methods removed - DetectionEngine functionality moved to content script
   async runComprehensiveTest() {
     return {
       timestamp: new Date().toISOString(),
@@ -1922,7 +1933,7 @@ class CheckBackground {
       logger.log("Profile information loaded:", this.profileInfo);
 
       // Store profile info for access by other parts of the extension
-      await chrome.storage.local.set({
+      await storage.local.set({
         currentProfile: this.profileInfo,
       });
     } catch (error) {
@@ -1940,12 +1951,12 @@ class CheckBackground {
 
   async getOrCreateProfileId() {
     try {
-      const result = await chrome.storage.local.get(["profileId"]);
+      const result = await storage.local.get(["profileId"]);
 
       if (!result.profileId) {
         // Generate a unique identifier for this profile
         const profileId = crypto.randomUUID();
-        await chrome.storage.local.set({ profileId });
+        await storage.local.set({ profileId });
         logger.log("Generated new profile ID:", profileId);
         return profileId;
       }
@@ -1959,27 +1970,17 @@ class CheckBackground {
   }
 
   async checkManagedEnvironment() {
-    return new Promise((resolve) => {
-      try {
-        chrome.storage.managed.get(null, (policies) => {
-          if (chrome.runtime.lastError) {
-            resolve(false);
-          } else {
-            const isManaged = policies && Object.keys(policies).length > 0;
-            if (isManaged) {
-              logger.log(
-                "Detected managed environment with policies:",
-                policies
-              );
-            }
-            resolve(isManaged);
-          }
-        });
-      } catch (error) {
-        logger.error("Error checking managed environment:", error);
-        resolve(false);
+    try {
+      const policies = await storage.managed.get(null);
+      const isManaged = policies && Object.keys(policies).length > 0;
+      if (isManaged) {
+        logger.log("Detected managed environment with policies:", policies);
       }
-    });
+      return isManaged;
+    } catch (error) {
+      logger.error("Error checking managed environment:", error);
+      return false;
+    }
   }
 
   async getUserInfo() {
@@ -2181,8 +2182,8 @@ class CheckBackground {
     try {
       const config = await this.configManager.getConfig();
 
-      if (!config?.enableCippReporting || !config?.cippServerUrl) {
-        logger.debug("CIPP reporting disabled or no server URL configured");
+      if (!config?.enableCippReporting && !config?.genericWebhook?.enabled) {
+        logger.debug("Webhooks disabled");
         return;
       }
 
@@ -2192,7 +2193,7 @@ class CheckBackground {
         config: config,
         userProfile: userProfile,
         extensionVersion: chrome.runtime.getManifest().version,
-        isPrivateIP: this.webhookManager.isPrivateIP(basePayload.redirectTo)
+        isPrivateIP: this.webhookManager.isPrivateIP(basePayload.redirectTo),
       };
 
       const result = await this.webhookManager.sendWebhook(
@@ -2288,7 +2289,7 @@ class CheckBackground {
 
       // Get all logs from storage
       const result = await safe(
-        chrome.storage.local.get(["securityEvents", "accessLogs", "debugLogs"])
+        storage.local.get(["securityEvents", "accessLogs", "debugLogs"])
       );
 
       const securityEvents = result?.securityEvents || [];

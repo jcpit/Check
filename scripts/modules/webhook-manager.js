@@ -9,7 +9,7 @@ export class WebhookManager {
       PAGE_BLOCKED: "page_blocked",
       ROGUE_APP: "rogue_app_detected",
       THREAT_DETECTED: "threat_detected",
-      VALIDATION_EVENT: "validation_event"
+      VALIDATION_EVENT: "validation_event",
     };
   }
 
@@ -17,32 +17,41 @@ export class WebhookManager {
     const config = await this.configManager.getConfig();
 
     if (!config) {
-      return null;
+      return [];
     }
 
-    if (webhookType === this.webhookTypes.DETECTION_ALERT && config.enableCippReporting) {
-      return {
-        url: config.cippServerUrl ? 
-          config.cippServerUrl.replace(/\/+$/, "") + "/api/PublicPhishingCheck" : null,
+    const webhooks = [];
+
+    // Check CIPP webhook
+    if (
+      webhookType === this.webhookTypes.DETECTION_ALERT &&
+      config.enableCippReporting
+    ) {
+      webhooks.push({
+        url: config.cippServerUrl
+          ? config.cippServerUrl.replace(/\/+$/, "") +
+            "/api/PublicPhishingCheck"
+          : null,
         enabled: config.enableCippReporting,
         type: "cipp",
-        tenantId: config.cippTenantId || null
-      };
+        tenantId: config.cippTenantId || null,
+      });
     }
 
+    // Check generic webhook
     const genericWebhook = config.genericWebhook;
     if (genericWebhook && genericWebhook.enabled && genericWebhook.url) {
       const events = genericWebhook.events || [];
       if (events.includes(webhookType)) {
-        return {
+        webhooks.push({
           url: genericWebhook.url,
           enabled: true,
-          type: "generic"
-        };
+          type: "generic",
+        });
       }
     }
 
-    return null;
+    return webhooks.length > 0 ? webhooks : [];
   }
 
   buildPayload(webhookType, data, metadata = {}) {
@@ -51,8 +60,9 @@ export class WebhookManager {
       type: webhookType,
       timestamp: new Date().toISOString(),
       source: "Check Extension",
-      extensionVersion: metadata.extensionVersion || chrome.runtime.getManifest().version,
-      data: {}
+      extensionVersion:
+        metadata.extensionVersion || chrome.runtime.getManifest().version,
+      data: {},
     };
 
     switch (webhookType) {
@@ -94,24 +104,65 @@ export class WebhookManager {
   }
 
   buildDetectionAlertPayload(data) {
+    // Extract rule information from various possible locations
+    const rule = data.rule || data.ruleId || data.event?.rule || null;
+    const reason =
+      data.reason ||
+      data.blockReason ||
+      data.event?.reason ||
+      "Threat detected";
+
+    // Build matched rules array
+    let matchedRules =
+      data.rules || data.matchedRules || data.event?.matchedRules || [];
+
+    // If no matchedRules but we have phishingIndicators, convert them to matched rules
+    if (
+      matchedRules.length === 0 &&
+      data.phishingIndicators &&
+      Array.isArray(data.phishingIndicators)
+    ) {
+      matchedRules = data.phishingIndicators.map((indicatorId) => ({
+        id: indicatorId,
+        description: indicatorId,
+        severity: data.severity || data.threatLevel || "medium",
+      }));
+    }
+
+    // If we have a single rule but no matchedRules array, create one
+    if (matchedRules.length === 0 && rule) {
+      matchedRules = [
+        {
+          id: rule,
+          description: data.ruleDescription || reason,
+          severity:
+            data.severity ||
+            data.threatLevel ||
+            data.event?.severity ||
+            "medium",
+        },
+      ];
+    }
+
     return {
-      url: data.url || data.targetUrl,
-      severity: data.severity || data.threatLevel || "medium",
+      url: data.url || data.targetUrl || data.event?.url,
+      severity:
+        data.severity || data.threatLevel || data.event?.severity || "medium",
       score: data.score || data.threatScore || 0,
       threshold: data.threshold || 85,
-      reason: data.reason || data.blockReason || "Threat detected",
+      reason: reason,
       detectionMethod: data.detectionMethod || "rules_engine",
-      rule: data.rule || data.ruleId || null,
-      ruleDescription: data.ruleDescription || data.reason || null,
+      rule: rule,
+      ruleDescription: data.ruleDescription || reason || null,
       category: data.category || "phishing",
       confidence: data.confidence || 0.8,
-      matchedRules: data.rules || data.matchedRules || [],
+      matchedRules: matchedRules,
       context: {
-        referrer: data.referrer || null,
-        pageTitle: data.pageTitle || null,
-        domain: data.domain || null,
-        redirectTo: data.redirectTo || null
-      }
+        referrer: data.referrer || data.event?.referrer || null,
+        pageTitle: data.pageTitle || data.event?.pageTitle || null,
+        domain: data.domain || data.event?.domain || null,
+        redirectTo: data.redirectTo || data.event?.redirectTo || null,
+      },
     };
   }
 
@@ -129,29 +180,48 @@ export class WebhookManager {
       context: {
         referrer: null,
         pageTitle: null,
-        domain: null
-      }
+        domain: null,
+      },
     };
   }
 
   buildPageBlockedPayload(data) {
+    // Extract rule information from various possible locations
+    const rule = data.rule || data.ruleId || null;
+    const reason = data.reason || data.blockReason || "Page blocked";
+
+    // Build matched rules array
+    let matchedRules = data.matchedRules || [];
+
+    // If we have a single rule but no matchedRules array, create one
+    if (matchedRules.length === 0 && rule) {
+      matchedRules = [
+        {
+          id: rule,
+          description: data.ruleDescription || reason,
+          severity: data.severity || data.threatLevel || "high",
+        },
+      ];
+    }
+
     return {
       url: data.url || data.blockedUrl,
       severity: data.severity || data.threatLevel || "high",
       score: data.score || 0,
       threshold: data.threshold || 85,
-      reason: data.reason || data.blockReason || "Page blocked",
+      reason: reason,
       detectionMethod: data.detectionMethod || "rules_engine",
-      rule: data.rule || data.ruleId || null,
-      ruleDescription: data.ruleDescription || data.reason || null,
+      rule: rule,
+      ruleDescription: data.ruleDescription || reason || null,
       category: data.category || "phishing",
       action: "blocked",
+      matchedRules: matchedRules,
       context: {
         referrer: data.referrer || null,
         pageTitle: data.pageTitle || null,
         domain: data.domain || null,
-        redirectTo: data.redirectTo || null
-      }
+        redirectTo: data.redirectTo || null,
+      },
     };
   }
 
@@ -168,7 +238,7 @@ export class WebhookManager {
         description: data.description || null,
         tags: data.tags || [],
         references: data.references || [],
-        risk: data.risk || "high"
+        risk: data.risk || "high",
       },
       context: {
         referrer: null,
@@ -176,8 +246,8 @@ export class WebhookManager {
         domain: null,
         redirectTo: data.redirectTo || null,
         isLocalhost: data.redirectTo?.includes("localhost") || false,
-        isPrivateIP: data.isPrivateIP || false
-      }
+        isPrivateIP: data.isPrivateIP || false,
+      },
     };
   }
 
@@ -199,8 +269,8 @@ export class WebhookManager {
         pageTitle: data.pageTitle || null,
         domain: data.domain || null,
         redirectTo: data.redirectTo || null,
-        ...(data.context || {})
-      }
+        ...(data.context || {}),
+      },
     };
   }
 
@@ -217,8 +287,8 @@ export class WebhookManager {
         referrer: null,
         pageTitle: null,
         domain: data.domain || null,
-        redirectTo: null
-      }
+        redirectTo: null,
+      },
     };
   }
 
@@ -231,53 +301,115 @@ export class WebhookManager {
       accountType: profile.userInfo?.accountType || "unknown",
       provider: profile.userInfo?.provider || "unknown",
       isManaged: profile.isManaged || false,
-      profileId: profile.profileId || null
+      profileId: profile.profileId || null,
     };
   }
 
   async sendWebhook(webhookType, data, metadata = {}) {
-    const webhookConfig = await this.getWebhookConfig(webhookType);
+    const webhookConfigs = await this.getWebhookConfig(webhookType);
 
-    if (!webhookConfig || !webhookConfig.url) {
+    if (!webhookConfigs || webhookConfigs.length === 0) {
       return {
         success: false,
         error: "Webhook not configured",
-        skipped: true
+        skipped: true,
       };
     }
 
-    const payload = webhookConfig.type === "cipp" ?
-      this.buildCippPayload(data, metadata) :
-      this.buildPayload(webhookType, data, metadata);
+    // Send to all configured webhooks
+    const results = await Promise.allSettled(
+      webhookConfigs.map((webhookConfig) =>
+        this.sendSingleWebhook(webhookType, data, metadata, webhookConfig)
+      )
+    );
+
+    // Aggregate results
+    const successfulSends = results.filter(
+      (r) => r.status === "fulfilled" && r.value.success
+    );
+    const failedSends = results.filter(
+      (r) =>
+        r.status === "rejected" ||
+        (r.status === "fulfilled" && !r.value.success)
+    );
+
+    if (successfulSends.length === 0) {
+      return {
+        success: false,
+        error: "All webhook sends failed",
+        webhookType: webhookType,
+        results: results.map((r) =>
+          r.status === "fulfilled"
+            ? r.value
+            : { success: false, error: r.reason }
+        ),
+      };
+    }
+
+    return {
+      success: true,
+      webhookType: webhookType,
+      results: results.map((r) =>
+        r.status === "fulfilled"
+          ? r.value
+          : { success: false, error: r.reason?.message || "Unknown error" }
+      ),
+      totalSent: successfulSends.length,
+      totalFailed: failedSends.length,
+    };
+  }
+
+  async sendSingleWebhook(webhookType, data, metadata, webhookConfig) {
+    if (!webhookConfig.url) {
+      return {
+        success: false,
+        error: "Webhook URL not configured",
+        type: webhookConfig.type,
+      };
+    }
+
+    const payload =
+      webhookConfig.type === "cipp"
+        ? this.buildCippPayload(data, metadata)
+        : this.buildPayload(webhookType, data, metadata);
 
     try {
       const response = await fetch(webhookConfig.url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "User-Agent": `Check/${metadata.extensionVersion || chrome.runtime.getManifest().version}`,
+          "User-Agent": `Check/${
+            metadata.extensionVersion || chrome.runtime.getManifest().version
+          }`,
           "X-Webhook-Type": webhookType,
-          "X-Webhook-Version": "1.0"
+          "X-Webhook-Version": "1.0",
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      logger.log(`Webhook sent successfully: ${webhookType}`);
+      logger.log(
+        `Webhook sent to ${webhookConfig.url} successfully: ${webhookType} (${webhookConfig.type})`
+      );
       return {
         success: true,
         status: response.status,
-        webhookType: webhookType
+        webhookType: webhookType,
+        type: webhookConfig.type,
       };
     } catch (error) {
-      logger.error(`Failed to send webhook ${webhookType}:`, error.message);
+      logger.error(
+        `Failed to send webhook ${webhookType} to ${webhookConfig.type}:`,
+        error.message
+      );
       return {
         success: false,
         error: error.message,
-        webhookType: webhookType
+        webhookType: webhookType,
+        type: webhookConfig.type,
       };
     }
   }
@@ -287,7 +419,8 @@ export class WebhookManager {
     const userProfile = metadata.userProfile;
 
     const userEmail = userProfile?.userInfo?.email || null;
-    const userDisplayName = userProfile?.userInfo?.displayName ||
+    const userDisplayName =
+      userProfile?.userInfo?.displayName ||
       userProfile?.userInfo?.name ||
       (userEmail ? userEmail.split("@")[0] : null);
 
@@ -296,9 +429,10 @@ export class WebhookManager {
       browserVersion: userProfile?.browserInfo?.browserVersion || "unknown",
       platform: userProfile?.browserInfo?.platform || "unknown",
       language: userProfile?.browserInfo?.language || "unknown",
-      extensionVersion: userProfile?.browserInfo?.version ||
+      extensionVersion:
+        userProfile?.browserInfo?.version ||
         chrome.runtime.getManifest().version,
-      installType: userProfile?.browserInfo?.installType || "unknown"
+      installType: userProfile?.browserInfo?.installType || "unknown",
     };
 
     return {
@@ -319,16 +453,16 @@ export class WebhookManager {
         redirectContext: {
           redirectHost: data.redirectTo,
           isLocalhost: data.redirectTo?.includes("localhost"),
-          isPrivateIP: metadata.isPrivateIP || false
-        }
+          isPrivateIP: metadata.isPrivateIP || false,
+        },
       }),
       ...(data.clientId && {
         oauthContext: {
           clientId: data.clientId,
           appName: data.appName || "Unknown",
-          ...(data.reason && { threatReason: data.reason })
-        }
-      })
+          ...(data.reason && { threatReason: data.reason }),
+        },
+      }),
     };
   }
 
@@ -338,7 +472,7 @@ export class WebhookManager {
       high: "HIGH",
       medium: "MEDIUM",
       low: "LOW",
-      info: "INFORMATIONAL"
+      info: "INFORMATIONAL",
     };
     return severityMap[severity?.toLowerCase()] || "MEDIUM";
   }
@@ -346,7 +480,10 @@ export class WebhookManager {
   categorizeSecurityEvent(payload) {
     const type = payload.type?.toLowerCase() || "";
 
-    if (type.includes("rogue_app") || payload.ruleType === "rogue_app_detection") {
+    if (
+      type.includes("rogue_app") ||
+      payload.ruleType === "rogue_app_detection"
+    ) {
       return "OAUTH_THREAT";
     }
     if (type.includes("phishing") || type.includes("blocked")) {
@@ -365,8 +502,8 @@ export class WebhookManager {
       /^172\.(1[6-9]|2[0-9]|3[01])\./,
       /^192\.168\./,
       /^127\./,
-      /^localhost$/i
+      /^localhost$/i,
     ];
-    return privateRanges.some(range => range.test(host));
+    return privateRanges.some((range) => range.test(host));
   }
 }
