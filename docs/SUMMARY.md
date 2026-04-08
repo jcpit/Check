@@ -17,6 +17,13 @@
   - [MacOS](deployment/chrome-edge-deployment-instructions/macos.md)
 - [Firefox Deployment](deployment/firefox-deployment.md)
 
+## Removal
+
+- [Removal Overview](removal/README.md)
+  - [Windows](removal/windows/README.md)
+    - [Chrome and Edge](removal/windows/chrome-edge.md)
+    - [Firefox](removal/windows/firefox.md)
+
 ## Settings
 
 - [General](settings/general.md)
