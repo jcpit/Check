@@ -1,0 +1,170 @@
+# Check Extension - Intune Detection Script
+# This script verifies that the Check by CyberDrain extension is correctly configured
+# in the registry for both Chrome and Edge browsers.
+#
+# IMPORTANT: The settings below MUST match the values in your Deploy-Windows-Chrome-and-Edge.ps1.
+# If any value differs, Intune will detect the app as "not installed" and trigger a reinstall.
+#
+# Exit codes: 0 = compliant (extension correctly configured), 1 = non-compliant (drift detected)
+
+# Define extension details
+# Chrome
+$chromeExtensionId = "benimdeioplgkhanklclahllklceahbe"
+$chromeUpdateUrl = "https://clients2.google.com/service/update2/crx"
+$chromeManagedStorageKey = "HKLM:\SOFTWARE\Policies\Google\Chrome\3rdparty\extensions\$chromeExtensionId\policy"
+$chromeExtensionSettingsKey = "HKLM:\SOFTWARE\Policies\Google\Chrome\ExtensionSettings\$chromeExtensionId"
+
+#Edge
+$edgeExtensionId = "knepjpocdagponkonnbggpcnhnaikajg"
+$edgeUpdateUrl = "https://edge.microsoft.com/extensionwebstorebase/v1/crx"
+$edgeManagedStorageKey = "HKLM:\SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\$edgeExtensionId\policy"
+$edgeExtensionSettingsKey = "HKLM:\SOFTWARE\Policies\Microsoft\Edge\ExtensionSettings\$edgeExtensionId"
+
+# Extension Configuration Settings
+$showNotifications = 1 # 0 = Unchecked, 1 = Checked (Enabled); default is 1; This will set the "Show Notifications" option in the extension settings.
+$enableValidPageBadge = 0 # 0 = Unchecked, 1 = Checked (Enabled); default is 0; This will set the "Show Valid Page Badge" option in the extension settings.
+$enablePageBlocking = 1 # 0 = Unchecked, 1 = Checked (Enabled); default is 1; This will set the "Enable Page Blocking" option in the extension settings.
+$forceToolbarPin = 1 # 0 = Not pinned, 1 = Force pinned to toolbar; default is 1
+$enableCippReporting = 0 # 0 = Unchecked, 1 = Checked (Enabled); default is 0; This will set the "Enable CIPP Reporting" option in the extension settings.
+$cippServerUrl = "" # This will set the "CIPP Server URL" option in the extension settings; default is blank; if you set $enableCippReporting to 1, you must set this to a valid URL including the protocol (e.g., https://cipp.cyberdrain.com). Can be vanity URL or the default azurestaticapps.net domain.
+$cippTenantId = "" # This will set the "Tenant ID/Domain" option in the extension settings; default is blank; if you set $enableCippReporting to 1, you must set this to a valid Tenant ID.
+$customRulesUrl = "" # This will set the "Config URL" option in the Detection Configuration settings; default is blank.
+$updateInterval = 24 # This will set the "Update Interval" option in the Detection Configuration settings; default is 24 (hours). Range: 1-168 hours (1 hour to 1 week).
+$urlAllowlist = @() # This will set the "URL Allowlist" option in the Detection Configuration settings; default is blank; if you want to add multiple URLs, add them as a comma-separated list within the brackets (e.g., @("https://example1.com", "https://example2.com")). Supports simple URLs with * wildcard (e.g., https://*.example.com) or advanced regex patterns (e.g., ^https:\/\/(www\.)?example\.com\/.*$).
+$domainSquattingEnabled = 1 # 0 = Disabled, 1 = Enabled; default is 1; controls domain squatting detection from managed policy/config.
+$enableDebugLogging = 0 # 0 = Unchecked, 1 = Checked (Enabled); default is 0; This will set the "Enable Debug Logging" option in the Activity Log settings.
+
+# Generic Webhook Settings
+$enableGenericWebhook = 0 # 0 = Disabled, 1 = Enabled; default is 0; This will enable the generic webhook for sending detection events to a custom endpoint.
+$webhookUrl = "" # This will set the "Webhook URL" option; default is blank; if you set $enableGenericWebhook to 1, you must set this to a valid URL including the protocol (e.g., https://webhook.example.com/endpoint).
+$webhookEvents = @() # This will set the "Event Types" to send to the webhook; default is blank; if you set $enableGenericWebhook to 1, you can specify which events to send. Available events: "detection_alert", "false_positive_report", "page_blocked", "rogue_app_detected", "threat_detected", "validation_event". Example: @("detection_alert", "page_blocked", "threat_detected").
+
+# Custom Branding Settings
+$companyName = "CyberDrain" # This will set the "Company Name" option in the Custom Branding settings; default is "CyberDrain".
+$productName = "Check - Phishing Protection" # This will set the "Product Name" option in the Custom Branding settings; default is "Check - Phishing Protection".
+$supportEmail = "" # This will set the "Support Email" option in the Custom Branding settings; default is blank.
+$supportUrl = "" # This will set the "Support URL" option in the Custom Branding settings; default is blank.
+$privacyPolicyUrl = "" # This will set the "Privacy URL" option in the Custom Branding settings; default is blank.
+$aboutUrl = "" # This will set the "About URL" option in the Custom Branding settings; default is blank.
+$primaryColor = "#F77F00" # This will set the "Primary Color" option in the Custom Branding settings; default is "#F77F00"; must be a valid hex color code (e.g., #FFFFFF).
+$logoUrl = "" # This will set the "Logo URL" option in the Custom Branding settings; default is blank. Must be a valid URL including the protocol (e.g., https://example.com/logo.png); protocol must be https; recommended size is 48x48 pixels with a maximum of 128x128.
+
+# Extension Settings
+$installationMode = "force_installed"
+
+# Helper to check a registry value matches expected
+function Test-RegValue {
+    param (
+        [string]$Path,
+        [string]$Name,
+        $Expected
+    )
+    $val = (Get-ItemProperty -Path $Path -Name $Name -ErrorAction SilentlyContinue).$Name
+    return ($null -ne $val -and $val -eq $Expected)
+}
+
+# Define browser configurations for detection
+$browsers = @(
+    @{
+        Name                = 'Chrome'
+        ExtensionId         = $chromeExtensionId
+        UpdateUrl           = $chromeUpdateUrl
+        ManagedStorageKey   = $chromeManagedStorageKey
+        ExtensionSettingsKey = $chromeExtensionSettingsKey
+        ToolbarProp         = 'toolbar_pin'
+        ToolbarValue        = 'force_pinned'
+    },
+    @{
+        Name                = 'Edge'
+        ExtensionId         = $edgeExtensionId
+        UpdateUrl           = $edgeUpdateUrl
+        ManagedStorageKey   = $edgeManagedStorageKey
+        ExtensionSettingsKey = $edgeExtensionSettingsKey
+        ToolbarProp         = 'toolbar_state'
+        ToolbarValue        = 'force_shown'
+    }
+)
+
+foreach ($browser in $browsers) {
+    # Verify managed storage key exists
+    if (!(Test-Path $browser.ManagedStorageKey)) { exit 1 }
+
+    $policyKey = $browser.ManagedStorageKey
+
+    # Core DWord settings
+    if (!(Test-RegValue $policyKey 'showNotifications' $showNotifications)) { exit 1 }
+    if (!(Test-RegValue $policyKey 'enableValidPageBadge' $enableValidPageBadge)) { exit 1 }
+    if (!(Test-RegValue $policyKey 'enablePageBlocking' $enablePageBlocking)) { exit 1 }
+    if (!(Test-RegValue $policyKey 'enableCippReporting' $enableCippReporting)) { exit 1 }
+    if (!(Test-RegValue $policyKey 'updateInterval' $updateInterval)) { exit 1 }
+    if (!(Test-RegValue $policyKey 'enableDebugLogging' $enableDebugLogging)) { exit 1 }
+
+    # Core String settings
+    if (!(Test-RegValue $policyKey 'cippServerUrl' $cippServerUrl)) { exit 1 }
+    if (!(Test-RegValue $policyKey 'cippTenantId' $cippTenantId)) { exit 1 }
+    if (!(Test-RegValue $policyKey 'customRulesUrl' $customRulesUrl)) { exit 1 }
+
+    # domainSquatting subkey
+    $domainSquattingKey = "$policyKey\domainSquatting"
+    if (!(Test-Path $domainSquattingKey)) { exit 1 }
+    if (!(Test-RegValue $domainSquattingKey 'enabled' $domainSquattingEnabled)) { exit 1 }
+
+    # customBranding subkey
+    $brandingKey = "$policyKey\customBranding"
+    if (!(Test-Path $brandingKey)) { exit 1 }
+    if (!(Test-RegValue $brandingKey 'companyName' $companyName)) { exit 1 }
+    if (!(Test-RegValue $brandingKey 'productName' $productName)) { exit 1 }
+    if (!(Test-RegValue $brandingKey 'supportEmail' $supportEmail)) { exit 1 }
+    if (!(Test-RegValue $brandingKey 'supportUrl' $supportUrl)) { exit 1 }
+    if (!(Test-RegValue $brandingKey 'privacyPolicyUrl' $privacyPolicyUrl)) { exit 1 }
+    if (!(Test-RegValue $brandingKey 'aboutUrl' $aboutUrl)) { exit 1 }
+    if (!(Test-RegValue $brandingKey 'primaryColor' $primaryColor)) { exit 1 }
+    if (!(Test-RegValue $brandingKey 'logoUrl' $logoUrl)) { exit 1 }
+
+    # genericWebhook subkey
+    $webhookKey = "$policyKey\genericWebhook"
+    if (!(Test-Path $webhookKey)) { exit 1 }
+    if (!(Test-RegValue $webhookKey 'enabled' $enableGenericWebhook)) { exit 1 }
+    if (!(Test-RegValue $webhookKey 'url' $webhookUrl)) { exit 1 }
+
+    # genericWebhook\events subkey — verify exact count and values
+    $eventsKey = "$webhookKey\events"
+    if (!(Test-Path $eventsKey)) { exit 1 }
+    if ($webhookEvents.Count -gt 0) {
+        $eventsCount = (Get-Item $eventsKey).Property.Count
+        if ($eventsCount -ne $webhookEvents.Count) { exit 1 }
+        for ($i = 0; $i -lt $webhookEvents.Count; $i++) {
+            if (!(Test-RegValue $eventsKey ($i + 1).ToString() $webhookEvents[$i])) { exit 1 }
+        }
+    } else {
+        $existingEvents = (Get-Item $eventsKey).Property
+        if ($null -ne $existingEvents -and $existingEvents.Count -gt 0) { exit 1 }
+    }
+
+    # urlAllowlist subkey — verify exact count and values
+    $allowlistKey = "$policyKey\urlAllowlist"
+    if (!(Test-Path $allowlistKey)) { exit 1 }
+    if ($urlAllowlist.Count -gt 0) {
+        $allowlistCount = (Get-Item $allowlistKey).Property.Count
+        if ($allowlistCount -ne $urlAllowlist.Count) { exit 1 }
+        for ($i = 0; $i -lt $urlAllowlist.Count; $i++) {
+            if (!(Test-RegValue $allowlistKey ($i + 1).ToString() $urlAllowlist[$i])) { exit 1 }
+        }
+    } else {
+        $existingAllowlist = (Get-Item $allowlistKey).Property
+        if ($null -ne $existingAllowlist -and $existingAllowlist.Count -gt 0) { exit 1 }
+    }
+
+    # ExtensionSettings key
+    if (!(Test-Path $browser.ExtensionSettingsKey)) { exit 1 }
+    if (!(Test-RegValue $browser.ExtensionSettingsKey 'installation_mode' $installationMode)) { exit 1 }
+    if (!(Test-RegValue $browser.ExtensionSettingsKey 'update_url' $browser.UpdateUrl)) { exit 1 }
+
+    # Toolbar pin — only checked when enabled (upstream install script does not write this property when disabled)
+    if ($forceToolbarPin -eq 1) {
+        if (!(Test-RegValue $browser.ExtensionSettingsKey $browser.ToolbarProp $browser.ToolbarValue)) { exit 1 }
+    }
+}
+
+Write-Output "Check extension is correctly configured for Chrome and Edge."
+exit 0
