@@ -168,53 +168,77 @@ foreach ($browser in $browsers) {
         Write-DetectionFailure -BrowserName $browser.Name -KeyPath $brandingKey -ValueName $null -ExpectedValue $null -ActualValue $null
         exit 1
     }
-    if (!(Test-RegValue $brandingKey 'companyName' $companyName)) { exit 1 }
-    if (!(Test-RegValue $brandingKey 'productName' $productName)) { exit 1 }
-    if (!(Test-RegValue $brandingKey 'supportEmail' $supportEmail)) { exit 1 }
-    if (!(Test-RegValue $brandingKey 'supportUrl' $supportUrl)) { exit 1 }
-    if (!(Test-RegValue $brandingKey 'privacyPolicyUrl' $privacyPolicyUrl)) { exit 1 }
-    if (!(Test-RegValue $brandingKey 'aboutUrl' $aboutUrl)) { exit 1 }
-    if (!(Test-RegValue $brandingKey 'primaryColor' $primaryColor)) { exit 1 }
-    if (!(Test-RegValue $brandingKey 'logoUrl' $logoUrl)) { exit 1 }
+    if (!(Test-RegValueWithDetails $browser.Name $brandingKey 'companyName' $companyName)) { exit 1 }
+    if (!(Test-RegValueWithDetails $browser.Name $brandingKey 'productName' $productName)) { exit 1 }
+    if (!(Test-RegValueWithDetails $browser.Name $brandingKey 'supportEmail' $supportEmail)) { exit 1 }
+    if (!(Test-RegValueWithDetails $browser.Name $brandingKey 'supportUrl' $supportUrl)) { exit 1 }
+    if (!(Test-RegValueWithDetails $browser.Name $brandingKey 'privacyPolicyUrl' $privacyPolicyUrl)) { exit 1 }
+    if (!(Test-RegValueWithDetails $browser.Name $brandingKey 'aboutUrl' $aboutUrl)) { exit 1 }
+    if (!(Test-RegValueWithDetails $browser.Name $brandingKey 'primaryColor' $primaryColor)) { exit 1 }
+    if (!(Test-RegValueWithDetails $browser.Name $brandingKey 'logoUrl' $logoUrl)) { exit 1 }
 
     # genericWebhook subkey
     $webhookKey = "$policyKey\genericWebhook"
-    if (!(Test-Path $webhookKey)) { exit 1 }
-    if (!(Test-RegValue $webhookKey 'enabled' $enableGenericWebhook)) { exit 1 }
-    if (!(Test-RegValue $webhookKey 'url' $webhookUrl)) { exit 1 }
+    if (!(Test-Path $webhookKey)) {
+        Write-DetectionFailure -BrowserName $browser.Name -KeyPath $webhookKey -ValueName $null -ExpectedValue $null -ActualValue $null
+        exit 1
+    }
+    if (!(Test-RegValueWithDetails $browser.Name $webhookKey 'enabled' $enableGenericWebhook)) { exit 1 }
+    if (!(Test-RegValueWithDetails $browser.Name $webhookKey 'url' $webhookUrl)) { exit 1 }
 
     # genericWebhook\events subkey — verify exact count and values
     $eventsKey = "$webhookKey\events"
-    if (!(Test-Path $eventsKey)) { exit 1 }
+    if (!(Test-Path $eventsKey)) {
+        Write-DetectionFailure -BrowserName $browser.Name -KeyPath $eventsKey -ValueName $null -ExpectedValue $null -ActualValue $null
+        exit 1
+    }
     if ($webhookEvents.Count -gt 0) {
         $eventsCount = (Get-Item $eventsKey).Property.Count
-        if ($eventsCount -ne $webhookEvents.Count) { exit 1 }
+        if ($eventsCount -ne $webhookEvents.Count) {
+            Write-Output "$($browser.Name): Registry key '$eventsKey' has $eventsCount event value(s); expected $($webhookEvents.Count)."
+            exit 1
+        }
         for ($i = 0; $i -lt $webhookEvents.Count; $i++) {
-            if (!(Test-RegValue $eventsKey ($i + 1).ToString() $webhookEvents[$i])) { exit 1 }
+            if (!(Test-RegValueWithDetails $browser.Name $eventsKey ($i + 1).ToString() $webhookEvents[$i])) { exit 1 }
         }
     } else {
         $existingEvents = (Get-Item $eventsKey).Property
-        if ($null -ne $existingEvents -and $existingEvents.Count -gt 0) { exit 1 }
+        if ($null -ne $existingEvents -and $existingEvents.Count -gt 0) {
+            Write-Output "$($browser.Name): Registry key '$eventsKey' has unexpected event value(s); expected none."
+            exit 1
+        }
     }
 
     # urlAllowlist subkey — verify exact count and values
     $allowlistKey = "$policyKey\urlAllowlist"
-    if (!(Test-Path $allowlistKey)) { exit 1 }
+    if (!(Test-Path $allowlistKey)) {
+        Write-DetectionFailure -BrowserName $browser.Name -KeyPath $allowlistKey -ValueName $null -ExpectedValue $null -ActualValue $null
+        exit 1
+    }
     if ($urlAllowlist.Count -gt 0) {
         $allowlistCount = (Get-Item $allowlistKey).Property.Count
-        if ($allowlistCount -ne $urlAllowlist.Count) { exit 1 }
+        if ($allowlistCount -ne $urlAllowlist.Count) {
+            Write-Output "$($browser.Name): Registry key '$allowlistKey' has $allowlistCount allowlist value(s); expected $($urlAllowlist.Count)."
+            exit 1
+        }
         for ($i = 0; $i -lt $urlAllowlist.Count; $i++) {
-            if (!(Test-RegValue $allowlistKey ($i + 1).ToString() $urlAllowlist[$i])) { exit 1 }
+            if (!(Test-RegValueWithDetails $browser.Name $allowlistKey ($i + 1).ToString() $urlAllowlist[$i])) { exit 1 }
         }
     } else {
         $existingAllowlist = (Get-Item $allowlistKey).Property
-        if ($null -ne $existingAllowlist -and $existingAllowlist.Count -gt 0) { exit 1 }
+        if ($null -ne $existingAllowlist -and $existingAllowlist.Count -gt 0) {
+            Write-Output "$($browser.Name): Registry key '$allowlistKey' has unexpected allowlist value(s); expected none."
+            exit 1
+        }
     }
 
     # ExtensionSettings key
-    if (!(Test-Path $browser.ExtensionSettingsKey)) { exit 1 }
-    if (!(Test-RegValue $browser.ExtensionSettingsKey 'installation_mode' $installationMode)) { exit 1 }
-    if (!(Test-RegValue $browser.ExtensionSettingsKey 'update_url' $browser.UpdateUrl)) { exit 1 }
+    if (!(Test-Path $browser.ExtensionSettingsKey)) {
+        Write-DetectionFailure -BrowserName $browser.Name -KeyPath $browser.ExtensionSettingsKey -ValueName $null -ExpectedValue $null -ActualValue $null
+        exit 1
+    }
+    if (!(Test-RegValueWithDetails $browser.Name $browser.ExtensionSettingsKey 'installation_mode' $installationMode)) { exit 1 }
+    if (!(Test-RegValueWithDetails $browser.Name $browser.ExtensionSettingsKey 'update_url' $browser.UpdateUrl)) { exit 1 }
 
     # Toolbar pin - always verified; deploy script writes either pinned or unpinned value based on $forceToolbarPin
     $expectedToolbar = if ($forceToolbarPin -eq 1) { $browser.ToolbarPinnedValue } else { $browser.ToolbarUnpinnedValue }

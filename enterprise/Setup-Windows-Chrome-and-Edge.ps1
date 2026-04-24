@@ -252,26 +252,44 @@ $arrayReplacements = @(
 #######################################################################
 
 function Apply-Replacements {
-    param ([string]$Content)
+    param (
+        [string]$Content,
+        [string]$TemplateName
+    )
+
+    $missing = [System.Collections.Generic.List[string]]::new()
 
     foreach ($r in $replacements) {
-        $Content = $Content.Replace($r.Pattern, $r.Value)
+        if ($Content.Contains($r.Pattern)) {
+            $Content = $Content.Replace($r.Pattern, $r.Value)
+        } else {
+            $missing.Add($r.Pattern)
+        }
     }
     foreach ($r in $arrayReplacements) {
-        $Content = $Content.Replace($r.Pattern, $r.Value)
+        if ($Content.Contains($r.Pattern)) {
+            $Content = $Content.Replace($r.Pattern, $r.Value)
+        } else {
+            $missing.Add($r.Pattern)
+        }
+    }
+
+    if ($missing.Count -gt 0) {
+        $list = ($missing | ForEach-Object { "  - $_" }) -join "`n"
+        throw "Failed to customize the $TemplateName template; the following expected pattern(s) were not found:`n$list`nThe upstream template format may have changed."
     }
 
     return $Content
 }
 
 # Deploy script — apply all replacements
-$deployContent = Apply-Replacements -Content $templates['Deploy']
+$deployContent = Apply-Replacements -Content $templates['Deploy'] -TemplateName 'Deploy'
 $deployPath = Join-Path $outputPath $scripts['Deploy'].FileName
 Set-Content -Path $deployPath -Value $deployContent -Encoding UTF8
 Write-Host "Written: $deployPath" -ForegroundColor Green
 
 # Detect script — apply all replacements (same config block format)
-$detectContent = Apply-Replacements -Content $templates['Detect']
+$detectContent = Apply-Replacements -Content $templates['Detect'] -TemplateName 'Detect'
 $detectPath = Join-Path $outputPath $scripts['Detect'].FileName
 Set-Content -Path $detectPath -Value $detectContent -Encoding UTF8
 Write-Host "Written: $detectPath" -ForegroundColor Green
