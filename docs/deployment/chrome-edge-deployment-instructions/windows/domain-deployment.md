@@ -10,7 +10,7 @@ The simplest method of Intune deployment is via a win32 script. Follow the steps
 
 1. Download a copy of the Setup-Windows-Chrome-and-Edge.ps1 script from the Check repository on GitHub using the button below.
 
-<a href="https://raw.githubusercontent.com/CyberDrain/Check/refs/heads/main/enterprise/Setup-Windows-Chrome-and-Edge.ps1" class="button primary">Import File</a>
+<a href="https://raw.githubusercontent.com/CyberDrain/Check/refs/heads/main/enterprise/Setup-Windows-Chrome-and-Edge.ps1" class="button primary">Download script</a>
 
 2. Run the script locally on your computer to generate the following scripts:
    1. Deploy-Windows-Chrome-and-Edge.ps1
