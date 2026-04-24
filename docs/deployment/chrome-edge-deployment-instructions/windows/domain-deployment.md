@@ -40,6 +40,13 @@ Intune Win32 apps require an `.intunewin` package. Place your three configured s
 
 This creates `Deploy-Windows-Chrome-and-Edge.intunewin`.
 
+### Step 2: Create the Win32 App in Intune
+
+1. Open the [Microsoft Intune admin center](https://intune.microsoft.com)
+2. Navigate to **Apps** > **Windows**
+3. Click **Add** > Select **Windows app (Win32)** > **Select**
+4. Upload the `.intunewin` file created in Step 1
+
 ### Step 3: Configure App Information
 
 | Field | Value |

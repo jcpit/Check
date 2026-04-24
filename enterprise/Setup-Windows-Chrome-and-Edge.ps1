@@ -207,6 +207,14 @@ function Format-ArrayLiteral {
     return "@($($quoted -join ', '))"
 }
 
+# Helper to emit a single-quoted PowerShell string literal from a value.
+# Single quotes prevent $ and backtick interpolation in the generated scripts.
+function Format-SingleQuoted {
+    param ([string]$Value)
+    $escaped = $Value -replace "'", "''"
+    return "'$escaped'"
+}
+
 # Each entry: variable assignment pattern to find -> replacement value
 # Scalar replacements target the value + start of inline comment
 $replacements = @(
@@ -215,22 +223,22 @@ $replacements = @(
     @{ Pattern = '$enablePageBlocking = 1 #';        Value = "`$enablePageBlocking = $cfg_enablePageBlocking #" }
     @{ Pattern = '$forceToolbarPin = 1 #';           Value = "`$forceToolbarPin = $cfg_forceToolbarPin #" }
     @{ Pattern = '$enableCippReporting = 0 #';       Value = "`$enableCippReporting = $cfg_enableCippReporting #" }
-    @{ Pattern = '$cippServerUrl = "" #';            Value = "`$cippServerUrl = `"$cfg_cippServerUrl`" #" }
-    @{ Pattern = '$cippTenantId = "" #';             Value = "`$cippTenantId = `"$cfg_cippTenantId`" #" }
-    @{ Pattern = '$customRulesUrl = "" #';           Value = "`$customRulesUrl = `"$cfg_customRulesUrl`" #" }
+    @{ Pattern = '$cippServerUrl = "" #';            Value = "`$cippServerUrl = $(Format-SingleQuoted $cfg_cippServerUrl) #" }
+    @{ Pattern = '$cippTenantId = "" #';             Value = "`$cippTenantId = $(Format-SingleQuoted $cfg_cippTenantId) #" }
+    @{ Pattern = '$customRulesUrl = "" #';           Value = "`$customRulesUrl = $(Format-SingleQuoted $cfg_customRulesUrl) #" }
     @{ Pattern = '$updateInterval = 24 #';           Value = "`$updateInterval = $cfg_updateInterval #" }
     @{ Pattern = '$domainSquattingEnabled = 1 #';    Value = "`$domainSquattingEnabled = $cfg_domainSquattingEnabled #" }
     @{ Pattern = '$enableDebugLogging = 0 #';        Value = "`$enableDebugLogging = $cfg_enableDebugLogging #" }
     @{ Pattern = '$enableGenericWebhook = 0 #';      Value = "`$enableGenericWebhook = $cfg_enableGenericWebhook #" }
-    @{ Pattern = '$webhookUrl = "" #';               Value = "`$webhookUrl = `"$cfg_webhookUrl`" #" }
-    @{ Pattern = '$companyName = "CyberDrain" #';    Value = "`$companyName = `"$cfg_companyName`" #" }
-    @{ Pattern = '$productName = "Check - Phishing Protection" #'; Value = "`$productName = `"$cfg_productName`" #" }
-    @{ Pattern = '$supportEmail = "" #';             Value = "`$supportEmail = `"$cfg_supportEmail`" #" }
-    @{ Pattern = '$supportUrl = "" #';               Value = "`$supportUrl = `"$cfg_supportUrl`" #" }
-    @{ Pattern = '$privacyPolicyUrl = "" #';         Value = "`$privacyPolicyUrl = `"$cfg_privacyPolicyUrl`" #" }
-    @{ Pattern = '$aboutUrl = "" #';                 Value = "`$aboutUrl = `"$cfg_aboutUrl`" #" }
-    @{ Pattern = '$primaryColor = "#F77F00" #';      Value = "`$primaryColor = `"$cfg_primaryColor`" #" }
-    @{ Pattern = '$logoUrl = "" #';                  Value = "`$logoUrl = `"$cfg_logoUrl`" #" }
+    @{ Pattern = '$webhookUrl = "" #';               Value = "`$webhookUrl = $(Format-SingleQuoted $cfg_webhookUrl) #" }
+    @{ Pattern = '$companyName = "CyberDrain" #';    Value = "`$companyName = $(Format-SingleQuoted $cfg_companyName) #" }
+    @{ Pattern = '$productName = "Check - Phishing Protection" #'; Value = "`$productName = $(Format-SingleQuoted $cfg_productName) #" }
+    @{ Pattern = '$supportEmail = "" #';             Value = "`$supportEmail = $(Format-SingleQuoted $cfg_supportEmail) #" }
+    @{ Pattern = '$supportUrl = "" #';               Value = "`$supportUrl = $(Format-SingleQuoted $cfg_supportUrl) #" }
+    @{ Pattern = '$privacyPolicyUrl = "" #';         Value = "`$privacyPolicyUrl = $(Format-SingleQuoted $cfg_privacyPolicyUrl) #" }
+    @{ Pattern = '$aboutUrl = "" #';                 Value = "`$aboutUrl = $(Format-SingleQuoted $cfg_aboutUrl) #" }
+    @{ Pattern = '$primaryColor = "#F77F00" #';      Value = "`$primaryColor = $(Format-SingleQuoted $cfg_primaryColor) #" }
+    @{ Pattern = '$logoUrl = "" #';                  Value = "`$logoUrl = $(Format-SingleQuoted $cfg_logoUrl) #" }
 )
 
 # Array replacements — replace the full assignment line including inline comment
