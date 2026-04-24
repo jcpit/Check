@@ -71,8 +71,9 @@ $browsers = @(
         UpdateUrl           = $chromeUpdateUrl
         ManagedStorageKey   = $chromeManagedStorageKey
         ExtensionSettingsKey = $chromeExtensionSettingsKey
-        ToolbarProp         = 'toolbar_pin'
-        ToolbarValue        = 'force_pinned'
+        ToolbarProp          = 'toolbar_pin'
+        ToolbarPinnedValue   = 'force_pinned'
+        ToolbarUnpinnedValue = 'default_unpinned'
     },
     @{
         Name                = 'Edge'
@@ -80,8 +81,9 @@ $browsers = @(
         UpdateUrl           = $edgeUpdateUrl
         ManagedStorageKey   = $edgeManagedStorageKey
         ExtensionSettingsKey = $edgeExtensionSettingsKey
-        ToolbarProp         = 'toolbar_state'
-        ToolbarValue        = 'force_shown'
+        ToolbarProp          = 'toolbar_state'
+        ToolbarPinnedValue   = 'force_shown'
+        ToolbarUnpinnedValue = 'hidden'
     }
 )
 
@@ -214,10 +216,9 @@ foreach ($browser in $browsers) {
     if (!(Test-RegValue $browser.ExtensionSettingsKey 'installation_mode' $installationMode)) { exit 1 }
     if (!(Test-RegValue $browser.ExtensionSettingsKey 'update_url' $browser.UpdateUrl)) { exit 1 }
 
-    # Toolbar pin — only checked when enabled (upstream install script does not write this property when disabled)
-    if ($forceToolbarPin -eq 1) {
-        if (!(Test-RegValue $browser.ExtensionSettingsKey $browser.ToolbarProp $browser.ToolbarValue)) { exit 1 }
-    }
+    # Toolbar pin - always verified; deploy script writes either pinned or unpinned value based on $forceToolbarPin
+    $expectedToolbar = if ($forceToolbarPin -eq 1) { $browser.ToolbarPinnedValue } else { $browser.ToolbarUnpinnedValue }
+    if (!(Test-RegValueWithDetails $browser.Name $browser.ExtensionSettingsKey $browser.ToolbarProp $expectedToolbar)) { exit 1 }
 }
 
 Write-Output "Check extension is correctly configured for Chrome and Edge."
