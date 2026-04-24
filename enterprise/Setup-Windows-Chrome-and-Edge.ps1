@@ -203,7 +203,7 @@ Write-Host ""
 function Format-ArrayLiteral {
     param ([string[]]$Values)
     if ($Values.Count -eq 0) { return '@()' }
-    $quoted = $Values | ForEach-Object { $escaped = $_ -replace '"', '""'; "`"$escaped`"" }
+    $quoted = $Values | ForEach-Object { $escaped = $_ -replace "'", "''"; "'$escaped'" }
     return "@($($quoted -join ', '))"
 }
 
