@@ -85,33 +85,87 @@ $browsers = @(
     }
 )
 
+function Write-DetectionFailure {
+    param(
+        [string]$BrowserName,
+        [string]$KeyPath,
+        [string]$ValueName,
+        [object]$ExpectedValue,
+        [object]$ActualValue
+    )
+
+    if ([string]::IsNullOrEmpty($ValueName)) {
+        Write-Output "$BrowserName detection failed: missing registry key '$KeyPath'."
+        return
+    }
+
+    Write-Output "$BrowserName detection failed for '$ValueName' at '$KeyPath': expected '$ExpectedValue', actual '$ActualValue'."
+}
+
+function Test-RegValueWithDetails {
+    param(
+        [string]$BrowserName,
+        [string]$KeyPath,
+        [string]$ValueName,
+        [object]$ExpectedValue
+    )
+
+    $matches = Test-RegValue $KeyPath $ValueName $ExpectedValue
+    if ($matches) {
+        return $true
+    }
+
+    $actualValue = '<missing>'
+    if (Test-Path $KeyPath) {
+        try {
+            $property = Get-ItemProperty -Path $KeyPath -Name $ValueName -ErrorAction Stop
+            $actualValue = $property.$ValueName
+        }
+        catch {
+            $actualValue = '<missing>'
+        }
+    }
+
+    Write-DetectionFailure -BrowserName $BrowserName -KeyPath $KeyPath -ValueName $ValueName -ExpectedValue $ExpectedValue -ActualValue $actualValue
+    return $false
+}
+
 foreach ($browser in $browsers) {
     # Verify managed storage key exists
-    if (!(Test-Path $browser.ManagedStorageKey)) { exit 1 }
+    if (!(Test-Path $browser.ManagedStorageKey)) {
+        Write-DetectionFailure -BrowserName $browser.Name -KeyPath $browser.ManagedStorageKey -ValueName $null -ExpectedValue $null -ActualValue $null
+        exit 1
+    }
 
     $policyKey = $browser.ManagedStorageKey
 
     # Core DWord settings
-    if (!(Test-RegValue $policyKey 'showNotifications' $showNotifications)) { exit 1 }
-    if (!(Test-RegValue $policyKey 'enableValidPageBadge' $enableValidPageBadge)) { exit 1 }
-    if (!(Test-RegValue $policyKey 'enablePageBlocking' $enablePageBlocking)) { exit 1 }
-    if (!(Test-RegValue $policyKey 'enableCippReporting' $enableCippReporting)) { exit 1 }
-    if (!(Test-RegValue $policyKey 'updateInterval' $updateInterval)) { exit 1 }
-    if (!(Test-RegValue $policyKey 'enableDebugLogging' $enableDebugLogging)) { exit 1 }
+    if (!(Test-RegValueWithDetails $browser.Name $policyKey 'showNotifications' $showNotifications)) { exit 1 }
+    if (!(Test-RegValueWithDetails $browser.Name $policyKey 'enableValidPageBadge' $enableValidPageBadge)) { exit 1 }
+    if (!(Test-RegValueWithDetails $browser.Name $policyKey 'enablePageBlocking' $enablePageBlocking)) { exit 1 }
+    if (!(Test-RegValueWithDetails $browser.Name $policyKey 'enableCippReporting' $enableCippReporting)) { exit 1 }
+    if (!(Test-RegValueWithDetails $browser.Name $policyKey 'updateInterval' $updateInterval)) { exit 1 }
+    if (!(Test-RegValueWithDetails $browser.Name $policyKey 'enableDebugLogging' $enableDebugLogging)) { exit 1 }
 
     # Core String settings
-    if (!(Test-RegValue $policyKey 'cippServerUrl' $cippServerUrl)) { exit 1 }
-    if (!(Test-RegValue $policyKey 'cippTenantId' $cippTenantId)) { exit 1 }
-    if (!(Test-RegValue $policyKey 'customRulesUrl' $customRulesUrl)) { exit 1 }
+    if (!(Test-RegValueWithDetails $browser.Name $policyKey 'cippServerUrl' $cippServerUrl)) { exit 1 }
+    if (!(Test-RegValueWithDetails $browser.Name $policyKey 'cippTenantId' $cippTenantId)) { exit 1 }
+    if (!(Test-RegValueWithDetails $browser.Name $policyKey 'customRulesUrl' $customRulesUrl)) { exit 1 }
 
     # domainSquatting subkey
     $domainSquattingKey = "$policyKey\domainSquatting"
-    if (!(Test-Path $domainSquattingKey)) { exit 1 }
-    if (!(Test-RegValue $domainSquattingKey 'enabled' $domainSquattingEnabled)) { exit 1 }
+    if (!(Test-Path $domainSquattingKey)) {
+        Write-DetectionFailure -BrowserName $browser.Name -KeyPath $domainSquattingKey -ValueName $null -ExpectedValue $null -ActualValue $null
+        exit 1
+    }
+    if (!(Test-RegValueWithDetails $browser.Name $domainSquattingKey 'enabled' $domainSquattingEnabled)) { exit 1 }
 
     # customBranding subkey
     $brandingKey = "$policyKey\customBranding"
-    if (!(Test-Path $brandingKey)) { exit 1 }
+    if (!(Test-Path $brandingKey)) {
+        Write-DetectionFailure -BrowserName $browser.Name -KeyPath $brandingKey -ValueName $null -ExpectedValue $null -ActualValue $null
+        exit 1
+    }
     if (!(Test-RegValue $brandingKey 'companyName' $companyName)) { exit 1 }
     if (!(Test-RegValue $brandingKey 'productName' $productName)) { exit 1 }
     if (!(Test-RegValue $brandingKey 'supportEmail' $supportEmail)) { exit 1 }
