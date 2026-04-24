@@ -74,8 +74,8 @@ This creates `Deploy-Windows-Chrome-and-Edge.intunewin`.
 |-------|-------|
 | Run script as 32-bit process on 64-bit clients | **No** |
 | Enforce script signature check | **No** |
-| Run script in 64-bit PowerShell host | **No** |
 
+Keep **Run script as 32-bit process on 64-bit clients** set to **No** so the detection script runs in the 64-bit PowerShell/registry context on 64-bit devices. This is important because the script checks values under `HKLM:\SOFTWARE\Policies\...`; running it as 32-bit could read redirected `WOW6432Node` paths and cause detection to fail incorrectly.
 The detection script checks that all registry keys written by the install script exist and have the correct values. It exits with code `0` when everything matches (app detected) and code `1` when any value is missing or wrong (app not detected, triggers reinstall).
 
 ### Step 7: Assign the App
