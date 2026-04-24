@@ -2,7 +2,7 @@
 
 {% tabs %}
 {% tab title="Intune" %}
-The simplest method of Intune deployment is via a win32 script. Follow the steps below to:
+The simplest method of Intune deployment is via a win32 script. Follow the steps below to deploy Check with Intune.
 
 ***
 
