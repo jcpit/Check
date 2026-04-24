@@ -143,14 +143,15 @@ function Configure-ExtensionSettings {
     New-ItemProperty -Path $ExtensionSettingsKey -Name "installation_mode" -PropertyType String -Value $installationMode -Force | Out-Null
     New-ItemProperty -Path $ExtensionSettingsKey -Name "update_url" -PropertyType String -Value $UpdateUrl -Force | Out-Null
 
-    # Add toolbar pinning if enabled
-    if ($forceToolbarPin -eq 1) {
-        if ($ExtensionId -eq $edgeExtensionId) {
-            New-ItemProperty -Path $ExtensionSettingsKey -Name "toolbar_state" -PropertyType String -Value "force_shown" -Force | Out-Null
-        } elseif ($ExtensionId -eq $chromeExtensionId) {
-            New-ItemProperty -Path $ExtensionSettingsKey -Name "toolbar_pin" -PropertyType String -Value "force_pinned" -Force | Out-Null
-        }
+    # Toolbar pinning - always write a value so detection can verify either state
+    if ($ExtensionId -eq $edgeExtensionId) {
+        $toolbarProp  = "toolbar_state"
+        $toolbarValue = if ($forceToolbarPin -eq 1) { "force_shown" } else { "hidden" }
+    } elseif ($ExtensionId -eq $chromeExtensionId) {
+        $toolbarProp  = "toolbar_pin"
+        $toolbarValue = if ($forceToolbarPin -eq 1) { "force_pinned" } else { "default_unpinned" }
     }
+    New-ItemProperty -Path $ExtensionSettingsKey -Name $toolbarProp -PropertyType String -Value $toolbarValue -Force | Out-Null
  
     Write-Output "Configured extension settings for $ExtensionId"
 }
