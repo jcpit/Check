@@ -1,0 +1,113 @@
+name: Validate PR
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - dev
+      - main
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Lint JavaScript
+        run: |
+          if [ -f "eslint.config.js" ] || [ -f ".eslintrc.json" ] || [ -f ".eslintrc.js" ]; then
+            npx eslint scripts options popup --max-warnings 0
+          else
+            echo "ℹ️  No ESLint configuration found. Skipping linting."
+            echo "To enable: Create eslint.config.js or .eslintrc.json at repo root"
+          fi
+
+  codeql:
+    name: CodeQL Security Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: 'javascript'
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  validate-json:
+    name: Validate JSON Files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate manifest.json
+        run: |
+          node -e "require('fs').readFileSync('manifest.json'); console.log('✓ manifest.json is valid JSON')"
+
+      - name: Validate Firefox manifest
+        run: |
+          node -e "require('fs').readFileSync('manifest.firefox.json'); console.log('✓ manifest.firefox.json is valid JSON')"
+
+      - name: Validate config files
+        run: |
+          for file in config/*.json rules/*.json; do
+            if [ -f "$file" ]; then
+              node -e "require('fs').readFileSync('$file'); console.log('✓ $file is valid JSON')" || exit 1
+            fi
+          done
+
+  conventional-commits:
+    name: Validate Conventional Commits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate PR title
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          if ! echo "$PR_TITLE" | grep -E "^(feat|fix|docs|style|refactor|perf|test|chore|ci)(\(.+\))?!?: .+" > /dev/null; then
+            echo "❌ PR title does not follow Conventional Commits format"
+            echo "Expected format: feat|fix|docs|style|refactor|perf|test|chore|ci(scope)?: description"
+            echo "Received: $PR_TITLE"
+            exit 1
+          fi
+          echo "✓ PR title follows Conventional Commits format"
+
+  verify-changes:
+    name: Verify File Changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for deployment configuration updates
+        run: |
+          # If config/branding.json or config/managed_schema.json changed
+          if git diff origin/main HEAD --name-only | grep -q "^config/"; then
+            echo "⚠️  Configuration files were modified"
+            echo "Reminder: Review enterprise/Deploy-Windows-Chrome-and-Edge.ps1 and enterprise/admx/Check-Extension.admx"
+          fi
+
+          # If manifest changed
+          if git diff origin/main HEAD --name-only | grep -qE "manifest.*\.json"; then
+            echo "ℹ️  Manifest was modified"
+            echo "Reminder: Test in both Chrome and Firefox"
+          fi
