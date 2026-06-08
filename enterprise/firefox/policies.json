@@ -29,7 +29,7 @@
           "updateInterval": 24,
           "urlAllowlist": [],
           "domainSquatting": {
-            "enabled": true
+            "enabled": false
           },
           "enableDebugLogging": false,
           "customBranding": {

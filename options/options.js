@@ -1000,7 +1000,7 @@ class CheckOptions {
 
     if (this.elements.domainSquattingEnabled) {
       this.elements.domainSquattingEnabled.checked =
-        this.config?.domainSquatting?.enabled !== false;
+        this.config?.domainSquatting?.enabled === true;
     }
 
     // Handle updateInterval - ensure we always show hours in the UI
@@ -1257,7 +1257,7 @@ class CheckOptions {
 
       // Domain squatting settings (runtime control moved from rules JSON)
       domainSquatting: {
-        enabled: this.elements.domainSquattingEnabled?.checked !== false,
+        enabled: this.elements.domainSquattingEnabled?.checked === true,
         deviationThreshold: existingDomainSquatting.deviationThreshold ?? 2,
         algorithms: {
           levenshtein:

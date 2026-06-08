@@ -166,7 +166,7 @@ All settings are based on the managed schema and include:
 ### Rule Management
 - **`customRulesUrl`** - URL for custom detection rules
 - **`updateInterval`** - Rule update interval in hours (default: 24)
-- **`domainSquatting.enabled`** - Enable/disable domain squatting detection (default: true)
+- **`domainSquatting.enabled`** - Enable/disable domain squatting detection (default: false)
 
 ### Custom Branding
 - **`companyName`** - Company name for white labeling

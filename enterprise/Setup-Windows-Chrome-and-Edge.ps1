@@ -118,7 +118,7 @@ $cfg_enablePageBlocking = Read-Setting -Name "enablePageBlocking" -Description "
 $cfg_forceToolbarPin = Read-Setting -Name "forceToolbarPin" -Description "Force pin extension to toolbar (0 = Not pinned, 1 = Force pinned)" -Default "1" -Type "bool"
 $cfg_updateInterval = Read-Setting -Name "updateInterval" -Description "Update interval in hours (1-168)" -Default "24" -Type "int"
 $cfg_enableDebugLogging = Read-Setting -Name "enableDebugLogging" -Description "Enable debug logging (0 = Disabled, 1 = Enabled)" -Default "0" -Type "bool"
-$cfg_domainSquattingEnabled = Read-Setting -Name "domainSquattingEnabled" -Description "Enable domain squatting detection (0 = Disabled, 1 = Enabled)" -Default "1" -Type "bool"
+$cfg_domainSquattingEnabled = Read-Setting -Name "domainSquattingEnabled" -Description "Enable domain squatting detection (0 = Disabled, 1 = Enabled)" -Default "0" -Type "bool"
 $cfg_customRulesUrl = Read-Setting -Name "customRulesUrl" -Description "Custom rules/config URL (leave blank if not used)" -Default ""
 Write-Host ""
 

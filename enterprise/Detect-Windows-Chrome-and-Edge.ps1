@@ -31,7 +31,7 @@ $cippTenantId = "" # This will set the "Tenant ID/Domain" option in the extensio
 $customRulesUrl = "" # This will set the "Config URL" option in the Detection Configuration settings; default is blank.
 $updateInterval = 24 # This will set the "Update Interval" option in the Detection Configuration settings; default is 24 (hours). Range: 1-168 hours (1 hour to 1 week).
 $urlAllowlist = @() # This will set the "URL Allowlist" option in the Detection Configuration settings; default is blank; if you want to add multiple URLs, add them as a comma-separated list within the brackets (e.g., @("https://example1.com", "https://example2.com")). Supports simple URLs with * wildcard (e.g., https://*.example.com) or advanced regex patterns (e.g., ^https:\/\/(www\.)?example\.com\/.*$).
-$domainSquattingEnabled = 1 # 0 = Disabled, 1 = Enabled; default is 1; controls domain squatting detection from managed policy/config.
+$domainSquattingEnabled = 0 # 0 = Disabled, 1 = Enabled; default is 0; controls domain squatting detection from managed policy/config.
 $enableDebugLogging = 0 # 0 = Unchecked, 1 = Checked (Enabled); default is 0; This will set the "Enable Debug Logging" option in the Activity Log settings.
 
 # Generic Webhook Settings

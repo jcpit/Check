@@ -21,7 +21,7 @@ Windows Registry Editor Version 5.00
 "enableDebugLogging"=dword:00000000
 
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\knepjpocdagponkonnbggpcnhnaikajg\policy\domainSquatting]
-"enabled"=dword:00000001
+"enabled"=dword:00000000
 
 ; Generic webhook configuration (optional)
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge\3rdparty\extensions\knepjpocdagponkonnbggpcnhnaikajg\policy\genericWebhook]
@@ -68,7 +68,7 @@ Windows Registry Editor Version 5.00
 "enableDebugLogging"=dword:00000000
 
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\3rdparty\extensions\benimdeioplgkhanklclahllklceahbe\policy\domainSquatting]
-"enabled"=dword:00000001
+"enabled"=dword:00000000
 
 ; Generic webhook configuration for Chrome (optional)
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\3rdparty\extensions\benimdeioplgkhanklclahllklceahbe\policy\genericWebhook]
