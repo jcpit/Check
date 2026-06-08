@@ -112,7 +112,7 @@ export class ConfigManager {
           updateInterval: 24,
           enableDebugLogging: false,
           domainSquatting: {
-            enabled: true,
+            enabled: false,
             deviationThreshold: 2,
             algorithms: {
               levenshtein: true,
@@ -306,7 +306,7 @@ export class ConfigManager {
 
       // Domain squatting runtime settings
       domainSquatting: {
-        enabled: true,
+        enabled: false,
         deviationThreshold: 2,
         algorithms: {
           levenshtein: true,

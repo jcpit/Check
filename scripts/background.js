@@ -289,7 +289,10 @@ class CheckBackground {
   constructor() {
     this.configManager = new ConfigManager();
     this.policyManager = new PolicyManager();
-    this.detectionRulesManager = new DetectionRulesManager(this.configManager);
+    this.detectionRulesManager = new DetectionRulesManager(
+      this.configManager,
+      (rules) => this._handleDetectionRulesUpdated(rules)
+    );
     this.rogueAppsManager = new RogueAppsManager();
     this.domainSquattingDetector = new DomainSquattingDetector();
     this.webhookManager = new WebhookManager(this.configManager);
@@ -863,6 +866,28 @@ class CheckBackground {
     } else if (details.reason === "update") {
       // Handle extension updates
       await safe(this.configManager.migrateConfig(details.previousVersion));
+    }
+  }
+
+  /**
+   * Invoked by DetectionRulesManager whenever a remote rules fetch succeeds
+   * (forced, on-save, or via the lazy background refresh triggered by page
+   * detection). Re-initializes downstream subsystems with the new rules so
+   * they don't lag behind the cache.
+   */
+  async _handleDetectionRulesUpdated(rules) {
+    try {
+      if (!rules || !this.domainSquattingDetector) return;
+      const runtimeConfig = await this.configManager.getConfig();
+      await this.domainSquattingDetector.initialize(rules, runtimeConfig);
+      logger.log(
+        "Domain squatting detector re-initialized after rules refresh"
+      );
+    } catch (error) {
+      logger.warn(
+        "Failed to re-init domain squatting detector after rules refresh:",
+        error?.message || error
+      );
     }
   }
 
@@ -1487,6 +1512,10 @@ class CheckBackground {
             const previousBadgeEnabled =
               currentConfig?.enableValidPageBadge ||
               this.policy?.EnableValidPageBadge;
+            const previousRulesUrl =
+              currentConfig?.customRulesUrl ||
+              currentConfig?.detectionRules?.customRulesUrl ||
+              null;
 
             // Update the configuration
             await this.configManager.updateConfig(message.config);
@@ -1499,6 +1528,31 @@ class CheckBackground {
             const newBadgeEnabled =
               updatedConfig?.enableValidPageBadge ||
               this.policy?.EnableValidPageBadge;
+
+            // On config save, always pull fresh rules so a URL change (or any
+            // other policy save) immediately reflects new rules in cache and
+            // in the domain-squatting detector. The onRulesUpdated callback
+            // wired into DetectionRulesManager will reinit the squatting
+            // detector once the fetch completes, so we don't need to do that
+            // here for the success path - but we still re-init synchronously
+            // below to cover the case where the network fetch fails.
+            const newRulesUrl =
+              updatedConfig?.customRulesUrl ||
+              updatedConfig?.detectionRules?.customRulesUrl ||
+              null;
+            this.detectionRulesManager.updateDetectionRules().catch((err) => {
+              logger.warn(
+                "Pull-on-save detection-rules update failed:",
+                err?.message || err
+              );
+            });
+            if (previousRulesUrl !== newRulesUrl) {
+              logger.log(
+                `customRulesUrl changed (${previousRulesUrl || "<default>"} -> ${
+                  newRulesUrl || "<default>"
+                }) - background rules pull triggered`
+              );
+            }
 
             // Update domain squatting detector with new configuration
             // If URL allowlist changed, reinitialize detector to extract new domains

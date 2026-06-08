@@ -282,8 +282,8 @@
             <string id="CheckDomainSquattingEnabled_Explain">
                 This policy controls domain squatting detection in the Check extension.
 
-                When enabled (default): Typosquatting, homoglyph, and combosquatting protections are active.
-                When disabled: Domain squatting detections are skipped.
+                When enabled: Typosquatting, homoglyph, and combosquatting protections are active.
+                When disabled (default): Domain squatting detections are skipped.
             </string>
             <!-- Debug Logging - Chrome -->
             <string id="CheckDebugLoggingChrome">Enable debug logging (Chrome)</string>
@@ -299,8 +299,8 @@
             <string id="CheckDomainSquattingEnabledChrome_Explain">
                 This policy controls domain squatting detection in the Check extension for Google Chrome.
 
-                When enabled (default): Typosquatting, homoglyph, and combosquatting protections are active.
-                When disabled: Domain squatting detections are skipped.
+                When enabled: Typosquatting, homoglyph, and combosquatting protections are active.
+                When disabled (default): Domain squatting detections are skipped.
             </string>
             <!-- Valid Page Badge - Chrome -->
             <string id="CheckValidPageBadgeChrome">Show valid page badge (Chrome)</string>

@@ -108,7 +108,7 @@ Edit your `rules/detection-rules.json` file to customize:
 ```json
 {
   "domain_squatting": {
-    "enabled": true,  // Turn detection on/off
+    "enabled": false,  // Turn detection on/off (default: false)
     "action": "block" // Action when detected: "block" or "warn"
   }
 }
@@ -125,7 +125,7 @@ Edit your `rules/detection-rules.json` file to customize:
 Note: Page blocking also requires "Enable Page Blocking" to be turned ON in settings.
 
 **Adjust Sensitivity:**
-    "enabled": true
+    "enabled": false
   }
 }
 ```

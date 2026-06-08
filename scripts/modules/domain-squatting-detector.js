@@ -8,7 +8,7 @@ import logger from '../utils/logger.js';
 export class DomainSquattingDetector {
   constructor() {
     this.protectedDomains = [];
-    this.enabled = true;
+    this.enabled = false;
     this.action = 'block';
     this.minimumSeverity = 'high';
     this.logDetections = true;
@@ -141,7 +141,7 @@ export class DomainSquattingDetector {
       const rulesDomainSquatting = rulesConfig?.domain_squatting || {};
       const runtimeDomainSquatting = runtimeConfig?.domainSquatting || {};
 
-      this.enabled = runtimeDomainSquatting.enabled !== false;
+      this.enabled = runtimeDomainSquatting.enabled === true;
       this.protectedDomains = rulesDomainSquatting.protected_domains || [];
       this.deviationThreshold =
         runtimeDomainSquatting.deviationThreshold ||

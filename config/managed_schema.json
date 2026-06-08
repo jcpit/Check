@@ -185,7 +185,7 @@
           "title": "Enabled",
           "description": "Enable or disable domain squatting detection",
           "type": "boolean",
-          "default": true
+          "default": false
         },
         "deviationThreshold": {
           "title": "Deviation Threshold",

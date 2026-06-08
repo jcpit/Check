@@ -73,7 +73,7 @@
                     <key>Value</key>
                     <dict>
                         <key>enabled</key>
-                        <true />
+                        <false />
                     </dict>
                 </dict>
                 <!-- Logging Settings -->
