@@ -1684,6 +1684,58 @@ if (window.checkExtensionLoaded) {
               }
               break;
 
+            case "aitm_origin_validation": {
+              // Block AitM reverse-proxy pages: Microsoft login source markers
+              // present on a non-trusted host with credential inputs (form-less
+              // JS-driven kits bypass form_post_not_microsoft).
+              const requireNonTrustedHost =
+                rule.condition?.require_non_trusted_host !== false;
+              const isTrustedHost = isTrustedLoginDomain(window.location.href);
+              if (requireNonTrustedHost && isTrustedHost) {
+                break;
+              }
+
+              const markers = rule.condition?.microsoft_source_markers || [];
+              const minMatches = rule.condition?.minimum_marker_matches || 3;
+              const aitmPageSource = getPageSource();
+              const matchedMarkers = [];
+              for (const marker of markers) {
+                try {
+                  const markerRegex = new RegExp(marker, "i");
+                  if (markerRegex.test(aitmPageSource)) {
+                    matchedMarkers.push(marker);
+                  }
+                } catch (regexError) {
+                  logger.debug(
+                    `Invalid AitM marker regex "${marker}": ${regexError.message}`
+                  );
+                }
+              }
+
+              if (matchedMarkers.length < minMatches) {
+                break;
+              }
+
+              if (rule.condition?.require_credential_input !== false) {
+                const hasCredentialInput =
+                  document.querySelector(
+                    'input[type="password"], input[name="passwd"], input[name="loginfmt"], input[type="email"], input[name*="email" i], input[id*="password" i]'
+                  ) !== null;
+                if (!hasCredentialInput) {
+                  break;
+                }
+              }
+
+              ruleTriggered = true;
+              reason = `AitM detected: ${matchedMarkers.length} Microsoft login markers (${matchedMarkers
+                .slice(0, 5)
+                .join(", ")}) on non-Microsoft origin "${window.location.hostname}" with credential input present`;
+              logger.warn(
+                `BLOCKING RULE TRIGGERED: ${rule.id} ${rule.description} - ${reason}`
+              );
+              break;
+            }
+
             default:
               logger.warn(`Unknown blocking rule type: ${rule.type}`);
           }
