@@ -1,5 +1,5 @@
 {
-  "version": "1.2.2",
+  "version": "1.2.3",
   "lastUpdated": "2026-06-08T00:00:00Z",
   "description": "Phishing detection logic for identifying phishing attempts targeting Microsoft 365 login pages",
   "trusted_login_patterns": [
@@ -188,6 +188,50 @@
         ],
         "description": "Page title exactly matches the canonical Microsoft 'Sign in to your account' title",
         "weight": 2,
+        "category": "primary"
+      },
+      {
+        "id": "canvas_streaming_ms_kit",
+        "type": "code_driven",
+        "code_logic": {
+          "type": "all_of",
+          "operations": [
+            { "type": "substring_present", "values": ["<canvas"] },
+            {
+              "type": "substring_present",
+              "values": ["socket.io", "new WebSocket(", "WebSocket('", "WebSocket(\""]
+            },
+            {
+              "type": "any_of",
+              "operations": [
+                {
+                  "type": "substring_present",
+                  "values": [
+                    "outlook.office365.com",
+                    "outlook.live.com",
+                    "outlook.com/favicon",
+                    "office365.com/favicon",
+                    "login.microsoftonline.com",
+                    "aadcdn.msauth.net",
+                    "aadcdn.msftauth.net"
+                  ]
+                },
+                {
+                  "type": "substring_present",
+                  "values": [
+                    "<title>Outlook</title>",
+                    "<title>Microsoft 365</title>",
+                    "<title>Office 365</title>",
+                    "<title>Microsoft account</title>",
+                    "<title>Sign in to your account</title>"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "description": "Remote-browser-streaming phishing kit signature: full-viewport <canvas> + Socket.IO/WebSocket transport + Microsoft/Outlook/Office reference (favicon hotlink or exact title). Catches BrowserClone/Castle/Pixel-stream-style kits that paint Microsoft login UI as pixels to defeat DOM-based detection.",
+        "weight": 3,
         "category": "primary"
       }
     ],
@@ -1638,6 +1682,52 @@
       "description": "Multiple empty tags used to obfuscate text (supporting evidence - should not block alone)",
       "action": "warn",
       "category": "text_obfuscation",
+      "confidence": 0.9
+    },
+    {
+      "id": "phi_036_canvas_streaming_ms_impersonation",
+      "code_driven": true,
+      "code_logic": {
+        "type": "all_of",
+        "operations": [
+          { "type": "substring_present", "values": ["<canvas"] },
+          {
+            "type": "substring_present",
+            "values": ["socket.io", "new WebSocket(", "WebSocket('", "WebSocket(\""]
+          },
+          {
+            "type": "any_of",
+            "operations": [
+              {
+                "type": "substring_present",
+                "values": [
+                  "outlook.office365.com",
+                  "outlook.live.com",
+                  "outlook.com/favicon",
+                  "office365.com/favicon",
+                  "login.microsoftonline.com",
+                  "aadcdn.msauth.net",
+                  "aadcdn.msftauth.net"
+                ]
+              },
+              {
+                "type": "substring_present",
+                "values": [
+                  "<title>Outlook</title>",
+                  "<title>Microsoft 365</title>",
+                  "<title>Office 365</title>",
+                  "<title>Microsoft account</title>",
+                  "<title>Sign in to your account</title>"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "severity": "critical",
+      "description": "Remote-browser-streaming phishing kit detected: page is a <canvas>-only UI streamed via Socket.IO/WebSocket from a server-side headless browser, with Microsoft/Outlook/Office branding (favicon hotlink or impersonating title). Defeats DOM-based detection because the rendered UI exists only as pixels.",
+      "action": "warn",
+      "category": "remote_browser_phishing",
       "confidence": 0.9
     },
     {
