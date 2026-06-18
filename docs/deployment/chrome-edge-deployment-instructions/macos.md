@@ -126,10 +126,4 @@ This would not install the extension until the next time Chrome is launched, and
 Due to limitations like this it really would be better to push it via an MDM. 
 
 
-### I don't know if this is the kind of feedback, or instruction you're looking for with macOS. If it IS, and you just need more screenshots, better examples, and more official language I'd be happy to assist with that. 
-
-
-
-
-### Original message below
-Coming soon. If you have experience deploying managed MacOS browser extensions, please contribute to the [docs via GitHub](https://github.com/CyberDrain/Check/tree/dev/docs). All Mac resources in the GitHub repo should be considered inaccurate until tested.&#x20;
+If you have experience deploying managed MacOS browser extensions, please contribute to the [docs via GitHub](https://github.com/CyberDrain/Check/tree/dev/docs). All Mac resources in the GitHub repo should be considered inaccurate until tested.&#x20;
