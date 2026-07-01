@@ -1371,9 +1371,12 @@ class CheckOptions {
     if (!escaped.startsWith('^')) {
       escaped = '^' + escaped;
     }
-    // Add end anchor if pattern doesn't end with wildcard
+    // Add end anchor if pattern doesn't end with wildcard. Tolerate an optional
+    // trailing path, query, or fragment so a host or root URL pattern (with or
+    // without a trailing slash) also matches deep links such as https://host/path.
+    // Kept in sync with the copy in scripts/content.js.
     if (!pattern.endsWith('*') && !escaped.endsWith('.*')) {
-      escaped = escaped + '$';
+      escaped = escaped.replace(/\/$/, '') + '(?:[/?#].*)?$';
     }
     return escaped;
   }

@@ -3411,9 +3411,15 @@ if (window.checkExtensionLoaded) {
       escaped = "^" + escaped;
     }
 
-    // Add end anchor if pattern doesn't end with wildcard
+    // Add end anchor if pattern doesn't end with wildcard. Tolerate an
+    // optional trailing path, query, or fragment so that allowlisting a host
+    // or a root URL (with or without a trailing slash) also matches deep
+    // links such as https://host/path. A single trailing slash in the pattern
+    // is normalized so it does not force an exact match on the bare root URL.
+    // Suffix tricks (for example https://host.evil.com/) still do not match,
+    // because the tolerated remainder must begin with /, ?, or #.
     if (!pattern.endsWith("*") && !escaped.endsWith(".*")) {
-      escaped = escaped + "$";
+      escaped = escaped.replace(/\/$/, "") + "(?:[/?#].*)?$";
     }
 
     return escaped;
