@@ -92,8 +92,8 @@ Check has an **"Enable Page Blocking"** setting in the extension options that co
 
 - **Page Blocking Enabled** + **Action: "block"** = Page is completely blocked with full-page warning
 - **Page Blocking Enabled** + **Action: "warn"** = Warning banner shown, page remains accessible
-- **Action: "log"** = Detection is recorded in Activity Logs and sent to reporting and webhooks only. No banner and no block are shown to the user, regardless of the Page Blocking setting.
-- **Page Blocking Disabled** = Never blocks. A `block` or `warn` action shows a warning banner instead; a `log` action stays silent.
+- **Action: "log"** = Detection is recorded in Activity Logs and (if configured) sent to reporting and webhooks. No banner and no block are shown to the user, regardless of the Page Blocking setting.
+- **Page Blocking Disabled** = Never blocks. If **Show Notifications** is enabled, a `block` or `warn` action shows a warning banner instead; a `log` action stays silent.
 
 This gives you control over whether you want aggressive blocking, visible warnings, or silent monitoring for suspicious domains.
 
