@@ -109,7 +109,6 @@ Edit your `rules/detection-rules.json` file to customize:
 ```json
 {
   "domain_squatting": {
-    "enabled": false,  // Turn detection on/off (default: false)
     "action": "block" // Action when detected: "block", "warn", or "log"
   }
 }
