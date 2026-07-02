@@ -1371,9 +1371,19 @@ class CheckOptions {
     if (!escaped.startsWith('^')) {
       escaped = '^' + escaped;
     }
-    // Add end anchor if pattern doesn't end with wildcard
+    // Add the end anchor if the pattern does not already end with a wildcard.
+    // Only a host or root URL pattern (no path beyond an optional single
+    // trailing slash) gets the tolerant trailing matcher, so patterns that
+    // include an explicit path stay exact matches and allowlist entries are
+    // not silently broadened into prefix matches. Kept in sync with the copy
+    // in scripts/content.js.
     if (!pattern.endsWith('*') && !escaped.endsWith('.*')) {
-      escaped = escaped + '$';
+      const afterScheme = pattern.replace(/^https?:\/\//i, '');
+      const firstSlash = afterScheme.indexOf('/');
+      const isHostOrRoot = firstSlash === -1 || firstSlash === afterScheme.length - 1;
+      escaped = isHostOrRoot
+        ? escaped.replace(/\/$/, '') + '(?:[/?#].*)?$'
+        : escaped + '$';
     }
     return escaped;
   }

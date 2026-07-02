@@ -3411,9 +3411,25 @@ if (window.checkExtensionLoaded) {
       escaped = "^" + escaped;
     }
 
-    // Add end anchor if pattern doesn't end with wildcard
+    // Add the end anchor if the pattern does not already end with a wildcard.
+    //
+    // Only a host or root URL pattern (no path segment beyond an optional
+    // single trailing slash) is given the tolerant trailing matcher, so that
+    // allowlisting a host or root URL also matches deep links such as
+    // https://host/path. A pattern that includes an explicit path stays an
+    // exact match, so allowlist entries are not silently broadened into prefix
+    // matches (for example "https://host/safe" must not also allow
+    // "https://host/safe/anything"). Suffix tricks such as
+    // "https://host.evil.com/" still do not match a "https://host/" entry,
+    // because the tolerated remainder must begin with /, ?, or #.
     if (!pattern.endsWith("*") && !escaped.endsWith(".*")) {
-      escaped = escaped + "$";
+      const afterScheme = pattern.replace(/^https?:\/\//i, "");
+      const firstSlash = afterScheme.indexOf("/");
+      const isHostOrRoot =
+        firstSlash === -1 || firstSlash === afterScheme.length - 1;
+      escaped = isHostOrRoot
+        ? escaped.replace(/\/$/, "") + "(?:[/?#].*)?$"
+        : escaped + "$";
     }
 
     return escaped;
@@ -4247,19 +4263,29 @@ if (window.checkExtensionLoaded) {
           
           // Check if notifications should be shown
           const showNotifications = config.showNotifications !== false;
-          
-          // Determine if we should block the page
-          // Requires: 1) enablePageBlocking is ON, 2) domain_squatting action is "block"
+
+          // Resolve the effective action as a real three-state value:
+          // 'block' | 'warn' | 'log'. Previously this only checked for
+          // 'block', which collapsed 'log' into 'warn' (banner + "warned").
+          // Semantics: warn logs telemetry AND shows a banner; log logs
+          // telemetry only and shows nothing to the user.
+          const squattingAction = squattingData.action || 'warn';
           logger.debug(`  enablePageBlocking: ${config.enablePageBlocking}`);
           logger.debug(`  squattingData.action: ${squattingData.action}`);
-          const shouldBlock = squattingData.action === 'block' && 
+          const shouldBlock = squattingAction === 'block' &&
                              config.enablePageBlocking !== false;
+          const outcome = shouldBlock
+            ? "blocked"
+            : squattingAction === 'log'
+              ? "logged"
+              : "warned";
           logger.debug(`  shouldBlock: ${shouldBlock}`);
-          
+          logger.debug(`  outcome: ${outcome}`);
+
           // Log domain squatting detection
           logProtectionEvent({
             type: "threat_detected",
-            action: shouldBlock ? "blocked" : "warned",
+            action: outcome,
             url: location.href,
             origin: currentOrigin,
             reason: `Domain squatting detected: ${squattingData.techniques.map(t => t.description).join('; ')}`,
@@ -4282,7 +4308,7 @@ if (window.checkExtensionLoaded) {
             })),
             severity: squattingData.severity,
             confidence: squattingData.confidence,
-            action: shouldBlock ? "blocked" : "warned",
+            action: outcome,
             reason: `Domain squatting detected: ${squattingData.techniques.map(t => t.description).join('; ')}`
           });
           
@@ -4301,7 +4327,7 @@ if (window.checkExtensionLoaded) {
                 })),
                 severity: squattingData.severity,
                 confidence: squattingData.confidence,
-                action: shouldBlock ? "blocked" : "warned",
+                action: outcome,
                 reason: `Domain squatting detected: ${squattingData.techniques.map(t => t.description).join('; ')}`
               },
             })
@@ -4330,6 +4356,9 @@ if (window.checkExtensionLoaded) {
               }
             );
             return; // Stop processing, page is blocked
+          } else if (squattingAction === 'log') {
+            // Log-only action: telemetry has already been emitted above.
+            // Intentionally show nothing to the user. Log must not warn.
           } else if (showNotifications) {
             // Show warning banner for domain squatting (only if notifications enabled)
             const techniquesDesc = squattingData.techniques.map(t => 

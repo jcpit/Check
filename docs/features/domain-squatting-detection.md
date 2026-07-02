@@ -88,13 +88,14 @@ You don't need to do anything - the protection works automatically in the backgr
 
 ### Page Blocking Control
 
-Check has an **"Enable Page Blocking"** setting in the extension options that controls how suspicious pages are handled:
+Check has an **"Enable Page Blocking"** setting in the extension options that controls how suspicious pages are handled. The detection **Action** can be one of three values: `block`, `warn`, or `log`.
 
 - **Page Blocking Enabled** + **Action: "block"** = Page is completely blocked with full-page warning
 - **Page Blocking Enabled** + **Action: "warn"** = Warning banner shown, page remains accessible
-- **Page Blocking Disabled** = Warning banner shown regardless of action setting (never blocks)
+- **Action: "log"** = Detection is recorded in Activity Logs and (if configured) sent to reporting and webhooks. No banner and no block are shown to the user, regardless of the Page Blocking setting.
+- **Page Blocking Disabled** = Never blocks. If **Show Notifications** is enabled, a `block` or `warn` action shows a warning banner instead; a `log` action stays silent.
 
-This gives you control over whether you want aggressive blocking or just warnings for suspicious domains.
+This gives you control over whether you want aggressive blocking, visible warnings, or silent monitoring for suspicious domains.
 
 ### For Advanced Users and IT Departments
 
@@ -109,7 +110,7 @@ Edit your `rules/detection-rules.json` file to customize:
 {
   "domain_squatting": {
     "enabled": false,  // Turn detection on/off (default: false)
-    "action": "block" // Action when detected: "block" or "warn"
+    "action": "block" // Action when detected: "block", "warn", or "log"
   }
 }
 ```
@@ -118,7 +119,7 @@ Edit your `rules/detection-rules.json` file to customize:
 ```json
 {
   "domain_squatting": {
-    "action": "block"  // "block" = full page block, "warn" = banner only
+    "action": "block"  // "block" = full page block, "warn" = banner only, "log" = silent, telemetry only
   }
 }
 ```
