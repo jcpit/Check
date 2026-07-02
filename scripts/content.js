@@ -3411,15 +3411,25 @@ if (window.checkExtensionLoaded) {
       escaped = "^" + escaped;
     }
 
-    // Add end anchor if pattern doesn't end with wildcard. Tolerate an
-    // optional trailing path, query, or fragment so that allowlisting a host
-    // or a root URL (with or without a trailing slash) also matches deep
-    // links such as https://host/path. A single trailing slash in the pattern
-    // is normalized so it does not force an exact match on the bare root URL.
-    // Suffix tricks (for example https://host.evil.com/) still do not match,
+    // Add the end anchor if the pattern does not already end with a wildcard.
+    //
+    // Only a host or root URL pattern (no path segment beyond an optional
+    // single trailing slash) is given the tolerant trailing matcher, so that
+    // allowlisting a host or root URL also matches deep links such as
+    // https://host/path. A pattern that includes an explicit path stays an
+    // exact match, so allowlist entries are not silently broadened into prefix
+    // matches (for example "https://host/safe" must not also allow
+    // "https://host/safe/anything"). Suffix tricks such as
+    // "https://host.evil.com/" still do not match a "https://host/" entry,
     // because the tolerated remainder must begin with /, ?, or #.
     if (!pattern.endsWith("*") && !escaped.endsWith(".*")) {
-      escaped = escaped.replace(/\/$/, "") + "(?:[/?#].*)?$";
+      const afterScheme = pattern.replace(/^https?:\/\//i, "");
+      const firstSlash = afterScheme.indexOf("/");
+      const isHostOrRoot =
+        firstSlash === -1 || firstSlash === afterScheme.length - 1;
+      escaped = isHostOrRoot
+        ? escaped.replace(/\/$/, "") + "(?:[/?#].*)?$"
+        : escaped + "$";
     }
 
     return escaped;
