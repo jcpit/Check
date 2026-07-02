@@ -145,14 +145,6 @@
         "category": "primary"
       },
       {
-        "id": "img_alt_microsoft",
-        "type": "source_content",
-        "pattern": "<img[^>]+alt\\s*=\\s*[\"']Microsoft[\"'][^>]*>",
-        "description": "Image with alt=\"Microsoft\" - durable visual hook used by CSS-clone phishing kits that strip canonical MS DOM hooks",
-        "weight": 3,
-        "category": "primary"
-      },
-      {
         "id": "ms_visible_ux_combo",
         "type": "code_driven",
         "code_logic": {
