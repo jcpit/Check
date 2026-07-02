@@ -1,6 +1,6 @@
 {
-  "version": "1.2.3",
-  "lastUpdated": "2026-06-08T00:00:00Z",
+  "version": "1.2.4",
+  "lastUpdated": "2026-07-02T00:00:00Z",
   "description": "Phishing detection logic for identifying phishing attempts targeting Microsoft 365 login pages",
   "trusted_login_patterns": [
     "^https:\\/\\/login\\.microsoftonline\\.(com|us)$",
@@ -141,14 +141,6 @@
         "type": "source_content",
         "pattern": "aadcdn\\.msauth\\.net/shared/1\\.0/content/images/backgrounds/",
         "description": "Microsoft login page background image from CDN",
-        "weight": 3,
-        "category": "primary"
-      },
-      {
-        "id": "img_alt_microsoft",
-        "type": "source_content",
-        "pattern": "<img[^>]+alt\\s*=\\s*[\"']Microsoft[\"'][^>]*>",
-        "description": "Image with alt=\"Microsoft\" - durable visual hook used by CSS-clone phishing kits that strip canonical MS DOM hooks",
         "weight": 3,
         "category": "primary"
       },
