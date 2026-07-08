@@ -169,7 +169,7 @@
             }
           ]
         },
-        "description": "Microsoft login user-visible UX text combo: requires at least one Microsoft-distinctive account/help phrase (exact MS copy: 'No account? Create one' or 'Can't access your account') AND one Microsoft auth-flow phrase ('Sign-in options', 'Email, phone, or Skype', 'Stay signed in?', 'Use another account', 'Pick an account'). Both categories must be MS-distinctive - the generic 'Terms of use' satisfier and the standalone 'Sign-in options' satisfier were removed because non-Microsoft IdP login pages (e.g. Adobe IMS, Trimble Identity) share those exact phrases and were being mis-classified as MS login pages, then blocked by form_post_not_microsoft. Durable signal for CSS-clone kits that copy Microsoft's exact login copy but strip code hooks.",
+        "description": "Microsoft login user-visible UX text combo: requires at least one Microsoft-distinctive account/help phrase (exact MS copy: 'No account? Create one' or 'Can't access your account') AND one Microsoft auth-flow phrase ('Sign-in options', 'Email, phone, or Skype', 'Stay signed in?', 'Use another account', 'Pick an account').",
         "weight": 3,
         "category": "primary"
       },
