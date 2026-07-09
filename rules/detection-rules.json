@@ -1,6 +1,6 @@
 {
-  "version": "1.2.4",
-  "lastUpdated": "2026-07-02T00:00:00Z",
+  "version": "1.2.5",
+  "lastUpdated": "2026-07-08T00:00:00Z",
   "description": "Phishing detection logic for identifying phishing attempts targeting Microsoft 365 login pages",
   "trusted_login_patterns": [
     "^https:\\/\\/login\\.microsoftonline\\.(com|us)$",
@@ -154,19 +154,22 @@
               "type": "any_of",
               "operations": [
                 { "type": "substring_present", "values": ["No account? Create one"] },
-                { "type": "substring_present", "values": ["Sign-in options"] }
+                { "type": "substring_present", "values": ["Can't access your account", "Can’t access your account", "Cant access your account"] }
               ]
             },
             {
               "type": "any_of",
               "operations": [
-                { "type": "substring_present", "values": ["Can't access your account", "Can’t access your account", "Cant access your account"] },
-                { "type": "substring_present", "values": ["Terms of use"] }
+                { "type": "substring_present", "values": ["Sign-in options"] },
+                { "type": "substring_present", "values": ["Email, phone, or Skype"] },
+                { "type": "substring_present", "values": ["Stay signed in?"] },
+                { "type": "substring_present", "values": ["Use another account"] },
+                { "type": "substring_present", "values": ["Pick an account"] }
               ]
             }
           ]
         },
-        "description": "Microsoft login user-visible UX text combo (two or more exact-MS-copy phrases) - durable signal for CSS-clone kits",
+        "description": "Microsoft login user-visible UX text combo: requires at least one Microsoft-distinctive account/help phrase (exact MS copy: 'No account? Create one' or 'Can't access your account') AND one Microsoft auth-flow phrase ('Sign-in options', 'Email, phone, or Skype', 'Stay signed in?', 'Use another account', 'Pick an account').",
         "weight": 3,
         "category": "primary"
       },
