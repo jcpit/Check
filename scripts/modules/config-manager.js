@@ -54,6 +54,25 @@ export class ConfigManager {
   }
 
   migrateLegacyConfig(config) {
+    const previousDefaultRulesUrl =
+      "https://raw.githubusercontent.com/CyberDrain/Check/refs/heads/main/rules/detection-rules.json";
+    const defaultRulesUrl =
+      "https://raw.githubusercontent.com/jcpit/Check/refs/heads/main/rules/detection-rules.json";
+
+    // Move existing installations from the old bundled default to this
+    // distribution's rules feed. Values other than the previous default
+    // remain user-managed custom URLs.
+    if (config.customRulesUrl === previousDefaultRulesUrl) {
+      config.customRulesUrl = defaultRulesUrl;
+      logger.log("Check: Migrated default customRulesUrl to jcpit rules feed");
+    }
+    if (config.detectionRules?.customRulesUrl === previousDefaultRulesUrl) {
+      config.detectionRules.customRulesUrl = defaultRulesUrl;
+      logger.log(
+        "Check: Migrated legacy default detectionRules.customRulesUrl to jcpit rules feed"
+      );
+    }
+
     // Migrate legacy detectionRules.customRulesUrl to top-level customRulesUrl
     if (config.detectionRules?.customRulesUrl && !config.customRulesUrl) {
       config.customRulesUrl = config.detectionRules.customRulesUrl;
