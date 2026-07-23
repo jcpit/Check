@@ -5513,22 +5513,9 @@ if (window.checkExtensionLoaded) {
                 );
               }
 
-              // Also emit the generic detection-alert event while this
-              // document is still alive. This is intentionally awaited for
-              // the same reason as page_blocked above.
-              await sendCippReport({
-                type: "suspicious_logon_detected",
-                url: defangUrl(location.href),
-                threatLevel: severity,
-                reason: reason,
-                score: detectionResult.score,
-                threshold: detectionResult.threshold,
-                legitimate: false,
-                timestamp: new Date().toISOString(),
-              });
             } catch (error) {
               logger.warn(
-                "Failed to send high-threat block webhooks:",
+                "Failed to send high-threat block webhook:",
                 error.message
               );
             }
@@ -5606,8 +5593,8 @@ if (window.checkExtensionLoaded) {
           clientReason: clientInfo.reason,
         });
 
-        // The high-threat blocking branch sends this report before redirect.
-        // Warnings stay on the page, so they can report asynchronously here.
+        // A blocked page emits the dedicated page_blocked event above. Warnings
+        // remain on the page and can emit detection_alert asynchronously here.
         if (severity !== "high" || !protectionEnabled) {
           sendCippReport({
             type: "suspicious_logon_detected",
