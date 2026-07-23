@@ -103,6 +103,16 @@ export class DetectionRulesManager {
       const cached = result?.[this.cacheKey];
 
       if (cached && cached.rules && cached.lastUpdate) {
+        // A cache from a different rules feed must never survive a feed
+        // migration. Otherwise installations keep using a previously cached
+        // upstream file until its normal refresh interval expires.
+        if (cached.source !== this.remoteUrl) {
+          logger.log(
+            "Cached detection rules source differs from configured feed; fetching fresh rules"
+          );
+          return false;
+        }
+
         // Check if cache is still valid
         const now = Date.now();
         const cacheAge = now - cached.lastUpdate;
