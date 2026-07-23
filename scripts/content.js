@@ -5769,96 +5769,41 @@ if (window.checkExtensionLoaded) {
                   newElementsAdded = true;
                   const tagName = node.tagName?.toLowerCase();
 
-                  // Log what's being added for debugging
-                  logger.debug(`DOM mutation: Adding ${tagName} element`);
-                  if (
-                    node.textContent &&
-                    node.textContent.length > 0 &&
-                    node.textContent.length < 200
-                  ) {
-                    logger.debug(
-                      `  Content preview: "${node.textContent.substring(
-                        0,
-                        100
-                      )}"`
-                    );
-                  }
-                  if (node.className) {
-                    logger.debug(`  Classes: "${node.className}"`);
-                  }
-                  if (node.id) {
-                    logger.debug(`  ID: "${node.id}"`);
-                  }
-
-                  if (
+                  // React/Angular applications add divs, buttons and labels
+                  // constantly. Treating those routine UI updates as a reason
+                  // to re-scan the entire document caused major input lag on
+                  // large portals. Re-scan only when a credential surface is
+                  // added, or when a subtree contains one.
+                  const hasCredentialSurface =
                     tagName === "form" ||
                     tagName === "input" ||
-                    tagName === "script" ||
-                    tagName === "div" || // Many login forms are built with divs
-                    tagName === "button" ||
-                    tagName === "label" ||
-                    tagName === "iframe" // Some phishing pages load content in iframes
-                  ) {
+                    tagName === "iframe" ||
+                    node.querySelector?.(
+                      'input[type="password"], input[type="email"], input[name="loginfmt"], #i0116'
+                    );
+                  if (hasCredentialSurface) {
                     shouldRerun = true;
                     logger.debug(
-                      `DOM change detected: ${tagName} element added - triggering re-scan`
+                      `Credential-related DOM change detected: ${tagName} - triggering re-scan`
                     );
                     break;
                   }
 
-                  // Check for Microsoft-related content being added
+                  // A small, high-signal check keeps coverage for malicious
+                  // dynamic script injection without inspecting the full text
+                  // of every application component update.
+                  const addedText = (node.textContent || "").slice(0, 4096);
                   if (
-                    node.textContent &&
-                    (node.textContent.includes("loginfmt") ||
-                      node.textContent.includes("idPartnerPL") ||
-                      node.textContent.includes("Microsoft") ||
-                      node.textContent.includes("Office 365") ||
-                      node.textContent.includes("Sign in") ||
-                      node.textContent.includes("Azure") ||
-                      node.textContent.includes("Outlook") ||
-                      node.textContent.includes("OneDrive") ||
-                      node.textContent.includes("Teams") ||
-                      node.textContent.includes("Enter password") ||
-                      node.textContent.includes("msauth") ||
-                      node.textContent.includes("microsoftonline"))
+                    (addedText.includes("__sxDocumentOrigin") &&
+                      addedText.includes("apiPath")) ||
+                    (addedText.includes("crypto.subtle.importKey") &&
+                      addedText.includes("AES-GCM"))
                   ) {
                     shouldRerun = true;
                     logger.debug(
-                      "DOM change detected: Microsoft-related content added - triggering re-scan"
-                    );
-                    logger.debug(
-                      `  Microsoft content: "${node.textContent.substring(
-                        0,
-                        200
-                      )}"`
+                      "Phishing-kit marker added dynamically - triggering re-scan"
                     );
                     break;
-                  }
-
-                  // Check for login-related classes or IDs being added
-                  if (node.className || node.id) {
-                    const classAndId = (
-                      node.className +
-                      " " +
-                      node.id
-                    ).toLowerCase();
-                    if (
-                      classAndId.includes("login") ||
-                      classAndId.includes("signin") ||
-                      classAndId.includes("password") ||
-                      classAndId.includes("email") ||
-                      classAndId.includes("username") ||
-                      classAndId.includes("microsoft") ||
-                      classAndId.includes("office") ||
-                      classAndId.includes("azure")
-                    ) {
-                      shouldRerun = true;
-                      logger.debug(
-                        "DOM change detected: Login-related element added - triggering re-scan"
-                      );
-                      logger.debug(`  Login classes/ID: "${classAndId}"`);
-                      break;
-                    }
                   }
                 }
               }
@@ -7301,8 +7246,10 @@ if (window.checkExtensionLoaded) {
       // Setup dynamic script monitoring early to catch any immediate script execution
       setupDynamicScriptMonitoring();
       
-      // Setup network monitoring for better timing detection
-      setupNetworkMonitoring();
+      // Do not hook fetch/XHR. Modern single-page apps can make hundreds of
+      // requests while rendering; triggering a document-wide scan on network
+      // idle makes the extension interfere with normal interaction. DOM
+      // monitoring below covers actual credential UI injection instead.
 
       // Track when we've completed different loading stages
       let domContentLoadedFired = false;
