@@ -141,7 +141,7 @@ async function reportFalsePositive() {
   
   const reportBtn = document.getElementById("reportFalsePositiveBtn");
   
-  if (!webhookConfig || !webhookConfig.url) {
+  if (!webhookConfig?.enabled) {
     console.error("No webhook configured");
     return;
   }
@@ -152,57 +152,46 @@ async function reportFalsePositive() {
     reportBtn.style.background = "#6b7280";
     reportBtn.style.color = "white";
     
-    const payload = {
-      version: "1.0",
-      type: "false_positive_report",
+    const data = {
+      blockedUrl:
+        globalDetectionDetails?.url ||
+        document.getElementById("blockedUrl").textContent,
+      reason: document.getElementById("blockReason").textContent,
       timestamp: new Date().toISOString(),
-      source: "Check Extension",
-      extensionVersion: chrome.runtime.getManifest().version,
-      data: {
-        reportedUrl: document.getElementById("blockedUrl").textContent,
-        reportedReason: document.getElementById("blockReason").textContent,
-        reportTimestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent,
-        browserInfo: {
-          platform: navigator.platform,
-          language: navigator.language,
-          vendor: navigator.vendor,
-          cookiesEnabled: navigator.cookieEnabled,
-          onLine: navigator.onLine
-        },
-        screenResolution: {
-          width: window.screen.width,
-          height: window.screen.height,
-          availWidth: window.screen.availWidth,
-          availHeight: window.screen.availHeight,
-          colorDepth: window.screen.colorDepth
-        },
-        detectionDetails: globalDetectionDetails || {},
-        userComments: null
-      }
-    };
-    
-    console.log("Sending false positive report to:", webhookConfig.url);
-    console.log("Report payload:", payload);
-    
-    const response = await fetch(webhookConfig.url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Webhook-Type": "false_positive_report",
-        "X-Webhook-Version": "1.0"
+      userAgent: navigator.userAgent,
+      browserInfo: {
+        platform: navigator.platform,
+        language: navigator.language,
+        vendor: navigator.vendor,
+        cookiesEnabled: navigator.cookieEnabled,
+        onLine: navigator.onLine,
       },
-      body: JSON.stringify(payload)
+      screenResolution: {
+        width: window.screen.width,
+        height: window.screen.height,
+        availWidth: window.screen.availWidth,
+        availHeight: window.screen.availHeight,
+        colorDepth: window.screen.colorDepth,
+      },
+      detectionDetails: globalDetectionDetails || {},
+      comments: null,
+    };
+
+    const response = await chrome.runtime.sendMessage({
+      type: "send_webhook",
+      webhookType: "false_positive_report",
+      data,
     });
-    
-    if (response.ok) {
+
+    if (response?.success) {
       console.log("False positive report sent successfully");
       reportBtn.textContent = "Report Sent Successfully";
       reportBtn.style.background = "#16a34a";
       reportBtn.style.color = "white";
     } else {
-      console.warn("False positive report failed with HTTP status:", response.status, response.statusText);
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(
+        response?.result?.error || response?.error || "Webhook delivery failed"
+      );
     }
   } catch (error) {
     console.error("Failed to send false positive report:", error);
@@ -613,14 +602,20 @@ async function loadBranding() {
         }
       }
       
-      // Check if false positive webhook is configured and show button accordingly
+      // Load generic webhook settings from the extension configuration. Branding
+      // data intentionally contains no webhook details.
       const falsePositiveBtn = document.getElementById("reportFalsePositiveBtn");
-      const genericWebhook = storageResult.genericWebhook;
+      const configResult = await chrome.runtime.sendMessage({
+        type: "GET_CONFIG",
+      });
+      const genericWebhook = configResult?.success
+        ? configResult.config?.genericWebhook
+        : null;
       if (genericWebhook && genericWebhook.enabled && genericWebhook.url) {
         const events = genericWebhook.events || [];
         if (events.includes("false_positive_report")) {
           console.log("False positive webhook configured, showing report button");
-          webhookConfig = { url: genericWebhook.url };
+          webhookConfig = { enabled: true };
           if (falsePositiveBtn) {
             falsePositiveBtn.style.display = "inline-block";
           }
