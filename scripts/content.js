@@ -5855,52 +5855,11 @@ if (window.checkExtensionLoaded) {
         attributes: false, // Don't monitor attributes to reduce noise
       });
 
-      // Fallback: Check periodically for content that might have loaded without triggering observer
-      let fallbackCheckCount = 0;
-      const MAX_FALLBACK_CHECKS = 5; // Allow up to 5 fallback checks
-      const checkInterval = setInterval(() => {
-        // Stop if page has been escalated to block
-        if (escalatedToBlock) {
-          logger.debug("🛑 Page escalated to block - stopping fallback timer");
-          clearInterval(checkInterval);
-          return;
-        }
-
-        if (showingBanner) {
-          logger.debug(
-            "🔍 Fallback timer scanning cleaned page source while banner is displayed"
-          );
-          // Scan cleaned page source (banner and injected elements removed)
-          runProtection(true, false, { scanCleaned: true });
-          clearInterval(checkInterval);
-          return;
-        }
-
-        fallbackCheckCount++;
-        const currentElementCount = document.querySelectorAll("*").length;
-        const hasSignificantContent = document.body?.textContent?.length > 1000;
-
-        if (hasSignificantContent && currentElementCount > 50) {
-          logger.log(
-            `⏰ Fallback timer detected significant content - re-running analysis (check ${fallbackCheckCount}/${MAX_FALLBACK_CHECKS})`
-          );
-          runProtection(true);
-          
-          // Stop after MAX_FALLBACK_CHECKS successful rescans
-          if (fallbackCheckCount >= MAX_FALLBACK_CHECKS) {
-            logger.log("⏰ Maximum fallback checks reached - stopping");
-            clearInterval(checkInterval);
-          }
-        } else if (fallbackCheckCount >= MAX_FALLBACK_CHECKS) {
-          // Stop after MAX_FALLBACK_CHECKS attempts even if no significant content
-          logger.debug("⏰ Maximum fallback check attempts reached - stopping");
-          clearInterval(checkInterval);
-        }
-      }, 1500); // Check every 1.5 seconds
-
-      // Stop monitoring after 30 seconds to prevent resource drain
+      // MutationObserver provides the required signal for delayed credential
+      // injection. Periodically serializing and rescanning a whole page here
+      // penalized normal ecommerce and admin SPAs, so no polling fallback is
+      // used. Keep the observer only through the short delayed-load window.
       setTimeout(() => {
-        clearInterval(checkInterval);
         stopDOMMonitoring();
         // Also clear any pending DOM scan debounce
         if (domScanTimeout) {
@@ -5908,7 +5867,7 @@ if (window.checkExtensionLoaded) {
           domScanTimeout = null;
         }
         logger.log("🛑 DOM monitoring timeout reached - stopping");
-      }, 30000);
+      }, 10000);
     } catch (error) {
       logger.error("Failed to set up DOM monitoring:", error.message);
     }
@@ -7320,9 +7279,22 @@ if (window.checkExtensionLoaded) {
             for (const node of mutation.addedNodes) {
               if (node.nodeType === Node.ELEMENT_NODE) {
                 const tagName = node.tagName?.toLowerCase();
-                // If a form or input appears, trigger immediate scan
-                if (tagName === "form" || tagName === "input") {
-                  logger.log("🎯 Critical element detected via observer: " + tagName);
+                // Do not re-scan for ordinary search, quantity, or checkout
+                // fields. Only credential-like inputs are relevant before the
+                // normal initial scan completes.
+                const inputType = node.getAttribute?.("type") || "";
+                const inputIdentity = `${node.id || ""} ${
+                  node.getAttribute?.("name") || ""
+                }`;
+                const isCredentialInput =
+                  tagName === "input" &&
+                  (inputType === "password" ||
+                    inputType === "email" ||
+                    /login|signin|password|username|email|loginfmt/i.test(
+                      inputIdentity
+                    ));
+                if (isCredentialInput) {
+                  logger.log("🎯 Credential input detected via observer");
                   criticalElementObserver.disconnect();
                   
                   if (scanCount < MAX_SCANS && !showingBanner && !escalatedToBlock) {
