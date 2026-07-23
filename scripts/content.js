@@ -5474,9 +5474,11 @@ if (window.checkExtensionLoaded) {
               "🛡️ PROTECTION ACTIVE: Blocking page due to high threat"
             );
 
-            // Send page_blocked webhook
-            chrome.runtime
-              .sendMessage({
+            // A blob-document block immediately navigates away from this
+            // content-script context. Wait for the background worker to
+            // accept and deliver the event before changing location.
+            try {
+              const webhookResponse = await chrome.runtime.sendMessage({
                 type: "send_webhook",
                 webhookType: "page_blocked",
                 data: {
@@ -5503,13 +5505,33 @@ if (window.checkExtensionLoaded) {
                   ],
                   timestamp: new Date().toISOString(),
                 },
-              })
-              .catch((err) => {
-                logger.warn(
-                  "Failed to send page_blocked webhook:",
-                  err.message
-                );
               });
+              if (!webhookResponse?.success) {
+                logger.warn(
+                  "Page-blocked webhook was not delivered:",
+                  webhookResponse?.error || "Webhook not configured"
+                );
+              }
+
+              // Also emit the generic detection-alert event while this
+              // document is still alive. This is intentionally awaited for
+              // the same reason as page_blocked above.
+              await sendCippReport({
+                type: "suspicious_logon_detected",
+                url: defangUrl(location.href),
+                threatLevel: severity,
+                reason: reason,
+                score: detectionResult.score,
+                threshold: detectionResult.threshold,
+                legitimate: false,
+                timestamp: new Date().toISOString(),
+              });
+            } catch (error) {
+              logger.warn(
+                "Failed to send high-threat block webhooks:",
+                error.message
+              );
+            }
 
             await showBlockingOverlay(reason, lastDetectionResult);
             disableFormSubmissions();
@@ -5584,17 +5606,20 @@ if (window.checkExtensionLoaded) {
           clientReason: clientInfo.reason,
         });
 
-        // Send CIPP reporting if enabled
-        sendCippReport({
-          type: "suspicious_logon_detected",
-          url: defangUrl(location.href),
-          threatLevel: severity,
-          reason: reason,
-          score: detectionResult.score,
-          threshold: detectionResult.threshold,
-          legitimate: false,
-          timestamp: new Date().toISOString(),
-        });
+        // The high-threat blocking branch sends this report before redirect.
+        // Warnings stay on the page, so they can report asynchronously here.
+        if (severity !== "high" || !protectionEnabled) {
+          sendCippReport({
+            type: "suspicious_logon_detected",
+            url: defangUrl(location.href),
+            threatLevel: severity,
+            reason: reason,
+            score: detectionResult.score,
+            threshold: detectionResult.threshold,
+            legitimate: false,
+            timestamp: new Date().toISOString(),
+          });
+        }
       } else {
         // Extract client info for legitimate access logging
         const redirectHostname = extractRedirectHostname(location.href);
