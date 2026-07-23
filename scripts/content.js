@@ -159,6 +159,56 @@ if (window.checkExtensionLoaded) {
     return cachedPageSource;
   }
 
+  // Avoid serializing and evaluating the full DOM on every page. This is a
+  // deliberately cheap, selector-based gate: it identifies Microsoft login
+  // surfaces and the few blob-kit primitives we need to catch before normal
+  // page analysis. Ordinary pages stay on the lightweight observer path.
+  function hasPotentialM365OrKitSignal() {
+    try {
+      if (location.protocol === "blob:") return true;
+
+      const hostname = location.hostname.toLowerCase();
+      if (
+        /(^|\.)(microsoftonline\.com|live\.com|office\.com|microsoft\.com)$/.test(
+          hostname
+        )
+      ) {
+        return true;
+      }
+
+      if (
+        document.querySelector(
+          'input[type="password"], input[name="loginfmt"], #i0116, #i0118, [data-report-event*="Signin"], iframe[src*="microsoftonline.com"], script[src*="microsoftonline.com"], link[href*="microsoftonline.com"]'
+        )
+      ) {
+        return true;
+      }
+
+      // The observed kit adds this exact style id. Its bootstrap also embeds
+      // __sxDocumentOrigin in an inline script. Inspect individual scripts,
+      // not documentElement.outerHTML, to keep this constant-cost in practice.
+      if (document.getElementById("__customBgStyles")) return true;
+      const scripts = document.scripts;
+      const limit = Math.min(scripts.length, 24);
+      for (let index = 0; index < limit; index++) {
+        const source = scripts[index].textContent || "";
+        if (
+          source.includes("__sxDocumentOrigin") ||
+          (source.includes("crypto.subtle.importKey") &&
+            source.includes("AES-GCM"))
+        ) {
+          return true;
+        }
+      }
+    } catch (error) {
+      // On unusual documents, fall through to the full scan rather than
+      // risking a missed detection.
+      logger.debug("Fast content gate failed:", error.message);
+      return true;
+    }
+    return false;
+  }
+
   /**
    * Compute reliable hash of page source to detect changes
    * Uses djb2 with intelligent sampling for performance + accuracy balance
@@ -3854,26 +3904,6 @@ if (window.checkExtensionLoaded) {
           isRerun ? "(re-run)" : "(initial)"
         } for ${window.location.href}`
       );
-      let cleanedSourceLength = null;
-      if (options.scanCleaned) {
-        // If scanCleaned is true, get cleaned page source length
-        const cleanedSource = getCleanPageSource();
-        cleanedSourceLength = cleanedSource ? cleanedSource.length : null;
-        logger.log(
-          `📄 Page info: ${document.querySelectorAll("*").length} elements, ${
-            document.body?.textContent?.length || 0
-          } chars content | Cleaned page source: ${
-            cleanedSourceLength || "N/A"
-          } chars`
-        );
-      } else {
-        logger.log(
-          `📄 Page info: ${document.querySelectorAll("*").length} elements, ${
-            document.body?.textContent?.length || 0
-          } chars content`
-        );
-      }
-
       if (isInIframe()) {
         logger.log("⚠️ Page is in an iframe");
       }
@@ -3930,6 +3960,18 @@ if (window.checkExtensionLoaded) {
         }
 
         return; // EXIT IMMEDIATELY - can't be phishing on user-allowlisted URL
+      }
+
+      // Most pages are not login pages. Do not load all rules or serialize a
+      // large SPA DOM unless this small gate finds a credential/Microsoft/kit
+      // signal. The targeted observer handles a signal injected shortly after
+      // this first check.
+      if (!forceRescan && !hasPotentialM365OrKitSignal()) {
+        logger.debug("No Microsoft or phishing-kit signal; using lightweight monitoring");
+        if (!isRerun) {
+          setupDOMMonitoring();
+        }
+        return;
       }
 
       // Check if page blocking is disabled
@@ -5718,13 +5760,6 @@ if (window.checkExtensionLoaded) {
       }
 
       logger.log("Setting up DOM monitoring for delayed content");
-      logger.log(
-        `Current page has ${document.querySelectorAll("*").length} elements`
-      );
-      logger.log(`Page title: "${document.title}"`);
-      logger.log(
-        `Body content length: ${document.body?.textContent?.length || 0} chars`
-      );
 
       domObserver = new MutationObserver(async (mutations) => {
         try {
