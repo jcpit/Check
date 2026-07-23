@@ -23,7 +23,9 @@
       "matches": ["<all_urls>"],
       "exclude_matches": [
         "*://*.cloudflareaccess.com/*",
-        "*://challenges.cloudflare.com/*"
+        "*://challenges.cloudflare.com/*",
+        "*://cipp.jcpit.support/*",
+        "*://identity.6.azurestaticapps.net/*"
       ],
       "js": ["scripts/browser-polyfill-inline.js", "scripts/content.js"],
       "css": ["styles/content.css"],
