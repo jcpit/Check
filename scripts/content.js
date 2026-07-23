@@ -4552,6 +4552,52 @@ if (window.checkExtensionLoaded) {
             };
 
             if (protectionEnabled) {
+              // Deliver webhook events before navigating away. A blob-page
+              // redirect destroys this content-script context, so sends after
+              // showBlockingOverlay are not reliable.
+              try {
+                await chrome.runtime.sendMessage({
+                  type: "send_webhook",
+                  webhookType: "page_blocked",
+                  data: {
+                    url: defangUrl(location.href),
+                    reason: reason,
+                    severity: "critical",
+                    score: phishingResult.score,
+                    threshold: 85,
+                    rule: "phishing_indicators",
+                    ruleDescription: reason,
+                    matchedRules: criticalThreats.map((threat) => ({
+                      id: threat.id,
+                      description: threat.description,
+                      severity: threat.severity,
+                      confidence: threat.confidence,
+                    })),
+                    timestamp: new Date().toISOString(),
+                  },
+                });
+                await sendCippReport({
+                  type: "critical_phishing_blocked",
+                  url: defangUrl(location.href),
+                  reason: reason,
+                  severity: "critical",
+                  legitimate: false,
+                  timestamp: new Date().toISOString(),
+                  phishingIndicators: phishingResult.threats.map((t) => t.id),
+                  matchedRules: criticalThreats.map((threat) => ({
+                    id: threat.id,
+                    description: threat.description,
+                    severity: threat.severity,
+                    confidence: threat.confidence,
+                  })),
+                });
+              } catch (error) {
+                logger.warn(
+                  "Failed to send phishing block webhook:",
+                  error.message
+                );
+              }
+
               logger.error(
                 "🛡️ PROTECTION ACTIVE: Blocking page due to critical phishing indicators"
               );
@@ -4591,56 +4637,6 @@ if (window.checkExtensionLoaded) {
               clientSuspicious: clientInfo.isMalicious,
               clientReason: clientInfo.reason,
               phishingIndicators: phishingResult.threats.map((t) => t.id),
-            });
-
-            // This early content-indicator path bypasses the normal blocking
-            // rules flow, so emit the generic page_blocked event explicitly.
-            // Without it, integrations subscribed only to page_blocked miss
-            // blob-based phishing-kit blocks.
-            if (protectionEnabled) {
-              try {
-                await chrome.runtime.sendMessage({
-                  type: "send_webhook",
-                  webhookType: "page_blocked",
-                  data: {
-                    url: defangUrl(location.href),
-                    reason: reason,
-                    severity: "critical",
-                    score: phishingResult.score,
-                    threshold: 85,
-                    rule: "phishing_indicators",
-                    ruleDescription: reason,
-                    matchedRules: criticalThreats.map((threat) => ({
-                      id: threat.id,
-                      description: threat.description,
-                      severity: threat.severity,
-                      confidence: threat.confidence,
-                    })),
-                    timestamp: new Date().toISOString(),
-                  },
-                });
-              } catch (error) {
-                logger.warn(
-                  "Failed to send page_blocked webhook:",
-                  error.message
-                );
-              }
-            }
-
-            sendCippReport({
-              type: "critical_phishing_blocked",
-              url: defangUrl(location.href),
-              reason: reason,
-              severity: "critical",
-              legitimate: false,
-              timestamp: new Date().toISOString(),
-              phishingIndicators: phishingResult.threats.map((t) => t.id),
-              matchedRules: criticalThreats.map((threat) => ({
-                id: threat.id,
-                description: threat.description,
-                severity: threat.severity,
-                confidence: threat.confidence,
-              })),
             });
 
             return;
