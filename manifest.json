@@ -24,6 +24,7 @@
       "js": ["scripts/browser-polyfill-inline.js", "scripts/content.js"],
       "css": ["styles/content.css"],
       "run_at": "document_idle",
+      "match_origin_as_fallback": true,
       "all_frames": true
     }
   ],

@@ -1,5 +1,5 @@
 {
-  "version": "1.2.6",
+  "version": "1.2.7",
   "lastUpdated": "2026-07-23T00:00:00Z",
   "description": "Phishing detection logic for identifying phishing attempts targeting Microsoft 365 login pages",
   "trusted_login_patterns": [
@@ -691,7 +691,8 @@
       "description": "Credential-phishing kit that proxies API calls through __sxDocumentOrigin and injects a custom-background login layer",
       "action": "block",
       "category": "phishing_kit_signature",
-      "confidence": 0.98
+      "confidence": 0.98,
+      "pre_gate": true
     },
     {
       "id": "phi_038_fake_microsoft_identity_verification_modal",
@@ -702,6 +703,17 @@
       "action": "block",
       "category": "brand_abuse",
       "confidence": 0.96
+    },
+    {
+      "id": "phi_039_encrypted_blob_document_loader",
+      "pattern": "(?=[\\s\\S]*var\\s+payload\\s*=\\s*\\{[^}]*[\"']cipher[\"'][^}]*[\"']iv[\"'][^}]*[\"']key[\"'])(?=[\\s\\S]*function\\s+base64ToBytes)(?=[\\s\\S]*function\\s+resolveDocumentOrigin)(?=[\\s\\S]*crypto\\.subtle\\.importKey)(?=[\\s\\S]*AES-GCM)(?=[\\s\\S]*document\\.write\\s*\\(\\s*html\\s*\\))",
+      "flags": "i",
+      "severity": "critical",
+      "description": "Encrypted blob-document loader that decrypts a hidden page in-browser before replacing the document",
+      "action": "block",
+      "category": "phishing_kit_signature",
+      "confidence": 0.98,
+      "pre_gate": true
     },
     {
       "id": "phi_001",

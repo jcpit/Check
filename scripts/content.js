@@ -2783,6 +2783,49 @@ if (window.checkExtensionLoaded) {
   }
 
   /**
+   * Run the small set of explicitly opted-in kit signatures before the
+   * Microsoft-element gate. This covers bootstrap pages that immediately
+   * replace themselves with a blob document, before normal page analysis can
+   * identify the impersonated login UI.
+   */
+  function checkPreGateContentIndicators() {
+    if (!detectionRules?.phishing_indicators) {
+      return [];
+    }
+
+    const pageSource = document.documentElement?.outerHTML || "";
+    const pageText = document.body?.textContent || "";
+    const currentUrl = window.location.href;
+    const threats = [];
+
+    for (const indicator of detectionRules.phishing_indicators) {
+      if (!indicator.pre_gate) continue;
+
+      try {
+        const evaluation = evaluateIndicatorPortable(
+          indicator,
+          pageSource,
+          pageText,
+          currentUrl
+        );
+        if (evaluation.matches) {
+          threats.push({
+            id: indicator.id,
+            severity: indicator.severity,
+            action: indicator.action,
+          });
+        }
+      } catch (error) {
+        logger.debug(
+          `Pre-gate indicator ${indicator.id} failed: ${error.message}`
+        );
+      }
+    }
+
+    return threats;
+  }
+
+  /**
    * Process phishing indicators from detection rules
    */
   async function processPhishingIndicators() {
@@ -4400,6 +4443,20 @@ if (window.checkExtensionLoaded) {
       // Step 6: Check if page is an MS logon page (using rule file requirements)
       const msDetection = detectMicrosoftElements();
       if (!msDetection.isLogonPage) {
+        // Some phishing kits use a short, non-Microsoft bootstrap page to
+        // navigate into a blob document. Evaluate only signatures that opt in
+        // to this early scan, rather than running every content rule on every
+        // non-Microsoft page.
+        const preGateThreats = checkPreGateContentIndicators();
+        if (preGateThreats.length > 0) {
+          logger.warn(
+            `🚨 Pre-gate phishing-kit indicators triggered: ${preGateThreats
+              .map((threat) => threat.id)
+              .join(", ")}`
+          );
+          msDetection.hasElements = true;
+        }
+
         // Step 6a: Pre-check URL-only phishing indicators (e.g., wordlist-path
         // kits) BEFORE the hasElements performance gate. URL-shape signals must
         // fire even when the page has stripped all DOM hooks - this is the
