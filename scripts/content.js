@@ -4593,6 +4593,40 @@ if (window.checkExtensionLoaded) {
               phishingIndicators: phishingResult.threats.map((t) => t.id),
             });
 
+            // This early content-indicator path bypasses the normal blocking
+            // rules flow, so emit the generic page_blocked event explicitly.
+            // Without it, integrations subscribed only to page_blocked miss
+            // blob-based phishing-kit blocks.
+            if (protectionEnabled) {
+              try {
+                await chrome.runtime.sendMessage({
+                  type: "send_webhook",
+                  webhookType: "page_blocked",
+                  data: {
+                    url: defangUrl(location.href),
+                    reason: reason,
+                    severity: "critical",
+                    score: phishingResult.score,
+                    threshold: 85,
+                    rule: "phishing_indicators",
+                    ruleDescription: reason,
+                    matchedRules: criticalThreats.map((threat) => ({
+                      id: threat.id,
+                      description: threat.description,
+                      severity: threat.severity,
+                      confidence: threat.confidence,
+                    })),
+                    timestamp: new Date().toISOString(),
+                  },
+                });
+              } catch (error) {
+                logger.warn(
+                  "Failed to send page_blocked webhook:",
+                  error.message
+                );
+              }
+            }
+
             sendCippReport({
               type: "critical_phishing_blocked",
               url: defangUrl(location.href),
@@ -7026,9 +7060,17 @@ if (window.checkExtensionLoaded) {
         });
       });
 
-      // Check if CIPP reporting is enabled and URL is configured
-      if (!config.enableCippReporting || !config.cippServerUrl) {
-        logger.debug("CIPP reporting disabled or no server URL configured");
+      // A detection alert can be delivered through either CIPP or a generic
+      // webhook. Do not require CIPP configuration when the generic endpoint
+      // is explicitly subscribed to detection alerts.
+      const hasCippWebhook =
+        config.enableCippReporting && Boolean(config.cippServerUrl);
+      const hasGenericDetectionAlertWebhook =
+        config.genericWebhook?.enabled &&
+        Boolean(config.genericWebhook.url) &&
+        (config.genericWebhook.events || []).includes("detection_alert");
+      if (!hasCippWebhook && !hasGenericDetectionAlertWebhook) {
+        logger.debug("No CIPP or generic detection-alert webhook configured");
         return;
       }
 
