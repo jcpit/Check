@@ -1,6 +1,6 @@
 {
-  "version": "1.2.5",
-  "lastUpdated": "2026-07-08T00:00:00Z",
+  "version": "1.2.6",
+  "lastUpdated": "2026-07-23T00:00:00Z",
   "description": "Phishing detection logic for identifying phishing attempts targeting Microsoft 365 login pages",
   "trusted_login_patterns": [
     "^https:\\/\\/login\\.microsoftonline\\.(com|us)$",
@@ -683,6 +683,26 @@
     "phishing": 25
   },
   "phishing_indicators": [
+    {
+      "id": "phi_037_sx_document_origin_custom_background_kit",
+      "pattern": "(?=[\\s\\S]*window\\.__sxDocumentOrigin)(?=[\\s\\S]*function\\s+apiPath\\s*\\(\\s*value\\s*\\))(?=[\\s\\S]*__customBgStyles)(?=[\\s\\S]*__custom-bg-enabled)",
+      "flags": "i",
+      "severity": "critical",
+      "description": "Credential-phishing kit that proxies API calls through __sxDocumentOrigin and injects a custom-background login layer",
+      "action": "block",
+      "category": "phishing_kit_signature",
+      "confidence": 0.98
+    },
+    {
+      "id": "phi_038_fake_microsoft_identity_verification_modal",
+      "pattern": "(?=[\\s\\S]*Identity\\s+Verification)(?=[\\s\\S]*generate\\s+your\\s+verification\\s+code)(?=[\\s\\S]*I(?:'|&apos;|&#0*39;|&#x0*27;)m\\s+not\\s+a\\s+robot)(?=[\\s\\S]*Protected\\s+by\\s+Microsoft\\s+Security)",
+      "flags": "i",
+      "severity": "critical",
+      "description": "Fake Microsoft identity-verification modal that tricks users into generating a verification code",
+      "action": "block",
+      "category": "brand_abuse",
+      "confidence": 0.96
+    },
     {
       "id": "phi_001",
       "pattern": "(?:secure-?(?:microsoft|office|365|outlook))",
